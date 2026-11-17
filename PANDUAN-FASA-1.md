@@ -132,3 +132,33 @@ Render → `hikayat-nusantara-portal` → tunggu auto-deploy atau pilih **Manual
 2. Uji butang Lihat 2D dan Henti animasi, serta gerakkan tetikus di panel.
 3. Semak responsiveness, khususnya prestasi di telefon; gunakan mod 2D jika animasi terlalu berat.
 4. Semak dashboard Murid, Guru dan Admin masih boleh dibuka.
+
+
+## Fasa 2A — Dashboard Murid: Desa Hikayat 3D (prototaip)
+
+Bahagian peta dunia kini menjadi paparan pertama apabila murid memilih dashboard Murid.
+
+### Empat lokasi berasaskan RPH Tahun 5
+1. **Rumah Naskhah Pusaka (10 minit)** — membaca/mendengar cerita, susun 5 peristiwa dan jawab 3 soalan pemahaman.
+2. **Balai Olah Hikayat (15 minit)** — memilih watak/latar/peristiwa dan mengubah suai cerita.
+3. **Taman Bahasa Ajaib (10 minit)** — 4 cabaran pilihan bahasa indah dan santun.
+4. **Pentas Warisan (15 minit)** — merancang dan mempersembahkan cerita dengan rakaman suara atau video.
+
+### Ciri-ciri
+- Peta kampung 3D WebGL dengan rumah kayu, balai, taman, pentas, sungai, jambatan, sawah, pelita, awan dan pohon.
+- Tekan label lokasi atau bangunan 3D untuk memfokuskan pemandangan dan membaca penerangan misi.
+- Tekan **Lihat misi (demo)** untuk membuka dialog pratonton sedia ada; kandungan misi sebenar belum diaktifkan.
+- Butang **Lihat 2D / Lihat 3D** dan **Henti gerakan / Gerakkan**, serta tetapan sistem `prefers-reduced-motion`.
+- SVG asal dikekalkan sebagai paparan fallback jika Three.js atau WebGL tidak tersedia.
+- Ringkasan dan portfolio dikekalkan di bawah peta; Dashboard Guru dan Admin tidak diubah.
+- Mod demonstrasi menggunakan kemajuan 0/4; belum ada penyimpanan data, identiti sebenar atau sistem ganjaran.
+
+### Nota keselamatan dan etika
+Dashboard masih terbuka dan bukan aplikasi log masuk sebenar. **Jangan masukkan nama penuh murid, karya peribadi, rakaman sebenar atau data sensitif** sehingga akaun yang sah, perlindungan data dan storan dilaksanakan.
+
+### Deploy melalui GitHub dan Render
+Gabungkan PR melalui butang *Merge pull request* di GitHub. Jika Render tidak auto-deploy, buka Web Service `hikayat-nusantara-portal` dan klik **Manual Deploy → Deploy latest commit**. Semak:
+- Menu Murid membuka Desa Hikayat 3D dengan empat lokasi.
+- Klik semua lokasi, kemudian **Lihat misi (demo)**.
+- Tukar ke 2D dan hentikan animasi.
+- Semak paparan telefon dan fungsi Dashboard Guru/Admin.
