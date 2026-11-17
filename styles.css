@@ -209,3 +209,113 @@
   .desa-location-panel{animation:none!important}
   .desa-map-stage,.desa-map-action,#murid-view .map-pin{transition:none!important}
 }
+
+
+/* FASA 2B — Papan kemajuan, Pelita Pembimbing dan aktiviti Bahasa Melayu Tahun 5. */
+.student-quest-hud{position:relative;margin:0 0 22px;background:linear-gradient(125deg,#194d3d 0%,#2e7254 54%,#4f8262 100%);border:1px solid #d4b270;border-radius:21px;padding:22px 26px 15px;color:#fff5e1;box-shadow:0 14px 28px #1d443326;overflow:hidden}
+.student-quest-hud:after{content:"✧";position:absolute;right:19%;top:-48px;color:#fff2b52c;font-size:180px;font-family:"Fraunces",Georgia,serif;pointer-events:none}
+.student-quest-top{display:flex;align-items:center;gap:21px;position:relative;z-index:1}
+.student-quest-top>div:first-child{flex:1;min-width:0}
+.student-quest-top .mini-label{font-size:10px;color:#f8ce84;letter-spacing:.14em}
+.student-quest-top h3{font-family:"Fraunces",Georgia,serif;font-size:clamp(21px,2vw,30px);margin:6px 0;line-height:1.2}
+.student-quest-top p{color:#d7e6ce;font-size:12px;max-width:580px;line-height:1.65;margin:0}
+.student-pelita{font-size:64px;filter:drop-shadow(0 8px 17px #ffda744f);animation:quest-pelita-bob 4.5s ease-in-out infinite}
+.student-quest-score{display:flex;flex-direction:column;align-items:center;min-width:105px;border:1px solid #ecd89f80;background:#183b34b0;border-radius:13px;padding:12px}
+#quest-score{font-weight:800;font-size:26px;line-height:1.1}
+.student-quest-score small{font-size:8px;font-weight:700;letter-spacing:.12em;color:#e7d8b6;margin-top:4px}
+#quest-xp{font-size:11px;color:#fbd37b;margin-top:6px}
+.student-quest-track{height:9px;border-radius:80px;background:#ffffff36;overflow:hidden;margin:18px 0 15px}
+.student-quest-track span{display:block;height:100%;background:linear-gradient(90deg,#ebbc62,#fff1b6);border-radius:80px;transition:width .45s ease;box-shadow:0 0 14px #ffd277}
+.student-quest-actions{display:flex;flex-wrap:wrap;gap:9px}
+.student-quest-actions button{font-size:11px;letter-spacing:.015em;font-weight:800;border:1px solid #f5d9996e;border-radius:10px;padding:10px 14px;background:#ffffff14;color:#fff9e3;transition:transform .2s,background .2s}
+.student-quest-actions button:hover{transform:translateY(-3px);background:#ffffff2c}
+.student-quest-actions #quest-continue{background:#efd080;color:#244d3e;border-color:#fff0b6}
+.student-quest-actions #quest-reset{margin-left:auto;border-color:#fff4b24d;color:#e2ebd9;font-weight:600}
+.quest-privacy{font-size:10px;color:#e2e6d3;line-height:1.6;margin:12px 0 0;max-width:820px}
+.student-quest-hud.all-complete{box-shadow:0 0 0 2px #eacc78aa,0 18px 45px #ad86465e}
+#murid-view .map-pin.mission-complete{border-color:#45936b;background:#ebffdcf5}
+#murid-view .map-pin.mission-complete span{background:#307f58}
+#murid-view .reward-row>div.earned{opacity:1;border-color:#f3c877;background:linear-gradient(160deg,#fff8e1,#edf6dc);box-shadow:0 8px 19px #ae9a6730}
+.student-helper{position:fixed;z-index:45;right:18px;bottom:17px;max-width:340px;width:calc(100% - 35px);background:#fff6d9;border:2px solid #d2a15d;border-radius:18px;color:#284d3a;box-shadow:0 17px 60px #152d2580;padding:16px 17px 12px}
+.student-helper[hidden]{display:none}
+.student-helper-head{display:flex;justify-content:space-between;gap:16px;align-items:center;font-weight:800;font-family:"Fraunces",Georgia,serif}
+.student-helper-head button{background:#235d42;color:white;border:0;border-radius:8px;padding:3px 10px}
+.student-helper p{font-size:12px;line-height:1.65;margin:10px 0 0}
+.student-play-dialog{border:none;border-radius:23px;padding:0;width:min(790px,calc(100% - 24px));max-width:790px;max-height:min(90vh,920px);overflow:auto;background:#fffaf0;color:#2e4a3c;box-shadow:0 26px 100px #0a201bc7}
+.student-play-dialog::backdrop{background:rgba(10,34,25,.75);backdrop-filter:blur(4px)}
+.student-play-top{background:linear-gradient(120deg,#174b3b,#2d7554 78%);color:#fff4dc;padding:25px 35px 27px;position:relative;border-bottom:5px solid #d7ac64}
+.student-play-top h2{font-family:"Fraunces",Georgia,serif;font-size:clamp(24px,3.6vw,35px);margin:10px 48px 10px 0;line-height:1.15}
+.student-play-top p{font-size:12px;color:#e8eadd;max-width:620px;line-height:1.65;margin:0}
+.student-play-eyebrow{color:#f9d589;letter-spacing:.13em;font-weight:800;font-size:9px}
+.student-play-close{position:absolute;right:20px;top:21px;border:1px solid #fff2b366;border-radius:10px;color:#fff7e5;background:#ffffff18;width:37px;height:37px;font-size:19px}
+.student-play-close:hover{background:#ffffff39}
+.student-play-body{padding:9px 33px 26px}
+.student-activity-section{padding:24px 0;border-bottom:1px solid #e7dec8}
+.student-activity-section:last-of-type{border-bottom:0}
+.student-activity-section h3{font-family:"Fraunces",Georgia,serif;font-size:20px;line-height:1.25;color:#315e43;margin:0 0 11px}
+.student-activity-section>p{color:#637261;font-size:12px;margin:0 0 16px;line-height:1.7}
+.student-story{background:#fbf0d2;border:1px solid #dfcfaa;border-radius:14px;padding:17px 21px;box-shadow:inset 0 0 24px #b79a6110}
+.student-story p{font-size:14px;color:#3f4c38;line-height:1.9;margin:0 0 13px}
+.student-story p:last-child{margin:0}
+.student-activity-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+.student-play-secondary{border:1px solid #b8c9b6;background:#f6f8ed;border-radius:9px;padding:10px 14px;font-size:12px;font-weight:800;color:#35634c}
+.student-play-secondary:hover{background:#e5efdb;transform:translateY(-1px)}
+.student-play-primary{border:1px solid #205439;background:linear-gradient(115deg,#1f7050,#2c8961);color:#fff9e4;border-radius:11px;padding:13px 19px;font-size:13px;font-weight:800;box-shadow:0 7px 16px #1b533343}
+.student-play-primary:hover{transform:translateY(-2px);filter:brightness(1.08)}
+.student-sort-list{display:grid;gap:9px;list-style:none;padding:0;margin:14px 0 0}
+.student-sort-list li{display:flex;gap:11px;align-items:center;background:#fffdf7;border:1px solid #e3d4b2;padding:11px 11px 11px 14px;border-radius:12px;box-shadow:0 3px 10px #5b493011}
+.student-sort-list li>span{display:grid;place-items:center;width:28px;height:28px;background:#e9bc6e;color:#364d32;font-weight:800;border-radius:100%;flex:none}
+.student-sort-list li strong{flex:1;font-size:12px;font-weight:600;line-height:1.5}
+.student-sort-actions{display:flex;flex-direction:column;gap:4px}
+.student-sort-actions button{border:1px solid #b9c8b2;background:#e4f0df;border-radius:6px;min-width:32px;min-height:27px;color:#2b694f;font-size:15px;font-weight:700}
+.student-sort-actions button:disabled{opacity:.4;cursor:not-allowed}
+.student-question{border:1px solid #e4d7bc;border-radius:13px;padding:15px 16px;margin:14px 0;background:#fffdf7;min-width:0}
+.student-question legend{font-size:13px;font-weight:700;line-height:1.55;color:#3d5b42;padding:0 6px}
+.student-answers{display:grid;gap:8px;margin-top:8px}
+.student-answers label{display:flex;align-items:flex-start;gap:8px;font-size:12px;color:#3d513f;line-height:1.5;padding:8px 9px;border-radius:8px;border:1px solid transparent;cursor:pointer}
+.student-answers label:hover{background:#f5eedc;border-color:#e3d6b3}
+.student-answers input{accent-color:#297755;flex-shrink:0;margin:2px 0 0}
+.student-choices{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.student-choices label,.student-storyboard label{display:flex;flex-direction:column;gap:7px;font-size:12px;color:#4d6952;font-weight:700}
+.student-choices select{width:100%;min-width:0;border:1px solid #c6ceae;border-radius:9px;background:#fffdf7;padding:12px 9px;color:#315342}
+.student-phrases{display:flex;gap:8px;flex-wrap:wrap}
+.student-phrases button{background:#f4e6bd;border:1px solid #d5b87d;border-radius:40px;color:#785c35;font-size:12px;font-weight:800;padding:9px 13px}
+.student-phrases button.chosen{background:#d9f0d4;color:#2a7650;border-color:#78a981}
+.student-phrases button:hover{transform:translateY(-2px);box-shadow:0 4px 14px #8e723c2f}
+.student-writing-label{display:block;font-weight:800;font-size:12px;margin-bottom:9px;color:#4c654d}
+.student-activity-section textarea{width:100%;box-sizing:border-box;border:1px solid #c9cba9;background:#fffef7;border-radius:12px;padding:12px 13px;color:#31473a;font-size:13px;line-height:1.7;resize:vertical}
+.student-activity-section textarea:focus,.student-choices select:focus{outline:3px solid #e4bf6b9c;outline-offset:1px;border-color:#3d8961}
+.student-draft-count{font-size:11px;color:#697b65;margin:8px 0 0}
+.student-storyboard{display:grid;gap:13px}
+.student-practice-check{display:flex;gap:9px;align-items:start;font-size:12px;line-height:1.6;font-weight:700;padding:13px 14px;background:#f1efdc;border-radius:10px;margin-top:10px}
+.student-practice-check input{accent-color:#26744f;margin-top:3px}
+.student-upload-note{background:#f6eeda;border-left:4px solid #d3a25d;border-radius:6px;padding:11px 14px;color:#6d634e!important;margin-top:15px!important}
+.student-answer-feedback{border-radius:12px;border:1px solid #a9bea5;background:#eaf4e4;color:#305b3e;padding:14px 16px;font-size:13px;line-height:1.7;margin:20px 0 0;font-weight:700}
+.student-answer-feedback.try{background:#fff1d6;color:#85632c;border-color:#dfbf75}
+.student-answer-feedback.success{background:#ddf4e3;border-color:#76b58b;color:#236442}
+.student-submit-bar{display:flex;justify-content:flex-end;margin-top:20px}
+.student-play-footer{border-top:1px solid #e7dfc8;padding:15px 30px 20px;display:flex;align-items:center;justify-content:space-between;gap:16px;background:#f9f4e6}
+.student-play-footer>span{font-size:11px;color:#6c7567;line-height:1.6}
+.student-play-footer .student-play-secondary{flex-shrink:0}
+@keyframes quest-pelita-bob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-9px) rotate(4deg)}}
+@media(max-width:700px){
+  .student-quest-hud{padding:18px 16px 15px}
+  .student-quest-top{gap:10px;flex-wrap:wrap}
+  .student-pelita{font-size:40px}
+  .student-quest-score{min-width:80px;padding:8px}
+  #quest-score{font-size:20px}
+  .student-quest-actions #quest-reset{margin-left:0}
+  .student-play-top{padding:22px 20px}
+  .student-play-top h2{font-size:25px;margin-right:38px}
+  .student-play-close{right:12px;top:12px}
+  .student-play-body{padding:7px 17px 20px}
+  .student-choices{grid-template-columns:1fr}
+  .student-sort-list li{padding:8px;gap:7px}
+  .student-sort-list li strong{font-size:11px}
+  .student-play-footer{flex-wrap:wrap;padding:14px 18px}
+}
+@media(prefers-reduced-motion:reduce){
+  .student-pelita{animation:none}
+  .student-quest-track span,.student-quest-actions button,.student-play-primary,.student-play-secondary{transition:none}
+}
+.motion-paused .student-pelita{animation-play-state:paused!important}
