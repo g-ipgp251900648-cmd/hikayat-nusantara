@@ -3,7 +3,7 @@ on:
   pull_request:
     branches: [main]
   push:
-    branches: [feature/misi1-ai-studio-original-import]
+    branches: [feature/misi1-ai-studio-original-import, fix/render-vite-module-not-found]
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -12,15 +12,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install exactly as Render production
-        run: npm install --omit=dev
-        env:
-          NODE_ENV: production
+      # Exercise a cold build with NO node_modules directory.
+      # The build script must install Vite if Render has not installed it.
       - name: Verify JavaScript syntax
         run: npm run check
       - name: Check Misi 1 original game integration
         run: npm test
-      - name: Build main site and original React 3D Misi 1 under production settings
+      - name: Cold-build original React 3D Misi 1 without preinstalled Vite
         run: npm run build
         env:
           NODE_ENV: production

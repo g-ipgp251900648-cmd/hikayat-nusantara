@@ -11,6 +11,8 @@ console.log('Hikayat Nusantara: binaan statik tersedia dalam dist/');
    Binary illustrations are committed as base64 text so GitHub's content API
    can preserve them; decode images locally before bundling with Vite. */
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { readdir,readFile,writeFile } from 'node:fs/promises';
 const imgBase='mission-one-ai/src/assets/images_b64/';
 const imgOut='mission-one-ai/src/assets/images/';
@@ -25,9 +27,33 @@ for(const filename of images){
 }
 // Keep actionable errors at the end of Render logs instead of only an opaque execFileSync stack.
 console.log('[Misi 1] Building original Google AI Studio game with Node',process.version);
+// Render can retain a cache with no Vite installed. A hard-coded path to
+// node_modules/vite/bin/vite.js then crashes with MODULE_NOT_FOUND.
+// Resolve the actual package first; perform an explicit production install
+// only if the executable is missing. Keep CI checking this cold-start path.
+const viteCandidates = [
+  resolve('node_modules/vite/bin/vite.js'),
+  resolve('mission-one-ai/node_modules/vite/bin/vite.js'),
+  resolve('../node_modules/vite/bin/vite.js'),
+];
+let viteEntry=viteCandidates.find(path=>existsSync(path));
+if(!viteEntry){
+  console.log('[Misi 1] Vite is missing; installing production dependencies before building.');
+  const npm=process.platform==='win32'?'npm.cmd':'npm';
+  const install=spawnSync(npm,['install','--omit=dev','--no-audit','--no-fund'],{
+    cwd:process.cwd(),encoding:'utf8',maxBuffer:20*1024*1024,env:process.env
+  });
+  if(install.stdout)process.stdout.write(install.stdout);
+  if(install.stderr)process.stderr.write(install.stderr);
+  if(install.error)throw install.error;
+  if(install.status!==0)throw new Error('Cannot install production dependencies (npm status '+install.status+').');
+  viteEntry=viteCandidates.find(path=>existsSync(path));
+}
+if(!viteEntry)throw new Error('Vite is unavailable after npm install. Check Render Build Command and Root Directory.');
+console.log('[Misi 1] Vite executable located:',viteEntry);
 const result=spawnSync(process.execPath,
-  ['node_modules/vite/bin/vite.js','build','--config','mission-one-ai/vite.config.ts'],
-  {encoding:'utf8',maxBuffer:20*1024*1024,env:process.env}
+  [viteEntry,'build','--config','mission-one-ai/vite.config.ts'],
+  {cwd:process.cwd(),encoding:'utf8',maxBuffer:20*1024*1024,env:process.env}
 );
 if(result.stdout)process.stdout.write(result.stdout);
 if(result.stderr)process.stderr.write(result.stderr);
