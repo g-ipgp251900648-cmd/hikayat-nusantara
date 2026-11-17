@@ -93,7 +93,7 @@
   document.body.append(html);
   const $=s=>html.querySelector(s);
   const panel=$("#hn-m1-panel"),viewport=$("#hn-m1-viewport"),fallback=$("#hn-m1-fallback");
-  let isOpen=false,world=null,timer=null,last=0,movedKeys=new Set(),autoTarget=null,tickId=0;
+  let isOpen=false,world=null,loading3D=false,timer=null,last=0,movedKeys=new Set(),autoTarget=null,tickId=0;
   const timeText=n=>`${String(Math.floor(n/60)).padStart(2,"0")}:${String(n%60).padStart(2,"0")}`;
   function sound(){
     let ctx=null,gain=null,index=0,interval=null,enabled=false;
@@ -339,7 +339,8 @@
     button.addEventListener("lostpointercapture",()=>movedKeys.delete(button.dataset.move));
   });
   async function start3D(){
-    if(world||!isOpen)return;
+    if(world||!isOpen||loading3D)return;
+    loading3D=true;
     fallback.hidden=false;fallback.querySelector("p").textContent="Memuatkan Rumah Naskhah 3D… Anda juga boleh menggunakan pilihan lokasi.";
     let THREE;
     try{
@@ -523,18 +524,19 @@
     }catch(e){
       console.warn("3D tidak dapat dimulakan; mod lokasi mesra akses kekal tersedia.",e);
       fallback.hidden=false;fallback.querySelector("p").textContent="Paparan 3D tidak tersedia. Pilih lokasi melalui butang di sebelah untuk meneroka semua aktiviti.";
-    }
+    }finally{loading3D=false;}
   }
   function open(){
     if(isOpen)return;
     isOpen=true;html.hidden=false;document.body.classList.add("hn-m1-lock");
-    render();startTimer();if(game.phase!=="intro")start3D();
+    render();startTimer();start3D();
   }
   function close(){
     if(!isOpen)return;
     isOpen=false;html.hidden=true;document.body.classList.remove("hn-m1-lock");
     movedKeys.clear();autoTarget=null;audio.stop();window.speechSynthesis?.cancel();
     clearInterval(timer);timer=null;game.paused=false;store();
+    html.querySelector(".hn-m1-time-prompt")?.remove();
     world?.dispose();world=null;
   }
   const previous=window.openStudentMission;
