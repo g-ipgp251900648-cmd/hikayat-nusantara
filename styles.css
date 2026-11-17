@@ -82,3 +82,54 @@
 .motion-paused .world-label-dot,.motion-paused .portal-art,.motion-paused .portal-art:before,.motion-paused .portal-card:after,.motion-paused .student-banner .banner-emoji,.motion-paused .adventure-map:after,.motion-paused .map-pin,.motion-paused .mission-card .mission-emoji,.motion-paused .heading-ornament{animation-play-state:paused!important}
 @media(max-width:800px){.world-label{font-size:8px;bottom:12px;left:11px;padding:8px 10px}.world-label small{font-size:7px;margin-left:0}.world-controls{right:7px;top:7px}.world-control{font-size:9px;padding:7px}.world-hint{display:none}.hero-art.is-3d{border-radius:20px}.hero-art.is-3d:after{border-radius:14px}}
 @media(prefers-reduced-motion:reduce){.world-label-dot,.portal-art,.portal-art:before,.portal-card:after,.banner-emoji,.adventure-map:after,.map-pin,.mission-emoji,.heading-ornament{animation:none!important}.portal-card,.portal-card:hover,.stat:hover,.mission-card:hover{transform:none!important}}
+
+
+/* Fasa detail: tipografi nostalgia sinematik & gerakan teratur.
+   Tajuk bergerak aktif; teks panjang hanya muncul/bergerak pada hover
+   supaya kekal mudah dibaca oleh murid Tahun 5. */
+.home-view h1,.home-view h2,.home-view h3,.dashboard h1,.dashboard h2,.dashboard h3,
+.home-view .wordmark,.sidebar-brand{font-family:"Fraunces","Playfair Display",Georgia,serif}
+.hero h1{letter-spacing:-.045em;line-height:1.16;text-wrap:balance;text-shadow:0 14px 32px #0b2b2454}
+.hero h1 em{font-style:italic;color:#f4cf83;text-shadow:0 0 28px #e7bb7050}
+.word-dance{display:inline-block;transform-origin:50% 85%;animation:word-lilt 4.3s ease-in-out infinite;animation-delay:calc(var(--stagger)*.31s)}
+.hero-copy>p{animation:content-entrance 1.25s both;animation-delay:.35s}
+.hero .eyebrow{animation:content-entrance 1s both}
+.hero-meta span{display:inline-block;animation:soft-levitate 5s ease-in-out infinite;animation-delay:calc(var(--i,0)*.6s)}
+.hero-meta span:nth-child(2){--i:1}
+.hero-meta span:nth-child(3){--i:2}
+.home-nav .wordmark{animation:content-entrance .9s both}
+.home-nav a:not(.wordmark){display:inline-block;transition:color .22s,transform .22s}
+.home-nav a:not(.wordmark):hover{transform:translateY(-3px) rotate(-1deg)}
+.hero-buttons .btn{animation:content-entrance 1.05s both;animation-delay:.55s;box-shadow:0 10px 24px #061d1945}
+.hero-buttons .btn:hover{transform:translateY(-5px) scale(1.035)}
+.hero-buttons .btn span{display:inline-block;transition:transform .2s}
+.hero-buttons .btn:hover span{transform:translate(4px,-4px)}
+.hero-art.is-3d{background:radial-gradient(ellipse at 80% 26%,#ffe7b5 0%,transparent 42%),linear-gradient(145deg,#b0dfd3,#d9e5d4 48%,#d7bc87);box-shadow:0 44px 90px #081c195e,0 0 0 1px #fce5b657,inset 0 0 65px #e5eeb32b}
+.hero-art.is-3d:before{z-index:4;opacity:.30}
+.section-heading h2{animation:soft-levitate 6s ease-in-out infinite}
+.portal-bottom h3{transform-origin:left bottom;animation:title-sway 5.8s ease-in-out infinite}
+.portal-card:nth-child(2) h3{animation-delay:-1.8s}
+.portal-card:nth-child(3) h3{animation-delay:-3s}
+.portal-bottom .card-kicker{display:inline-block;animation:soft-levitate 6.6s ease-in-out infinite}
+.portal-bottom p{transition:transform .3s,color .3s}
+.portal-card:hover .portal-bottom p{transform:translateY(-2px);color:#284f3b}
+.portal-card .portal-link{transition:letter-spacing .2s}
+.portal-card:hover .portal-link{letter-spacing:.035em}
+.about-strip h2{animation:soft-levitate 8s ease-in-out infinite}
+.about-strip p{transition:transform .25s}
+.about-strip p:hover{transform:translateY(-2px)}
+.dash-heading h1{animation:content-entrance .9s both}
+.dash-heading h1 em{color:#bc8d45}
+.dash-heading p,.stat>span,.stat em,.small-note,.mini-label{transition:transform .22s,color .22s}
+.dash-heading p:hover,.stat:hover>span,.stat:hover em,.small-note:hover,.mini-label:hover{transform:translateY(-2px)}
+.mission-card h3,.paper-card h3,.feedback-card h3{transition:transform .22s,color .22s}
+.mission-card:hover h3,.paper-card:hover h3,.feedback-card:hover h3{transform:translateY(-3px);color:#a47d38}
+.world-label{font-family:"Fraunces",Georgia,serif;font-size:12px;letter-spacing:.045em}
+.world-label small{font-family:"DM Sans",sans-serif;font-size:8px}
+@keyframes word-lilt{0%,24%,100%{transform:translate3d(0,0,0) rotate(0deg)}32%{transform:translate3d(0,-9px,0) rotate(-1.4deg)}39%{transform:translate3d(0,2px,0) rotate(.7deg)}46%{transform:translate3d(0,-2px,0)}}
+@keyframes title-sway{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-3px) rotate(-.4deg)}}
+@keyframes soft-levitate{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes content-entrance{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.motion-paused .word-dance,.motion-paused .hero-copy>p,.motion-paused .hero .eyebrow,.motion-paused .hero-meta span,.motion-paused .home-nav .wordmark,.motion-paused .hero-buttons .btn,.motion-paused .section-heading h2,.motion-paused .portal-bottom h3,.motion-paused .portal-bottom .card-kicker,.motion-paused .about-strip h2,.motion-paused .dash-heading h1{animation-play-state:paused!important}
+@media(max-width:530px){.hero h1{letter-spacing:-.055em;font-size:clamp(31px,8.7vw,45px)}.word-dance{animation-duration:5.5s}.world-label{font-size:10px}}
+@media(prefers-reduced-motion:reduce){.word-dance,.hero-copy>p,.hero .eyebrow,.hero-meta span,.home-nav .wordmark,.hero-buttons .btn,.section-heading h2,.portal-bottom h3,.portal-bottom .card-kicker,.about-strip h2,.dash-heading h1{animation:none!important}.portal-card:hover .portal-bottom p,.mission-card:hover h3{transform:none}}
