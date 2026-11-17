@@ -416,3 +416,59 @@
  .cert-text{font-size:12pt!important}.cert-details b{font-size:9pt!important}
  .cert-seal{right:13mm;bottom:23mm}
 }
+
+
+/* FASA 2D — Analitik percubaan pembelajaran dalam dashboard murid.
+   Semua angka datang daripada rekod peranti sendiri, bukan rekod guru atau pelayan. */
+#murid-graf{scroll-margin-top:95px;margin-top:36px}
+#murid-graf .section-line h2{font-family:"Fraunces",Georgia,serif;font-size:clamp(26px,2.6vw,36px);color:#24543e;margin:6px 0}
+.mission-analytics-description{font-size:13px;color:#6b7c70;max-width:710px;line-height:1.7;margin:4px 0 0}
+.mission-analytics-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:19px 0}
+.mission-analytics-stats article{background:linear-gradient(145deg,#fffcf4,#f4ecd9);border:1px solid #e0d4b6;border-radius:16px;display:flex;gap:7px;flex-direction:column;padding:18px 21px;box-shadow:0 5px 17px #1d493012}
+.mission-analytics-stats article>span{font-size:11px;font-weight:700;color:#7c866f}
+.mission-analytics-stats article>strong{font-family:"Fraunces",Georgia,serif;color:#225740;font-size:clamp(26px,2.6vw,39px);line-height:1.05}
+.mission-analytics-stats article>small{font-size:10px;color:#839080}
+.mission-charts-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:stretch}
+.mission-chart-card{background:#fffdf7;border:1px solid #e2d8c3;box-shadow:0 11px 28px #24463314;border-radius:20px;padding:19px 20px;min-width:0}
+.mission-chart-head{display:flex;align-items:start;gap:12px;justify-content:space-between}
+.mission-chart-head h3{font-family:"Fraunces",Georgia,serif;font-size:19px;line-height:1.24;color:#315c42;margin:0 0 8px}
+.mission-chart-head p{font-size:11px;line-height:1.7;color:#738476;margin:0;max-width:400px}
+.mission-chart-icon{font-size:27px;background:#f4ecd5;border:1px solid #e4d4ab;border-radius:12px;padding:7px;line-height:1.2;flex-shrink:0}
+.mission-chart-drawing{min-height:226px;margin-top:14px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.mission-chart-drawing svg{display:block;width:100%;max-width:670px;height:auto;min-height:190px}
+.mission-chart-drawing svg text{font-family:"DM Sans",Arial,sans-serif}
+.mission-chart-drawing svg rect{transition:opacity .2s}
+.mission-select-label{display:flex;align-items:center;gap:12px;justify-content:space-between;font-size:11px;font-weight:800;color:#4c7055;margin:13px 0 0}
+.mission-select-label select{min-width:0;max-width:72%;padding:9px 10px;border:1px solid #b9ceba;border-radius:10px;background:#f6faed;color:#2b5e46;font-size:11px;font-weight:700}
+.mission-select-label select:focus-visible{outline:3px solid #e7bc66;outline-offset:2px}
+.mission-empty-chart{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:24px 16px;max-width:340px;background:#f7f7eb;border:1px dashed #cdd7bf;border-radius:14px}
+.mission-empty-chart>span{font-size:34px}
+.mission-empty-chart strong{color:#3c6547;font-size:13px}
+.mission-empty-chart p{margin:0;color:#7b897c;font-size:11px;line-height:1.65}
+.mission-attempt-table-card{margin-top:17px;background:#fffdf7;border:1px solid #e1d6bd;border-radius:17px;box-shadow:0 9px 23px #1f493111;padding:20px 21px}
+.mission-attempt-table-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:12px}
+.mission-attempt-table-top h3{font-family:"Fraunces",Georgia,serif;font-size:21px;color:#2d5b41;margin:0}
+#ma-history-label{font-size:10px;color:#886f3d;background:#f9edc9;padding:8px 11px;border-radius:24px;border:1px solid #edd9ad;font-weight:700}
+.mission-table-scroll{overflow-x:auto;border-radius:11px;border:1px solid #e7e4d3}
+.mission-table-scroll table{width:100%;border-collapse:collapse;text-align:left;font-size:12px}
+.mission-table-scroll thead{background:#e9f0df;color:#3e6c50}
+.mission-table-scroll th,.mission-table-scroll td{padding:12px 14px;border-bottom:1px solid #edf0e4;white-space:nowrap}
+.mission-table-scroll tbody tr:nth-child(even){background:#fafaf4}
+.mission-table-scroll tbody tr:last-child td{border-bottom:0}
+.mission-table-scroll td strong{color:#2b7851}
+.mission-analytics-note{border-left:3px solid #d5b16b;padding:12px 14px;background:#fbf5e5;color:#687765;font-size:11px;line-height:1.8;border-radius:0 9px 9px 0;margin:15px 0 0}
+@media(max-width:1030px){.mission-charts-grid{grid-template-columns:1fr}.mission-chart-drawing svg{max-width:650px}}
+@media(max-width:650px){
+ .mission-analytics-stats{grid-template-columns:1fr}
+ .mission-analytics-stats article{padding:14px 17px}
+ .mission-charts-grid{gap:12px}
+ .mission-chart-card{padding:17px 13px}
+ .mission-chart-head h3{font-size:17px}
+ .mission-chart-icon{font-size:23px}
+ .mission-select-label{flex-wrap:wrap}
+ .mission-select-label select{max-width:100%;width:100%}
+ .mission-attempt-table-card{padding:17px 12px}
+ .mission-chart-drawing{min-height:186px}
+ .mission-chart-drawing svg{min-height:155px}
+}
+@media(prefers-reduced-motion:reduce){.mission-chart-drawing svg rect{transition:none}}
