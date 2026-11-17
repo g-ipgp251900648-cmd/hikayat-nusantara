@@ -113,3 +113,22 @@ Render → `hikayat-nusantara-portal` → tunggu auto-deploy atau pilih **Manual
 - Kanvas hitam: semak sambungan Three.js dan sokongan WebGL. Tukar ke paparan 2D.
 - Lag pada telefon: tekan **Henti animasi** atau gunakan **Lihat 2D**.
 - Tulisan terlalu aktif: butang henti animasi juga menghentikan gerakan CSS.
+
+
+## Fasa 1E — Panorama Kampung Warisan berdasarkan rujukan visual
+
+- Ilustrasi diorama terapung diganti dengan bentang landskap bersambung (panorama).
+- Gunung dan hutan berlapis, sawah padi berteres di kiri, aliran sungai berliku dari ufuk ke hadapan, jambatan buluh berkekisi dan rumah Melayu bertiang beratap rumbia di kanan.
+- Tekstur bumbung dan dinding kayu dijana secara prosedural oleh CanvasTexture; tidak mengandungi imej luaran atau salinan gambar rujukan.
+- Perincian kampung seperti kain tenunan, bunga, kelapa, sampan dan siluet penduduk ditambah.
+- Animasi 3D sedia ada (awan, sungai, sampan, daun, pelita) masih berfungsi, termasuk pilihan paparan 2D dan henti animasi.
+- Susun atur, tiga dashboard, logik routing dan pelayan Render tidak diubah.
+
+**Penting:** Ini adalah adaptasi Three.js yang distilisasi mengikut komposisi imej rujukan, bukan hasil pelukisan semula gambar rujukan atau fotorealisme. Paparan akhir perlu diuji pada peranti sebenar selepas deploy. Ilustrasi SVG asal masih digunakan dalam mod 2D.
+
+### Ujian selepas deploy
+
+1. Lihat panorama: tiada tapak pulau terapung; rumah di kanan, sawah di kiri, sungai dan jambatan di tengah.
+2. Uji butang Lihat 2D dan Henti animasi, serta gerakkan tetikus di panel.
+3. Semak responsiveness, khususnya prestasi di telefon; gunakan mod 2D jika animasi terlalu berat.
+4. Semak dashboard Murid, Guru dan Admin masih boleh dibuka.
