@@ -296,3 +296,31 @@ Dashboard Murid kini mempunyai menu **📈 Graf Percubaan** dan seksyen **Graf P
 7. Semak paparan telefon, peta 3D dan aliran sijil guru masih berfungsi.
 
 **Status PR:** Cabang graf dibina di atas `feature/murid-aktiviti-interaktif-fasa2b` yang juga mengandungi kerja sijil PR #8. Pull Request baharu ke `main` akan memasukkan **kedua-dua** sistem sijil yang belum berada dalam `main` dan graf percubaan.
+
+
+## Fasa 2E — Aktiviti 1: Misteri Lima Helaian Naskhah (3D)
+
+Butang **Misi 1 — Jejak Naskhah Pusaka** dalam dashboard murid dan peta 3D kini memanggil `mission-one-3d.js`. Misi 2 hingga 4 menggunakan aktiviti interaktif asal tanpa perubahan.
+
+### Apa yang boleh dicuba
+- Peta dalaman Rumah Naskhah Pusaka menggunakan Three.js dengan lantai dan tiang kayu, rak kitab, peti pusaka, tingkap, meja, pelita, pokok tropika dan karakter **Hang Tuah 3D bergaya geometri asli** (tidak memerlukan model GLB berlesen).
+- Hang Tuah boleh bergerak menggunakan **WASD / arrow keys** serta butang anak panah skrin. Klik lokasi atau helaian untuk menuju objek dan mengutipnya. Tekan **E** untuk memeriksa helaian yang berada berdekatan.
+- Selepas **5/5 helaian** ditemui, murid membaca lima halaman cerita **Cahaya Pelita di Desa Warisan**, menyusun lima peristiwa, kemudian menjawab tiga soalan pemahaman.
+- Pemasa panduan 10 minit boleh dijeda, ditambah tiga minit atau dimatikan. Masa tamat tidak memadam jawapan.
+- Butang **♫ Main Muzik** memainkan **melodi instrumental asli sintesis Web Audio**, bukan rakaman seruling/gambus sebenar dan bukan muzik komersial.
+- Jawapan akhir dihantar ke jambatan skor `window.submitMissionOneAdventure` dalam `student-activities.js`. Modul itu mengesahkan lima helaian, lima halaman, urutan peristiwa dan tiga jawapan, kemudian merekodkan **satu percubaan** berskor **0–8**, serta memberikan status siap **60 XP** hanya selepas semua syarat benar. Graf Misi 1 dikemas kini melalui peristiwa `hikayat:attempt`.
+- Kemajuan permainan demo disimpan dalam `localStorage` bernama `hikayat-nusantara-misi1-world-v1`. Set semula latihan dalam dashboard turut menetapkan semula permainan demo.
+- Jika Three.js/WebGL gagal, murid masih boleh memilih lima lokasi melalui butang yang tersedia, meneruskan bacaan, menyusun peristiwa dan menjawab kuiz.
+
+### Cara uji selepas Pull Request digabungkan dan deployment selesai
+1. Masuk **Dashboard Murid → Misi 1** (atau pilih rumah pertama dalam peta Desa Hikayat 3D).
+2. Klik **Mulakan Pengembaraan**. Rumah 3D dan Hang Tuah dipaparkan; cuba butang muzik dan kawalan pergerakan.
+3. Kumpulkan lima helaian melalui papan kekunci, klik helaian atau butang lokasi. Semak setiap objek hanya boleh diambil sekali.
+4. Buka buku, baca semua lima halaman, atur lima peristiwa dan jawab tiga soalan.
+5. Cuba jawapan salah dahulu; pastikan percubaan meningkat pada **Graf Percubaan** dan mendapat petunjuk.
+6. Betulkan jawapan sehingga **8/8**; pastikan status Misi 1 selesai dan XP bertambah 60 sahaja.
+7. Segarkan laman; pastikan rekod disimpan. Uji paparan telefon, pemasa dan mod fallback jika WebGL dinyahaktifkan.
+8. Pastikan **Misi 2, 3, 4 dan status sijil** masih boleh digunakan seperti biasa.
+
+### Had dan kejujuran pelaksanaan
+Kod projek yang dibina dalam **Google AI Studio belum dieksport atau diberikan** kepada GitHub. Oleh itu, modul ini ialah **pelaksanaan baharu berdasarkan spesifikasi yang dibincangkan**, **bukan salinan tepat aset 3D, muzik dan kod prototaip Google AI Studio**. Sekiranya visual atau animasi yang sama sepenuhnya diperlukan, eksport sumber prototaip AI Studio dan semak aset/lesen sebelum penggantian. Graf dan kemajuan demo masih peranti setempat, bukan rekod murid rasmi. Sistem sijil kekal memerlukan kelulusan guru dan `CERTIFICATE_TEACHER_KEY` server.
