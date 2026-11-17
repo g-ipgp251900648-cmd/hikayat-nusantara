@@ -9,7 +9,8 @@
   "scripts": {
     "build": "node build.mjs",
     "start": "node server.js",
-    "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check mission-one-3d.js && node --check build.mjs && node --check server.js"
+    "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check mission-one-3d.js && node --check build.mjs && node --check server.js",
+    "test": "node --test tests/mission-one.test.mjs"
   },
   "description": "Hikayat Nusantara: Hang Tuah 3D Misi 1 manuscript quest with interactive Bahasa Melayu tasks"
 }
