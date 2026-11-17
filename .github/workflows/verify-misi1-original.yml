@@ -1,0 +1,27 @@
+name: Verify original Misi 1 integration
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [feature/misi1-ai-studio-original-import]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies including production build tools
+        run: npm install
+      - name: Verify JavaScript syntax
+        run: npm run check
+      - name: Check Misi 1 original game integration
+        run: npm test
+      - name: Build main site and original React 3D Misi 1
+        run: npm run build
+      - name: Verify produced Vite assets
+        run: |
+          test -f dist/misi1/index.html
+          test -f dist/misi1/src/assets/images/story_page_1_1794930837095.jpg
+          find dist/misi1/assets -name '*.js' | grep -q .

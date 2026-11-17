@@ -1,0 +1,107 @@
+/**
+ * Hikayat Nusantara — launch the user's ORIGINAL AI Studio Misi 1 on /misi1/.
+ * The React/Three.js application lives in mission-one-ai/. It is framed at
+ * the SAME origin and never embedded from an external AI Studio/private URL.
+ * Its assessment events are validated by the existing student-activities.js.
+ */
+(() => {
+  'use strict';
+  let overlay = null;
+  let iframe = null;
+  let lastSignature = '';
+  const sourceName = 'hikayat-misi1-aistudio-original';
+  const expectedScrolls = ['rak', 'peti', 'tingkap', 'meja', 'pelita'];
+  const options = {
+    q1: ['gua', 'sungai', 'pasar', 'pentas'],
+    q2: ['pertandingan', 'hiasan', 'kabus', 'jual'],
+    q3: ['kerjasama', 'mementingkan_diri', 'persaingan', 'tidak_peduli'],
+  };
+  const expectedIds = ['ev-1', 'ev-2', 'ev-3', 'ev-4', 'ev-5'];
+
+  function normalizeEvidence(raw) {
+    if (!raw || typeof raw !== 'object') return null;
+    const { foundScrolls, readStoryPages, orderedIds, quizAnswers } = raw;
+    if (!Array.isArray(foundScrolls) || foundScrolls.length !== 5 ||
+        !expectedScrolls.every(id => foundScrolls.includes(id)) || new Set(foundScrolls).size !== 5) return null;
+    if (!Array.isArray(readStoryPages) || readStoryPages.length !== 5 ||
+        ![1,2,3,4,5].every(i => readStoryPages.includes(i)) || new Set(readStoryPages).size !== 5) return null;
+    if (!Array.isArray(orderedIds) || orderedIds.length !== 5 ||
+        !expectedIds.every(id => orderedIds.includes(id)) || new Set(orderedIds).size !== 5) return null;
+    if (!quizAnswers || typeof quizAnswers !== 'object') return null;
+    for (const id of ['q1','q2','q3']) {
+      if (typeof quizAnswers[id] !== 'string' || !options[id].includes(quizAnswers[id])) return null;
+    }
+    const sequence = orderedIds.map(id => expectedIds.indexOf(id));
+    // The portal's original quiz indexes use three options (q1=1, q2=0, q3=2).
+    // We map the uploaded original's four-option IDs to right/wrong positions.
+    const answers = [
+      quizAnswers.q1 === 'sungai' ? '1' : '0',
+      quizAnswers.q2 === 'kabus' ? '0' : '1',
+      quizAnswers.q3 === 'kerjasama' ? '2' : '0',
+    ];
+    const signature = JSON.stringify([orderedIds, quizAnswers.q1, quizAnswers.q2, quizAnswers.q3]);
+    return { found: [true,true,true,true,true], pages: [true,true,true,true,true], sequence, answers, signature };
+  }
+
+  function onGameMessage(event) {
+    if (event.origin !== window.location.origin || !iframe || event.source !== iframe.contentWindow) return;
+    const msg = event.data;
+    if (!msg || msg.source !== sourceName || msg.version !== 1 ||
+        !['attempt', 'victory'].includes(msg.eventType)) return;
+    const data = normalizeEvidence(msg.payload);
+    if (!data) { console.warn('Misi 1: data pembelajaran tidak lengkap, rekod induk tidak dikemas kini.'); return; }
+    if (data.signature === lastSignature) return;
+    const save = window.submitMissionOneAdventure;
+    if (typeof save !== 'function') { console.warn('Misi 1: modul induk belum tersedia.'); return; }
+    const result = save(data);
+    if (result?.ok) {
+      lastSignature = data.signature;
+      const resultText = overlay?.querySelector('#hn-ai-status');
+      if (resultText) resultText.textContent = result.success
+        ? '✓ Misi 1 selesai — 60 XP diselaraskan dengan Dashboard Murid.'
+        : `Markah ${result.score}/8 direkodkan pada Dashboard Murid.`;
+    }
+  }
+
+  function close() {
+    if (!overlay) return;
+    window.removeEventListener('message', onGameMessage);
+    overlay.remove(); overlay = null; iframe = null;
+    document.body.classList.remove('hn-ai-fullscreen-active');
+    document.getElementById('hn-ai-style')?.remove();
+  }
+
+  window.openMissionOneAdventure = function openOriginalAiStudioMissionOne() {
+    if (overlay) return;
+    const style = document.createElement('style');
+    style.id = 'hn-ai-style';
+    style.textContent = `
+      body.hn-ai-fullscreen-active{overflow:hidden!important}
+      #hn-ai-overlay{position:fixed;inset:0;background:#132a23;z-index:99999;display:flex;flex-direction:column;color:#f8edce;font:500 13px 'DM Sans',Arial,sans-serif}
+      #hn-ai-top{height:51px;flex:none;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 16px;background:linear-gradient(112deg,#12382f,#285841);border-bottom:2px solid #d6af61}
+      #hn-ai-top strong{font:700 15px 'Fraunces',Georgia,serif}
+      #hn-ai-top small{color:#ead3a5;font-size:10px}
+      #hn-ai-top button{cursor:pointer;background:#f4e8ca;color:#1a4c37;border:1px solid #d5b97a;border-radius:9px;padding:10px 13px;font-weight:800;white-space:nowrap}
+      #hn-ai-status{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px;color:#e8d9b9}
+      #hn-ai-frame{width:100%;min-width:0;min-height:0;flex:1;border:0;background:#241509}
+      @media(max-width:750px){#hn-ai-top{height:56px;padding:6px 9px}#hn-ai-top strong{font-size:12px}#hn-ai-status{display:none}#hn-ai-top button{padding:9px}}
+    `;
+    document.head.append(style);
+    overlay = document.createElement('section');
+    overlay.id = 'hn-ai-overlay';
+    overlay.setAttribute('aria-label','Misi 1 — Misteri Lima Helaian Naskhah');
+    overlay.innerHTML = `<header id="hn-ai-top"><div><strong>🏮 Misi 1: Misteri Lima Helaian Naskhah</strong><br><small>Permainan asal Google AI Studio • Hang Tuah 3D</small></div>
+      <span id="hn-ai-status" role="status">Kemajuan kuiz diselaraskan dengan Dashboard Murid.</span>
+      <button id="hn-ai-close" type="button">✕ Kembali ke Dashboard</button></header>
+      <iframe id="hn-ai-frame" title="Permainan Misi 1 — Hang Tuah dan Lima Helaian Naskhah" src="/misi1/"></iframe>`;
+    document.body.append(overlay);
+    document.body.classList.add('hn-ai-fullscreen-active');
+    iframe = overlay.querySelector('iframe');
+    overlay.querySelector('#hn-ai-close').addEventListener('click', close);
+    window.addEventListener('message', onGameMessage);
+    overlay.querySelector('#hn-ai-close').focus();
+  };
+  window.closeMissionOneAdventure = close;
+  window.addEventListener('pagehide', close);
+  window.addEventListener('hikayat:reset', () => { lastSignature=''; });
+})();

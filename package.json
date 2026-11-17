@@ -1,16 +1,33 @@
 {
   "name": "hikayat-nusantara",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=20.19.0"
   },
   "scripts": {
     "build": "node build.mjs",
     "start": "node server.js",
-    "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check mission-one-3d.js && node --check build.mjs && node --check server.js",
+    "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check mission-one-ai-bridge.js && node --check build.mjs && node --check server.js",
     "test": "node --test tests/mission-one.test.mjs"
   },
-  "description": "Hikayat Nusantara: Hang Tuah 3D Misi 1 manuscript quest with interactive Bahasa Melayu tasks"
+  "description": "Hikayat Nusantara: original Google AI Studio Misi 1 Hang Tuah 3D adventure integrated into Dashboard Murid",
+  "dependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.187.0",
+    "lucide-react": "^0.546.0",
+    "vite": "^7.3.0",
+    "@vitejs/plugin-react": "^5.1.0",
+    "@tailwindcss/vite": "^4.1.16",
+    "tailwindcss": "^4.1.16"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.187.0",
+    "@types/node": "^22.0.0"
+  }
 }
