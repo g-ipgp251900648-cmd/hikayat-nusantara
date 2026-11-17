@@ -10,7 +10,7 @@
     "build": "node build.mjs",
     "start": "node server.js",
     "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check mission-one-3d.js && node --check student-progress.js && node --check certificate-ui.js && node --check certificate-api.js && node --check build.mjs && node --check server.js",
-    "test": "node --test tests/certificate-api.test.mjs"
+    "test": "node --test"
   },
   "description": "Hikayat Nusantara: 3D Hang Tuah manuscript quest, mission attempt analytics and teacher-approved demo certificates"
 }
