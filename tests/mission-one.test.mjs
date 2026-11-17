@@ -31,7 +31,7 @@ test('The original educational content and five JPG illustrations are preserved'
   for(let i=1;i<=5;i++){
     assert.match(data, new RegExp(`'/misi1/src/assets/images/story_page_${i}_`));
     const originalImages=['story_page_1_1794930837095.jpg','story_page_2_1794930837263.jpg','story_page_3_1794930839118.jpg','story_page_4_1794930839332.jpg','story_page_5_1794930838727.jpg'];
-    assert.ok(existsSync(join(root,'mission-one-ai/src/assets/images',originalImages[i-1])));
+    assert.ok(existsSync(join(root,'mission-one-ai/src/assets/images_b64',originalImages[i-1]+'.b64')));
   }
 });
 test('Embedded game uses same-origin progress bridge and server-side static assets',()=>{
