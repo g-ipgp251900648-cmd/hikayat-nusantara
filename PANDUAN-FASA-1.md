@@ -57,3 +57,35 @@ Fail `render.yaml` juga menyediakan konfigurasi sama sekiranya anda memilih kaed
 ## Fasa berikutnya
 
 Bina sistem log masuk dan kebenaran berasaskan peranan dahulu, kemudian hubungkan Neon PostgreSQL, storan fail, penghantaran karya, komen guru, pengumpulan markah dan statistik admin.
+
+## Fasa 1C — Reka bentuk 3D bergerak (17 November 2026)
+
+Kemas kini ini mengubah **visual sahaja**. Semua struktur misi, dashboard, nama tugasan dan kod backend Fasa 1B dikekalkan.
+
+- Dunia kampung Melayu 3D beranimasi pada homepage (dibina melalui Three.js, model asli berbentuk geometri).
+- Rumah tradisional, sampan bergerak, sungai beralun, jambatan, awan, pepohon dan pelita bercahaya.
+- Seret pada kanvas untuk mengubah sudut pemandangan secara lembut.
+- Pilihan **Lihat 2D / Lihat 3D** untuk kembali kepada ilustrasi SVG asal.
+- Pilihan **Henti animasi / Gerakkan**; menghormati tetapan sistem `prefers-reduced-motion`.
+- Kad pemilihan peranan mempunyai kesan kedalaman apabila menggunakan tetikus.
+- Peta murid, ikon misi dan ringkasan dashboard menerima animasi ringan.
+- Jika WebGL atau CDN 3D gagal, ilustrasi lama kekal sebagai fallback.
+
+### Teknikal dan perkara yang perlu diperhatikan
+
+- `world3d.js` memuatkan Three.js versi `0.177.0` dari jsDelivr; sambungan internet diperlukan untuk pengalaman 3D. Ilustrasi 2D tidak bergantung pada CDN ini.
+- `npm run build` kini turut menyalin `world3d.js` ke folder `dist`.
+- Server Node.js membenarkan fail modul `/world3d.js`.
+- **Tiada data peribadi disimpan** oleh tambahan visual ini. Semua markah dan komen masih data demo.
+- Pelan Render boleh diteruskan: **Build** `npm run build`, **Start** `npm start`.
+- Jika Render anda tidak menggunakan auto-deploy, pilih **Manual Deploy → Deploy latest commit** selepas Pull Request digabungkan.
+
+### Cara semak pengalaman
+
+1. Buka URL Render `hikayat-nusantara-portal` dan pastikan terdapat dunia kampung 3D pada homepage.
+2. Cuba seret pemandangan; awan, sampan dan pelita sepatutnya bergerak.
+3. Klik **Henti animasi**, kemudian **Lihat 2D**, dan kembali ke **Lihat 3D**.
+4. Semak dashboard Murid, Guru dan Admin; semua navigasi terdahulu perlu terus berfungsi.
+5. Uji skrin telefon. Jika prestasi terhad, gunakan mod 2D atau hentikan animasi.
+
+**Nota:** Ini masih prototaip. Jangan masukkan maklumat murid sebenar atau menganggap peranan dashboard sebagai pengesahan login.
