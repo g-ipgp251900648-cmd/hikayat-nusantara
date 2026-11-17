@@ -14,6 +14,7 @@ const PUBLIC_FILES = new Map([
   ["/world3d.js", ["world3d.js", "text/javascript; charset=utf-8"]],
   ["/student-map3d.js", ["student-map3d.js", "text/javascript; charset=utf-8"]],
   ["/student-activities.js", ["student-activities.js", "text/javascript; charset=utf-8"]],
+  ["/mission-one-3d.js", ["mission-one-3d.js", "text/javascript; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
 const PORT = Number(process.env.PORT || 10000);
