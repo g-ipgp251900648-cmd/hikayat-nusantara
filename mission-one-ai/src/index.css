@@ -1,0 +1,118 @@
+@import "tailwindcss";
+
+:root {
+  --color-emerald-deep: #064e3b;
+  --color-emerald-mid: #0d5c46;
+  --color-gold-antique: #d4af37;
+  --color-gold-burnished: #9a6e17;
+  --color-parchment: #faf3e0;
+  --color-parchment-edge: #ecdcb9;
+  --color-wood-dark: #2c1a0e;
+  --color-wood-warm: #5b371e;
+  --color-sky-clear: #38bdf8;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+  background-color: #1c130c;
+  color: #2c1a0e;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display {
+  font-family: 'Fraunces', Georgia, serif;
+}
+
+.font-body {
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Traditional Malay parchment & carved wood framing without backdrop-filter */
+.parchment-panel {
+  background-color: #faf3e0;
+  background-image: radial-gradient(circle at 20% 20%, rgba(255, 252, 242, 0.9), rgba(240, 224, 188, 0.96));
+  border: 2px solid #b88b2e;
+  box-shadow:
+    0 18px 42px rgba(20, 12, 6, 0.45),
+    inset 0 0 0 1px rgba(255, 248, 226, 0.85);
+}
+
+.wood-hud-panel {
+  background-color: rgba(34, 21, 12, 0.92);
+  border: 1.5px solid rgba(212, 175, 55, 0.65);
+  box-shadow: 0 8px 24px rgba(10, 6, 3, 0.45);
+  color: #faf3e0;
+}
+
+.emerald-cta {
+  background-color: #0d5c46;
+  color: #faf3e0;
+  border: 1.5px solid #d4af37;
+  box-shadow: 0 4px 14px rgba(6, 78, 59, 0.4);
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease;
+}
+
+.emerald-cta:hover:not(:disabled) {
+  background-color: #064e3b;
+  transform: translateY(-1px);
+}
+
+.emerald-cta:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.gold-cta {
+  background-color: #d4af37;
+  color: #2c1a0e;
+  border: 1.5px solid #fef3c7;
+  box-shadow: 0 4px 14px rgba(154, 110, 23, 0.4);
+  transition: transform 150ms cubic-bezier(0.16, 1, 0.3, 1), background-color 150ms ease;
+}
+
+.gold-cta:hover:not(:disabled) {
+  background-color: #e3be46;
+  transform: translateY(-1px);
+}
+
+/* Reduced motion preference */
+.reduce-motion *,
+.reduce-motion *::before,
+.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Custom subtle scrollbar inside reading/quiz panels */
+.hikayat-scroll::-webkit-scrollbar {
+  width: 7px;
+}
+.hikayat-scroll::-webkit-scrollbar-track {
+  background: rgba(180, 131, 39, 0.12);
+  border-radius: 6px;
+}
+.hikayat-scroll::-webkit-scrollbar-thumb {
+  background: rgba(154, 110, 23, 0.45);
+  border-radius: 6px;
+}
