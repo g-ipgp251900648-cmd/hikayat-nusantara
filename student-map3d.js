@@ -56,7 +56,7 @@ if(!wrapper||!stage||!dashboard){
   try{
     const THREE=await import("https://cdn.jsdelivr.net/npm/three@0.177.0/build/three.module.js");
     const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:"low-power"});
-    renderer.setPixelRatio(Math.min(devicePixelRatio||1,1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.5));
     renderer.shadowMap.enabled=true;
     renderer.shadowMap.type=THREE.PCFSoftShadowMap;
     renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -336,7 +336,7 @@ if(!wrapper||!stage||!dashboard){
       anchors.forEach((anchor,i)=>{
         const projected=anchor.clone();
         projected.applyAxisAngle(new THREE.Vector3(0,1,0),yaw);
-        projected.sub(cameraAim.clone().setY(0));
+        
         projected.project(camera);
         const x=(projected.x*.5+.5)*rect.width;
         const y=(-projected.y*.5+.5)*rect.height;
