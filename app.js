@@ -45,7 +45,9 @@ function closeDialog(){if(typeof dialog.close==="function")dialog.close();else d
 document.querySelector("[data-close-dialog]").addEventListener("click",closeDialog);
 dialog.addEventListener("click",event=>{if(event.target===dialog)closeDialog()});
 document.querySelectorAll("[data-mission]").forEach(button=>button.addEventListener("click",()=>{
- const m=missions[Number(button.dataset.mission)];if(!m)return;
+ const selected=Number(button.dataset.mission);
+ if(typeof window.openStudentMission==="function"){window.openStudentMission(selected);return;}
+ const m=missions[selected];if(!m)return;
  openDialog('<div class="dialog-inner"><span class="mini-label">PRATONTON MISI · FASA 1</span><div style="font-size:48px;margin:15px 0">'+m.icon+'</div><h2 id="dialog-title">'+m.name+'</h2><p>'+m.description+'</p><ul><li><b>Anggaran masa:</b> '+m.time+'</li><li><b>Bukti pembelajaran:</b> '+m.outcome+'</li></ul><div class="dialog-note">Mod demonstrasi: aktiviti sebenar, markah dan penyimpanan kemajuan akan dibina selepas sistem akaun serta pangkalan data siap.</div><button class="modal-button" style="margin-top:18px" data-dialog-done>Tutup pratonton</button></div>');
 }));
 const examples={
