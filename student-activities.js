@@ -71,6 +71,11 @@
     return base;
   }
   const state=load();
+  // Hanya baca kemajuan demo daripada modul misi, bukan bukti kelulusan guru.
+  window.getStudentCertificateProgress=()=>({
+    completed:[...state.completed],
+    performance:{...state.performance}
+  });
   let activeMission=-1;
   let feedback="";
   let feedbackTone="note";
@@ -178,6 +183,7 @@
       if(p)p.textContent=state.writtenStory.trim()?state.writtenStory.slice(0,170)+(state.writtenStory.length>170?"…":""):"Draf cerita yang ditulis dalam Misi 2 akan dipaparkan di sini.";
       if(tag)tag.textContent="Draf latihan setempat · Tidak dihantar kepada guru";
     }
+    window.dispatchEvent(new Event("hikayat:progress"));
   }
 
   function introLayout(title,body){

@@ -213,3 +213,47 @@ Dashboard Murid kini bukan hanya pratonton. Empat misi boleh dibuka melalui labe
 7. Pastikan menu Guru dan Admin, peta 3D, Lihat 2D/3D dan mod henti gerakan berfungsi.
 
 Build: `npm run build`, Start: `npm start`. Semakan sintaks: `npm run check`.
+
+
+## Fasa 2C — Sijil Pengembara Warisan dengan kelulusan guru (DEMO)
+
+### Aliran sebenar untuk menguji prototaip
+1. Murid melengkapkan **semua empat latihan** dalam Dashboard Murid, termasuk rancangan **permulaan / perkembangan / pengakhiran** Misi 4 serta tanda telah berlatih.
+2. Di bahagian **Khazanah Kejayaan → Sijil Pengembara Warisan**, sijil berubah daripada *Dikunci* kepada *Sedia Dihantar*.
+3. Murid memasukkan **nama samaran DEMO** (contoh `Pengembara Melur`) sekali dan menekan **Hantar Misi 4 untuk Semakan Guru**.
+4. Rekod dihantar melalui API ke **memori server Node.js** sebagai *pending*. Sijil masih terkunci.
+5. Guru membuka **Dashboard Guru → Semakan Sijil**, menaip nama penyemak demo dan kunci guru dalam Render, kemudian membuka senarai penghantaran.
+6. Guru membaca rancangan tiga babak Misi 4, mengisi **respons bertulis**, dan memilih sama ada **Minta Pembetulan** atau **Luluskan Sijil DEMO**.
+7. Selepas guru meluluskan pada server, murid menekan **Semak Kelulusan**. Sijil demo muncul dengan **nama samaran automatik**, nama penyemak, tarikh, dan nombor rujukan sementara; murid boleh **Cetak / Simpan PDF** menggunakan dialog cetak pelayar.
+
+### Tetapan wajib pada Render (jangan simpan rahsia di GitHub!)
+- Buka Render → Web Service `hikayat-nusantara-portal` → **Environment**.
+- Tambah environment variable **`CERTIFICATE_TEACHER_KEY`** dengan nilai rahsia rawak sekurang-kurangnya **16 aksara**. Jangan tulis nilai tersebut di dalam kod, issue, screenshot, atau mesej awam.
+- Klik simpan dan deploy semula jika Render meminta.
+- Guru hanya memasukkan kunci ini dalam Dashboard Guru pada halaman yang menggunakan HTTPS.
+- Jika key tidak dikonfigurasikan, UI memaparkan status tidak tersedia dan **sijil tidak boleh diluluskan**. Ini sengaja dilakukan untuk menghalang kelulusan palsu.
+
+### Fail baharu
+- `certificate-api.js`: API demo terhad pada server untuk penghantaran, semakan guru, respons, kelulusan dan status sijil.
+- `certificate-ui.js`: paparan Dashboard Murid dan Guru, status sijil, nama automatik, sijil hiasan songket dan mod cetak A4 landscape.
+- `student-activities.js`: getter kemajuan empat misi sahaja; **bukan** keputusan kelulusan guru.
+- `server.js` membolehkan API di atas dan memaparkan `certificate-ui.js`; `build.mjs` menyalin modul UI untuk Render.
+
+### Penjelasan kritikal
+- Ini **bukan sistem sijil rasmi**. Pada sijil tertera `SIJIL DEMONSTRASI · BUKAN SIJIL RASMI SEKOLAH`.
+- Semua rekod sijil dalam server hanyalah **RAM yang sementara**; Render restart, redeploy atau proses tamat akan memadam rekod. Ini belum integrasi Neon/PostgreSQL.
+- Status siap misi ialah laporan **daripada pelayar**, belum disahkan oleh akaun murid. Oleh itu, guru mesti menyemak hasil Misi 4 secara manusiawi sebelum kelulusan.
+- Nama dalam sijil diperoleh daripada **nama contoh yang ditaip murid sekali**. Pengisian automatik daripada profil sebenar hanya boleh dilakukan selepas sistem log masuk sah siap.
+- Jangan gunakan nama penuh atau data sebenar kanak-kanak, atau rakaman, dalam prototaip terbuka ini. Tiada pengesahan pengguna murid, perlindungan rekod berterusan atau pengurusan peranan menyeluruh.
+- URL status memerlukan ID dan token rawak pemilik penghantaran; kunci guru hanya disimpan sementara di memori halaman dan tidak disimpan dalam localStorage.
+- Sistem sebenar memerlukan login guru/murid, kebenaran data, pangkalan data Neon, ID sijil berterusan, audit keputusan dan kawalan capaian.
+
+### Semak selepas deploy
+- Status sijil dikunci pada kemajuan kurang 4/4.
+- Setelah 4/4, hantar Misi 4 dengan nama contoh; sijil masih tidak boleh dicetak.
+- Tanpa kunci guru: permintaan semakan guru ditolak.
+- Dengan kunci guru salah: permintaan semakan ditolak.
+- Dengan kunci guru benar: komen guru dan kelulusan tersedia.
+- Minta Pembetulan: murid nampak maklum balas dan boleh baiki/hantar semula.
+- Lulus: murid memuat semula status, nama muncul automatik, dan cetak menyokong format landskap.
+- Restart Render: rekod demo hilang sebagaimana yang dinyatakan.
