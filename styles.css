@@ -15,3 +15,70 @@
 @media(max-width:800px){.home-nav{padding:22px 5%}.home-nav nav{gap:15px}.home-nav nav>a:first-child,.home-nav nav>a:nth-child(2){display:none}.hero{grid-template-columns:1fr;padding:125px 6% 75px;gap:38px}.hero h1{font-size:clamp(40px,9vw,68px)}.hero-meta{margin-top:35px}.hero-art{max-width:540px}.hero-number{display:none}.portal-section{padding:70px 6%}.portal-grid{grid-template-columns:1fr}.portal-card{min-height:350px}.portal-art{font-size:70px;min-height:120px}.portal-bottom p{min-height:unset}.about-strip{grid-template-columns:1fr;padding:50px 6%;gap:10px}.sidebar{transform:translateX(-102%);transition:transform .25s}.dashboard.menu-open .sidebar{transform:translateX(0)}.menu-button{display:inline-block}.dash-main{margin-left:0}.dash-content{padding:35px 5% 90px}.student-banner{padding:25px}.banner-emoji{padding:0;font-size:70px}.mission-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:530px){.wordmark{font-size:15px}.wordmark small{font-size:8px}.mark{width:36px;height:36px}.home-nav .nav-pill{padding:9px 12px}.hero h1{font-size:42px}.hero-copy>p{font-size:13px}.hero-meta{font-size:10px;gap:12px}.hero-art svg{border-radius:18px}.portal-section{padding-top:56px}.section-decoration{display:none}.portal-bottom h3{font-size:27px}.dash-top{padding:0 15px;height:64px}.breadcrumbs{font-size:9px}.top-right{gap:7px}.demo-chip{font-size:8px;padding:5px 7px}.dash-heading h1{font-size:29px}.heading-ornament{display:none}.student-banner h2{font-size:23px}.banner-emoji{font-size:42px}.stats-grid.three,.stats-grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.stats-grid.three .stat:last-child{grid-column:1/-1}.stat{padding:17px}.stat strong{font-size:29px}.adventure-map{height:310px}.map-pin{padding:5px;font-size:9px}.map-pin b{max-width:65px;line-height:1.1}.map-pin span{width:20px;height:20px}.pin-one{top:29%;left:4%}.pin-two{top:13%;left:37%}.pin-three{top:70%;left:44%}.pin-four{top:42%;left:70%}.mission-grid,.split-cards,.reward-row,.task-list,.integration-grid{grid-template-columns:1fr}.mission-card p{min-height:0}.chart-rows>div{grid-template-columns:100px 1fr;font-size:10px;gap:10px}.section-line{align-items:start;flex-direction:column}.search-label{width:100%}.search-label input{width:100%}.home-footer{flex-direction:column;gap:8px}.demo-ribbon{font-size:8px;right:7px;bottom:7px;padding:5px 8px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+
+/* ===== Fasa 1C: Nusantara 3D sinematik dan objek beranimasi ===== */
+.hero-art{isolation:isolate;transform-style:preserve-3d;--hero-depth:0deg}
+.hero-art:before{content:"";position:absolute;inset:-24px;border-radius:52px;background:radial-gradient(ellipse at 50% 40%,rgba(243,212,149,.22),transparent 68%);filter:blur(20px);pointer-events:none;z-index:-1}
+.hero-art.is-3d{background:radial-gradient(ellipse at 72% 30%,#f9e0b0 0%,transparent 50%),linear-gradient(145deg,#b2d7bd 0%,#e3dbc1 60%,#a6c49e 100%);border:7px solid rgba(242,217,169,.54);border-radius:35px;overflow:hidden;box-shadow:0 36px 90px rgba(5,27,20,.43),inset 0 0 0 1px rgba(255,255,255,.65)}
+.hero-art.is-3d>svg{opacity:0;border:0}
+.three-stage{position:absolute;inset:0;z-index:2;touch-action:pan-y}
+.world-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;cursor:grab;touch-action:pan-y}
+.world-canvas:active{cursor:grabbing}
+.world-label{position:absolute;left:17px;bottom:18px;z-index:4;padding:10px 14px 8px;background:rgba(21,62,49,.85);color:#fff2c9;backdrop-filter:blur(14px);border:1px solid #f6dc9a7c;border-radius:10px;font-size:10px;letter-spacing:.09em;font-weight:800;max-width:53%;line-height:1.4}
+.world-label small{display:block;color:#e9e5d3;font-size:8px;font-weight:500;letter-spacing:.12em;margin:4px 0 0 13px}
+.world-label-dot{display:inline-block;width:7px;height:7px;background:#fed879;border-radius:50%;box-shadow:0 0 0 4px #f3d77c29,0 0 14px #ffd270;margin-right:6px;animation:world-pulse 2.5s ease-in-out infinite}
+.world-controls{position:absolute;right:12px;top:12px;z-index:5;display:flex;gap:7px;flex-wrap:wrap;justify-content:end;max-width:66%}
+.world-control{background:rgba(20,57,48,.87);backdrop-filter:blur(10px);border:1px solid rgba(255,231,183,.7);border-radius:8px;color:#fff1cf;padding:8px 10px;font-size:10px;font-weight:800;letter-spacing:.025em}
+.world-control:hover{background:#1c6148;transform:translateY(-2px)}
+.world-control:focus-visible{outline-color:#f6cb75}
+.world-hint{position:absolute;right:15px;bottom:20px;color:#244838;background:rgba(255,246,220,.9);border:1px solid #faf0db;border-radius:50px;padding:8px 11px;font-size:9px;font-weight:800;z-index:4;max-width:40%;text-align:center;box-shadow:0 5px 19px #27453227}
+.hero-art.is-3d .art-stamp{opacity:0;pointer-events:none}
+.hero-art:not(.is-3d) .three-stage,.hero-art:not(.is-3d) .world-label,.hero-art:not(.is-3d) .world-hint{display:none}
+.hero-art:not(.is-3d) .art-stamp{opacity:1}
+.hero-art.is-3d:after{content:"";position:absolute;inset:0;pointer-events:none;z-index:3;border-radius:29px;box-shadow:inset 0 0 45px #193b2334}
+
+/* Gerak lapisan untuk portal 3D. */
+.portal-card{--tilt-x:0deg;--tilt-y:0deg;transform-style:preserve-3d;transform:perspective(1000px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y));will-change:transform}
+.portal-card:hover{transform:perspective(1000px) rotateX(var(--tilt-x)) rotateY(var(--tilt-y)) translateY(-8px)}
+.portal-card .portal-top,.portal-card .portal-bottom{transform:translateZ(24px)}
+.portal-card .portal-art{transform:translateZ(42px);animation:portal-hover 5.2s ease-in-out infinite}
+.portal-card:nth-child(2) .portal-art{animation-delay:-1.65s}
+.portal-card:nth-child(3) .portal-art{animation-delay:-3s}
+.portal-art:before{content:"";width:190px;height:190px;position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:-1;border-radius:50%;background:radial-gradient(circle,#fff8 6%,#b4d3ad44 54%,transparent 68%);animation:world-breathe 4.8s ease-in-out infinite}
+.portal-card:after{content:"✦";position:absolute;top:28%;right:17%;font-size:21px;color:rgba(159,118,57,.44);animation:drifting-star 7s ease-in-out infinite;pointer-events:none}
+.student-card{background:linear-gradient(145deg,#ccdfb7,#f8ecd2 83%);box-shadow:0 10px 0 #a4b392,0 22px 40px #213c2925}
+.teacher-card{background:linear-gradient(145deg,#c6e1d8,#f4efe0 83%);box-shadow:0 10px 0 #96b3a9,0 22px 40px #213c2925}
+.admin-card{background:linear-gradient(145deg,#edd6b0,#f4e6d5 83%);box-shadow:0 10px 0 #c2a980,0 22px 40px #213c2925}
+.portal-card .portal-icon{box-shadow:inset 0 2px 5px #fff9,0 6px 15px #284b3425}
+.portal-link b{transition:transform .25s}
+.portal-card:hover .portal-link b{transform:translate(3px,-3px)}
+
+/* Dashboard: cahaya, interaksi dan pergerakan lembut tanpa mengalih bacaan. */
+.student-banner{background:radial-gradient(circle at 75% 47%,rgba(232,196,110,.16),transparent 44%),linear-gradient(108deg,#2b6652,#18473d 77%);box-shadow:0 15px 40px #1c513235}
+.student-banner .banner-emoji{animation:lantern-hover 5s ease-in-out infinite;filter:drop-shadow(0 12px 23px #f9cb6b50)}
+.adventure-map{box-shadow:0 19px 45px #25452a24,0 6px 0 #708f6c}
+.adventure-map:after{content:"";position:absolute;pointer-events:none;inset:-40% -40%;background:linear-gradient(108deg,transparent 39%,rgba(240,254,215,.15) 49%,transparent 59%);transform:translateX(-60%) rotate(-9deg);animation:river-shimmer 12s linear infinite}
+.map-pin{z-index:2;animation:pin-bob 3.5s ease-in-out infinite}
+.map-pin.pin-two{animation-delay:-.8s}
+.map-pin.pin-three{animation-delay:-1.5s}
+.map-pin.pin-four{animation-delay:-2.4s}
+.mission-card .mission-emoji{display:inline-block;animation:icon-bob 5s ease-in-out infinite}
+.mission-card:nth-child(2) .mission-emoji{animation-delay:-1s}
+.mission-card:nth-child(3) .mission-emoji{animation-delay:-2s}
+.mission-card:nth-child(4) .mission-emoji{animation-delay:-3s}
+.stat,.paper-card,.feedback-card,.reward-row>div,.mission-card{transition:transform .22s ease,box-shadow .22s ease}
+.stat:hover,.paper-card:hover,.feedback-card:hover,.reward-row>div:hover{transform:translateY(-4px);box-shadow:0 20px 34px #26493518}
+.heading-ornament{animation:ornament-turn 18s linear infinite}
+
+@keyframes world-pulse{0%,100%{opacity:.7;box-shadow:0 0 0 4px #f3d77c29,0 0 10px #ffd270}50%{opacity:1;box-shadow:0 0 0 7px #f3d77c23,0 0 22px #ffd270}}
+@keyframes portal-hover{0%,100%{transform:translateZ(42px) translateY(0)}50%{transform:translateZ(49px) translateY(-12px)}}
+@keyframes icon-bob{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-7px) rotate(4deg)}}
+@keyframes lantern-hover{0%,100%{transform:translateY(1px) rotate(-4deg)}50%{transform:translateY(-10px) rotate(5deg)}}
+@keyframes world-breathe{0%,100%{opacity:.64;scale:1}50%{opacity:1;scale:1.09}}
+@keyframes drifting-star{0%,100%{transform:translate(0,0) rotate(0deg);opacity:.5}50%{transform:translate(-20px,-12px) rotate(40deg);opacity:1}}
+@keyframes river-shimmer{0%{transform:translateX(-70%) rotate(-9deg)}100%{transform:translateX(80%) rotate(-9deg)}}
+@keyframes pin-bob{0%,100%{translate:0 0}50%{translate:0 -5px}}
+@keyframes ornament-turn{to{transform:rotate(360deg)}}
+.motion-paused .world-label-dot,.motion-paused .portal-art,.motion-paused .portal-art:before,.motion-paused .portal-card:after,.motion-paused .student-banner .banner-emoji,.motion-paused .adventure-map:after,.motion-paused .map-pin,.motion-paused .mission-card .mission-emoji,.motion-paused .heading-ornament{animation-play-state:paused!important}
+@media(max-width:800px){.world-label{font-size:8px;bottom:12px;left:11px;padding:8px 10px}.world-label small{font-size:7px;margin-left:0}.world-controls{right:7px;top:7px}.world-control{font-size:9px;padding:7px}.world-hint{display:none}.hero-art.is-3d{border-radius:20px}.hero-art.is-3d:after{border-radius:14px}}
+@media(prefers-reduced-motion:reduce){.world-label-dot,.portal-art,.portal-art:before,.portal-card:after,.banner-emoji,.adventure-map:after,.map-pin,.mission-emoji,.heading-ornament{animation:none!important}.portal-card,.portal-card:hover,.stat:hover,.mission-card:hover{transform:none!important}}
