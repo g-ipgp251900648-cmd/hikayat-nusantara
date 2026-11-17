@@ -98,3 +98,6 @@ if (window.matchMedia?.("(hover:hover) and (pointer:fine)")?.matches &&
     });
   });
 }
+
+/* Peta pengembaraan Desa Hikayat: paparan 3D murid dengan fallback SVG. */
+import("./student-map3d.js").catch(err=>console.warn("Peta Desa Hikayat tidak dimuatkan; peta SVG masih tersedia.",err));
