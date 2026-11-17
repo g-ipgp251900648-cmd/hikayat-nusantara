@@ -18,7 +18,7 @@ test('Root build and server publish the original game at /misi1/', () => {
   const build=read('build.mjs'), server=read('server.js');
   assert.match(build, /mission-one-ai\/vite\.config\.ts/);
   assert.match(build, /mission-one-ai-bridge\.js/);
-  assert.match(server, /pathname === '\/misi1'/);
+  assert.match(server, /pathname\s*===\s* '\/misi1'/);
   assert.match(server, /SAMEORIGIN/);
   assert.match(server, /mission-one-ai-bridge\.js/);
 });
