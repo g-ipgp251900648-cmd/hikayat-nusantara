@@ -1,0 +1,6 @@
+services:
+  - type: web
+    runtime: static
+    name: hikayat-nusantara
+    buildCommand: npm run build
+    staticPublishPath: dist
