@@ -13,6 +13,7 @@
   <script src="app.js" defer></script>
   <script src="student-activities.js" defer></script>
   <script src="mission-one-ai-bridge.js" defer></script>
+  <script src="student-learning-center.js" defer></script>
 </head>
 <body>
   <div class="grain" aria-hidden="true"></div>
@@ -95,6 +96,7 @@
       <div class="side-role">✦ RUANG MURID</div>
       <p class="side-label">PENGEMBARAAN</p>
       <button class="side-link active" data-target="murid-misi"><span>🗺</span> Desa Hikayat 3D</button>
+      <button class="side-link" data-target="murid-pusat"><span>📚</span> Pusat Pembelajaran</button>
       <button class="side-link" data-target="murid-ringkasan"><span>⌂</span> Ringkasan</button>
       <button class="side-link" data-target="murid-portfolio"><span>✒</span> Portfolio karya</button>
       <button class="side-link" data-target="murid-ganjaran"><span>✧</span> Ganjaran saya</button>
@@ -147,6 +149,77 @@
             <button class="mission-card" data-mission="3"><span class="mission-number">04</span><div class="mission-emoji">🎭</div><span class="mission-status next">Pratonton (demo)</span><h3>Persembahan Hikayat</h3><p>Rancang dan rakam persembahan cerita anda.</p><span class="mission-time">◷ 15 minit</span></button>
           </div>
           <p class="desa-notice">Prototaip interaktif: lokasi dan penerangan misi boleh diteroka. Jawapan, markah dan kemajuan sebenar belum disimpan.</p>
+        </section>
+        <section id="murid-pusat" class="dash-section hn-lc-section" aria-labelledby="hn-lc-title">
+          <div class="section-line">
+            <div><span class="mini-label">AKADEMI PELITA WARISAN · BAHASA MELAYU TAHUN 5</span>
+              <h2 id="hn-lc-title">Pusat Pembelajaran Pahlawan Muda</h2>
+              <p>Kenali objektif, cara bermain, bukti pembelajaran dan perkembangan pencapaian untuk setiap misi.</p>
+            </div>
+            <span class="small-note">Latihan individu · Data pada peranti ini</span>
+          </div>
+          <div class="hn-lc-welcome">
+            <div class="hn-lc-welcome-icon" aria-hidden="true">🏮</div>
+            <div><span class="hn-lc-kicker">PESANAN HANG TUAH</span>
+              <h3>Setiap misi, sebuah ilmu baharu.</h3>
+              <p>Jelajah Desa Hikayat, fahami kisah, olah dengan bahasa yang indah dan persembahkan hasil sendiri. Cuba lagi jika jawapan belum tepat!</p>
+            </div>
+            <button type="button" id="hn-lc-continue" class="hn-lc-main-cta">▶ Sambung pengembaraan</button>
+          </div>
+          <div class="hn-lc-overview" aria-label="Ringkasan kemajuan pembelajaran">
+            <div><span>Misi selesai</span><strong id="hn-lc-done">0/4</strong><small>Berdasarkan latihan pada pelayar</small></div>
+            <div><span>XP terkumpul</span><strong id="hn-lc-xp">0</strong><small>Daripada misi yang selesai</small></div>
+            <div><span>Percubaan jawapan</span><strong id="hn-lc-total-attempts">0</strong><small>Semakan yang direkodkan</small></div>
+            <div><span>Misi seterusnya</span><strong id="hn-lc-next">01</strong><small>Anda boleh mengulang misi</small></div>
+          </div>
+          <div class="hn-lc-group-title">
+            <div><span class="mini-label">PANDUAN BELAJAR</span><h3>Empat Misi Pengembaraan</h3></div>
+            <div class="hn-lc-filters" role="group" aria-label="Tapis mengikut status misi">
+              <button type="button" data-lc-filter="all" aria-pressed="true" class="active">Semua</button>
+              <button type="button" data-lc-filter="pending" aria-pressed="false">Belum selesai</button>
+              <button type="button" data-lc-filter="done" aria-pressed="false">Selesai</button>
+            </div>
+          </div>
+          <div id="hn-lc-missions" class="hn-lc-mission-list" aria-live="polite"></div>
+          <div class="hn-lc-two-column">
+            <section class="hn-lc-paper hn-lc-analytics" aria-labelledby="hn-lc-analytics-title">
+              <span class="mini-label">PENTAKSIRAN KENDIRI</span>
+              <h3 id="hn-lc-analytics-title">Graf Perkembangan Percubaan</h3>
+              <p>Pilih misi untuk melihat rekod semakan jawapan. Graf menunjukkan pencapaian sebenar, bukan masa bermain.</p>
+              <label for="hn-lc-choice">Pilih misi</label>
+              <select id="hn-lc-choice">
+                <option value="0">Misi 1 · Jejak Naskhah Pusaka</option>
+                <option value="1">Misi 2 · Balai Olah Hikayat</option>
+                <option value="2">Misi 3 · Warisan Bahasa</option>
+                <option value="3">Misi 4 · Persembahan Hikayat</option>
+              </select>
+              <div id="hn-lc-chart" class="hn-lc-chart" aria-live="polite">Belum ada percubaan direkodkan.</div>
+            </section>
+            <section class="hn-lc-paper hn-lc-journal" aria-labelledby="hn-lc-journal-title">
+              <span class="mini-label">REFLEKSI KENDIRI</span>
+              <h3 id="hn-lc-journal-title">Jurnal Pengembara</h3>
+              <p>Tulis perkara yang telah dipelajari dan perkara yang ingin diperbaiki. Catatan ini untuk diri sendiri sahaja.</p>
+              <label for="hn-lc-journal-choice">Catatan bagi</label>
+              <select id="hn-lc-journal-choice">
+                <option value="0">Misi 1 · Jejak Naskhah</option>
+                <option value="1">Misi 2 · Olah Hikayat</option>
+                <option value="2">Misi 3 · Warisan Bahasa</option>
+                <option value="3">Misi 4 · Persembahan</option>
+              </select>
+              <label for="hn-lc-note">Apa yang saya pelajari?</label>
+              <textarea id="hn-lc-note" maxlength="1200" rows="5" placeholder="Contohnya: Saya belajar menyusun peristiwa mengikut urutan. Lain kali saya akan membaca petunjuk masa dengan lebih teliti."></textarea>
+              <div class="hn-lc-journal-actions">
+                <button type="button" id="hn-lc-save-note" class="hn-lc-main-cta">Simpan catatan</button>
+                <button type="button" id="hn-lc-clear-note" class="hn-lc-subtle">Kosongkan</button>
+              </div>
+              <p id="hn-lc-note-status" class="hn-lc-note-status" role="status">Catatan disimpan pada pelayar ini sahaja, bukan dihantar kepada guru. Elakkan maklumat peribadi.</p>
+            </section>
+          </div>
+          <div class="hn-lc-howto">
+            <h3>✦ Cara mengikuti pengembaraan</h3>
+            <div><span><b>01</b> Baca objektif misi</span><span><b>02</b> Teroka dan jawab cabaran</span><span><b>03</b> Semak serta tambah baik jawapan</span><span><b>04</b> Catat pembelajaran anda</span></div>
+            <p>Ini ialah prototaip pembelajaran setempat. Catatan, graf dan markah tidak diselaraskan secara automatik dengan akaun atau dashboard guru. Sijil akhir tidak diluluskan hanya melalui rekod di halaman ini.</p>
+          </div>
         </section>
         <section id="murid-ringkasan"><div class="dash-heading"><div><div class="eyebrow dark"><span class="dot"></span> PENGEMBARAAN ANDA</div><h1>Selamat datang, <em>Pahlawan Muda.</em></h1><p>Sambung perjalanan untuk menghidupkan semula kisah Pelita Warisan.</p></div><span class="heading-ornament">✺</span></div>
           <div class="student-banner"><div><span class="mini-label">KEMAJUAN PENGEMBARAAN</span><h2>Empat lokasi menanti<br>pengembaraan anda!</h2><p>Peta dunia telah tersedia. Jelajah misi pertama untuk melihat arahan pembelajaran.</p><div class="progress-track"><span style="width:0%"></span></div><b>0% selesai · pratonton</b></div><div class="banner-emoji">🏮</div></div>
