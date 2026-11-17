@@ -45,7 +45,8 @@
     chosenPhrases:[],
     writtenStory:"",
     languageAnswers:["","","",""],
-    performance:{opening:"",middle:"",ending:"",format:"audio",practised:false}
+    performance:{opening:"",middle:"",ending:"",format:"audio",practised:false},
+    attempts:Array.from({length:4},()=>({count:0,history:[]}))
   });
   function load(){
     const base=empty();
@@ -62,6 +63,12 @@
       if(Array.isArray(parsed.chosenPhrases))base.chosenPhrases=parsed.chosenPhrases.filter(x=>phrases.includes(x)).slice(0,5);
       if(typeof parsed.writtenStory==="string")base.writtenStory=parsed.writtenStory.slice(0,2500);
       if(Array.isArray(parsed.languageAnswers))base.languageAnswers=base.languageAnswers.map((_,i)=>String(parsed.languageAnswers[i]??"").slice(0,1));
+      if(Array.isArray(parsed.attempts))base.attempts=base.attempts.map((entry,i)=>{
+        const other=parsed.attempts[i];if(!other||typeof other!=="object")return entry;
+        const count=Math.max(0,Math.min(100000,Math.trunc(Number(other.count)||0)));
+        const history=Array.isArray(other.history)?other.history.slice(-30).filter(x=>x&&typeof x==="object"&&Number.isFinite(Number(x.score))&&Number.isFinite(Number(x.total))&&Number(x.total)>0).map(x=>({number:Math.max(1,Math.trunc(Number(x.number)||1)),score:Number(x.score),total:Number(x.total),percent:Math.min(100,Math.max(0,Math.round(Number(x.score)/Number(x.total)*100))),success:x.success===true,at:String(x.at||"").slice(0,36)})):[];
+        return {count:Math.max(count,history.at(-1)?.number||0),history};
+      });
       if(parsed.performance&&typeof parsed.performance==="object"){
         for(const k of ["opening","middle","ending"])if(typeof parsed.performance[k]==="string")base.performance[k]=parsed.performance[k].slice(0,900);
         base.performance.format=parsed.performance.format==="video"?"video":"audio";
@@ -71,6 +78,7 @@
     return base;
   }
   const state=load();
+  window.getStudentAttemptStats=()=>state.attempts.map(({count,history},i)=>({mission:i+1,completed:state.completed[i],count,history:history.map(x=>({...x}))}));
   let activeMission=-1;
   let feedback="";
   let feedbackTone="note";
@@ -89,6 +97,12 @@
   function invalidate(index){if(state.completed[index]){state.completed[index]=false;updateProgress();}save();}
   const counter=()=>state.completed.filter(Boolean).length;
   const totalXP=()=>state.completed.reduce((acc,done,i)=>acc+(done?missions[i].xp:0),0);
+  function recordAttempt(index,score,total,success){
+    const entry=state.attempts[index];if(!entry||entry.count>=100000)return;
+    entry.count++;entry.history.push({number:entry.count,score,total,percent:Math.round(score/total*100),success,at:new Date().toISOString()});
+    if(entry.history.length>30)entry.history.splice(0,entry.history.length-30);
+    save();window.dispatchEvent(new Event("hikayat:attempt"));
+  }
 
   const hud=document.createElement("section");
   hud.className="student-quest-hud";
@@ -277,6 +291,9 @@
   }
   function open(index){
     if(index<0||index>3)return;
+    if(index===0&&typeof window.openMissionOneAdventure==="function"){
+      window.openMissionOneAdventure();return;
+    }
     activeMission=index;feedback="";
     renderDialog();
     if(!dialog.open)dialog.showModal();
@@ -298,6 +315,25 @@
     status(message+(saved?" Kemajuan latihan disimpan pada peranti ini.":" Storan tidak tersedia; kemajuan hanya sementara."),"success");
     renderDialog();
   }
+  // Misi 1: satu semakan komprehensif untuk 5 urutan + 3 soalan.
+  // Validasi ini terpakai dalam mod demo peranti murid sahaja.
+  window.submitMissionOneAdventure=(payload)=>{
+    const found=payload?.found,pages=payload?.pages,sequence=payload?.sequence,answers=payload?.answers;
+    if(!Array.isArray(found)||found.length!==5||!found.every(v=>v===true)
+      ||!Array.isArray(pages)||pages.length!==5||!pages.every(v=>v===true)
+      ||!Array.isArray(sequence)||sequence.length!==5||[...sequence].sort().join()!=="0,1,2,3,4"
+      ||!Array.isArray(answers)||answers.length!==3
+      ||answers.some(v=>!["0","1","2"].includes(String(v))))
+      return {ok:false,message:"Selesaikan lima naskhah, semua halaman dan setiap soalan dahulu."};
+    const positions=sequence.reduce((count,v,i)=>count+Number(v===i),0);
+    const comprehensionScore=answers.reduce((count,v,i)=>count+Number(String(v)===String(comprehension[i].correct)),0);
+    const score=positions+comprehensionScore,success=score===8;
+    state.sequence=[...sequence];state.readingAnswers=answers.map(String);
+    recordAttempt(0,score,8,success);
+    if(success){state.completed[0]=true;save();updateProgress();}
+    else save();
+    return {ok:true,success,positions,comprehensionScore,score,total:8};
+  };
   function checkReading(){
     const correctSequence=state.sequence.every((value,i)=>value===i);
     const score=state.readingAnswers.reduce((acc,a,i)=>acc+(a===String(comprehension[i].correct)?1:0),0);
@@ -421,6 +457,7 @@
     if(!window.confirm("Padam semua jawapan, draf dan kemajuan latihan yang disimpan pada peranti ini?"))return;
     Object.assign(state,empty());
     save();feedback="";updateProgress();helper.hidden=true;
+    window.dispatchEvent(new Event("hikayat:reset"));
   });
   helper.querySelector("#quest-helper-close")?.addEventListener("click",()=>helper.hidden=true);
   updateProgress();
