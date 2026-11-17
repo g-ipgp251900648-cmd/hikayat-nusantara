@@ -155,7 +155,7 @@
       <button type="button" id="quest-continue">▶ Mula Misi 1</button>
       <button type="button" id="quest-reset">↺ Tetapkan semula latihan</button>
     </div>
-    <p class="quest-privacy">Latihan ini hanya disimpan pada pelayar/peranti yang digunakan (jika storan tersedia). Tiada jawapan dihantar kepada guru. Jangan tulis maklumat peribadi.</p>`;
+    <p class="quest-privacy">Rekod percubaan kuiz dan graf disimpan pada pelayar ini sahaja. Rancangan Misi 4 hanya dihantar jika anda memilih untuk menghantar kepada guru. Jangan tulis maklumat peribadi.</p>`;
   const map=document.getElementById("desa-hikayat-map");
   if(map)map.before(hud);
 
