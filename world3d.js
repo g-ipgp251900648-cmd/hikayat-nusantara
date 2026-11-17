@@ -63,7 +63,7 @@ if (hero) {
       renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.65));
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 1.7;
+      renderer.toneMappingExposure = 1.26;
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
       renderer.domElement.className = "world-canvas";
@@ -96,7 +96,7 @@ if (hero) {
       const cube = (parent, w,h,d, material,x,y,z) => object(parent,new THREE.BoxGeometry(w,h,d),material,x,y,z);
       const ball = (parent, radius,material,x,y,z,detail=0) => object(parent,new THREE.IcosahedronGeometry(radius,detail),material,x,y,z);
       const cylinder = (parent, rt,rb,h, material,x,y,z,sides=7) => object(parent,new THREE.CylinderGeometry(rt,rb,h,sides),material,x,y,z);
-      const sun = new THREE.DirectionalLight(0xffe1a4,3.2);
+      const sun = new THREE.DirectionalLight(0xffcf81,2.5);
       sun.position.set(-5,13,9);
       sun.castShadow = true;
       sun.shadow.mapSize.set(1024,1024);
@@ -104,8 +104,8 @@ if (hero) {
       sun.shadow.camera.top=12; sun.shadow.camera.bottom=-12;
       sun.shadow.normalBias=.045;
       scene.add(sun);
-      scene.add(new THREE.HemisphereLight(0xe3f8e8,0x5e513b,2.1));
-      scene.add(new THREE.AmbientLight(0xffffff,.65));
+      scene.add(new THREE.HemisphereLight(0xffe0ae,0x416945,1.65));
+      scene.add(new THREE.AmbientLight(0xffffff,.44));
       scene.fog = new THREE.FogExp2(0xe9dcaf,.009);
 
       // Landskap panorama menggantikan model pulau terapung: bumi menuju ufuk.
