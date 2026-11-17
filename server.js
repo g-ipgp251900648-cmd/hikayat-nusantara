@@ -15,6 +15,7 @@ const PUBLIC_FILES = new Map([
   ["/student-map3d.js", ["student-map3d.js", "text/javascript; charset=utf-8"]],
   ["/student-activities.js", ["student-activities.js", "text/javascript; charset=utf-8"]],
   ["/mission-one-ai-bridge.js", ["mission-one-ai-bridge.js", "text/javascript; charset=utf-8"]],
+  ["/student-learning-center.js", ["student-learning-center.js", "text/javascript; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
 const PORT = Number(process.env.PORT || 10000);
