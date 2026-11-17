@@ -349,6 +349,32 @@
     status(message+(saved?" Kemajuan latihan disimpan pada peranti ini.":" Storan tidak tersedia; kemajuan hanya sementara."),"success");
     renderDialog();
   }
+  // Jambatan rasmi bagi prototaip Misi 1 baharu. Jangan benarkan UI
+  // memberikan XP atau rekod percubaan tanpa semakan 8 item yang lengkap.
+  window.submitMissionOneAdventure=(payload)=>{
+    const found=payload?.found;
+    const pages=payload?.pages;
+    const sequence=payload?.sequence;
+    const answers=payload?.answers;
+    if(!Array.isArray(found)||found.length!==5||!found.every(x=>x===true)
+       ||!Array.isArray(pages)||pages.length!==5||!pages.every(x=>x===true)
+       ||!Array.isArray(sequence)||sequence.length!==5
+       ||[...sequence].sort().join()!=="0,1,2,3,4"
+       ||!Array.isArray(answers)||answers.length!==3
+       ||answers.some(answer=>!["0","1","2"].includes(String(answer))))
+      return {ok:false,message:"Selesaikan pencarian, bacaan dan semua soalan sebelum semakan."};
+    const positions=sequence.reduce((n,v,i)=>n+Number(i===v),0);
+    const comprehensionScore=answers.reduce((n,v,i)=>n+Number(String(v)===String(comprehension[i].correct)),0);
+    const success=positions===5&&comprehensionScore===3;
+    state.sequence=[...sequence];
+    state.readingAnswers=answers.map(String);
+    recordAttempt(0,positions+comprehensionScore,8,success);
+    if(success){
+      state.completed[0]=true;
+      save();updateProgress();
+    }else save();
+    return {ok:true,success,positions,comprehensionScore,score:positions+comprehensionScore,total:8};
+  };
   function checkReading(){
     if(state.readingAnswers.some(answer=>answer==="")){
       status("Jawab ketiga-tiga soalan pemahaman sebelum menekan Semak. Percubaan hanya dikira setelah semua dijawab.","try");
@@ -496,6 +522,7 @@
     if(!window.confirm("Padam semua jawapan, draf dan kemajuan latihan yang disimpan pada peranti ini?"))return;
     Object.assign(state,empty());
     save();feedback="";updateProgress();helper.hidden=true;
+    window.dispatchEvent(new Event("hikayat:reset"));
   });
   helper.querySelector("#quest-helper-close")?.addEventListener("click",()=>helper.hidden=true);
   updateProgress();
