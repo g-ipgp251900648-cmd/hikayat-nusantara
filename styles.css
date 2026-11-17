@@ -133,3 +133,11 @@
 .motion-paused .word-dance,.motion-paused .hero-copy>p,.motion-paused .hero .eyebrow,.motion-paused .hero-meta span,.motion-paused .home-nav .wordmark,.motion-paused .hero-buttons .btn,.motion-paused .section-heading h2,.motion-paused .portal-bottom h3,.motion-paused .portal-bottom .card-kicker,.motion-paused .about-strip h2,.motion-paused .dash-heading h1{animation-play-state:paused!important}
 @media(max-width:530px){.hero h1{letter-spacing:-.055em;font-size:clamp(31px,8.7vw,45px)}.word-dance{animation-duration:5.5s}.world-label{font-size:10px}}
 @media(prefers-reduced-motion:reduce){.word-dance,.hero-copy>p,.hero .eyebrow,.hero-meta span,.home-nav .wordmark,.hero-buttons .btn,.section-heading h2,.portal-bottom h3,.portal-bottom .card-kicker,.about-strip h2,.dash-heading h1{animation:none!important}.portal-card:hover .portal-bottom p,.mission-card:hover h3{transform:none}}
+
+
+/* Landskap panorama warisan: pemandangan penuh hingga ufuk, bukannya pulau terapung. */
+.hero-art.is-3d{background:radial-gradient(circle at 31% 17%,#ffe2a0 0%,#f5d9a7 25%,transparent 55%),linear-gradient(155deg,#e7d69b 0%,#a8c398 55%,#588a76 100%);border-color:#eecb82;box-shadow:0 36px 80px #0d231d55,0 0 0 2px #cfa96e,inset 0 0 0 1px #fff4c5}
+.hero-art.is-3d:after{box-shadow:inset 0 0 50px #3c4a251c,inset 0 0 3px 2px #e9c07888}
+.world-label{background:linear-gradient(128deg,rgba(16,62,46,.95),rgba(25,87,54,.91));border-color:#e9bd63;box-shadow:0 10px 25px #0d281b40}
+.world-control{border-color:#e7c27d;background:rgba(26,77,57,.92);color:#ffe5a5;box-shadow:0 4px 12px #173c2c42}
+.world-hint{background:rgba(255,242,201,.95);color:#365c47;box-shadow:0 5px 20px #6b6d3b40}
