@@ -89,3 +89,27 @@ Kemas kini ini mengubah **visual sahaja**. Semua struktur misi, dashboard, nama 
 5. Uji skrin telefon. Jika prestasi terhad, gunakan mod 2D atau hentikan animasi.
 
 **Nota:** Ini masih prototaip. Jangan masukkan maklumat murid sebenar atau menganggap peranan dashboard sebagai pengesahan login.
+
+
+## Fasa 1D — Kampung 3D lebih terperinci & teks bergerak
+
+Kemas kini pada branch `upgrade-kampung-3d-detail`:
+
+- Rumah Melayu: bingkai tingkap, trim ukiran, serambi, tangga, bumbung bergaris, hiasan pagar.
+- Flora: pokok kelapa tambahan, bunga dan dedaun beranimasi.
+- Sungai: riak cahaya tambahan dan perahu kedua berayun.
+- Langit: awan tambahan yang beralih pada kelajuan sedikit berbeza.
+- Tipografi: font Fraunces untuk tajuk dan animasi perkataan berombak.
+- Teks tambahan dan kad menerima gerakan ringan dan kesan hover.
+- Kekalkan kawalan **Lihat 2D / Lihat 3D** serta **Henti animasi**.
+- Mod `prefers-reduced-motion` mematikan animasi teks dan gerakan 3D secara lalai.
+
+**Belum ada pengumpulan data sebenar**: dashboard masih mod demo. Semua kerja ini untuk bahagian visual sahaja.
+
+### Selepas merge
+Render → `hikayat-nusantara-portal` → tunggu auto-deploy atau pilih **Manual Deploy → Deploy latest commit**. Kemudian muat semula website secara paksa (Ctrl+Shift+R) untuk mendapatkan CSS/JavaScript terkini.
+
+### Jika ada masalah
+- Kanvas hitam: semak sambungan Three.js dan sokongan WebGL. Tukar ke paparan 2D.
+- Lag pada telefon: tekan **Henti animasi** atau gunakan **Lihat 2D**.
+- Tulisan terlalu aktif: butang henti animasi juga menghentikan gerakan CSS.

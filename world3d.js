@@ -241,6 +241,144 @@ if (hero) {
       cloud(-3.9,4.35,-4,1.0);
       cloud(2.5,4.83,-4.9,.82);
       cloud(4.8,3.6,-3.7,.63);
+      cloud(-.6,5.4,-6,.53);
+      cloud(5.7,4.6,-5.9,.51);
+
+
+      // FASA PERINCIAN: seni bina kampung tradisional yang lebih jelas.
+      // Segala hiasan dibuat menggunakan geometri ringan dan bahan sedia ada.
+      const carvings=mat(0xdab275,{roughness:.7});
+      const stepsMat=mat(0x8d6241),leafVein=mat(0x39734d);
+      function detailHouse(h){
+        const pairs=[[-.72,1.57],[.72,1.57]];
+        pairs.forEach(([x,y])=>{
+          // Bingkai dan silang kayu pada tingkap.
+          cube(h,.51,.055,.09,materials.woodDark,x,y+.29,.956);
+          cube(h,.51,.055,.09,materials.woodDark,x,y-.25,.956);
+          cube(h,.045,.56,.09,materials.woodDark,x-.26,y,.955);
+          cube(h,.045,.56,.09,materials.woodDark,x+.26,y,.955);
+          cube(h,.038,.48,.11,materials.woodDark,x,y,.959);
+          cube(h,.49,.03,.12,carvings,x,y,.967);
+        });
+        // Rasuk kayu melintang, serambi dan ukiran hiasan.
+        cube(h,2.54,.14,.18,materials.woodDark,0,2.10,.96);
+        cube(h,2.64,.12,.22,carvings,0,2.02,.99);
+        for(let i=0;i<8;i++){
+          const px=-.98+i*.28;
+          const detail=ball(h,.085,carvings,px,1.99,1.07,1);
+          detail.scale.set(1.0,.42,.4);
+        }
+        for(let i=0;i<9;i++){
+          const px=-1.05+i*.26;
+          cube(h,.05,.22,.07,materials.woodDark,px,.86,1.07);
+        }
+        for(let i=0;i<4;i++){
+          cube(h,.94,.065,.39,stepsMat,0,.53-i*.14,1.20+i*.28);
+        }
+        // Garis bumbung seperti genting klasik.
+        for(let i=0;i<7;i++){
+          for(let side of [-1,1]){
+            const beam=cube(h,.035,.035,2.24,materials.woodDark,side*(.22+i*.20),2.70-i*.12,0);
+            beam.rotation.z=side===-1?.58:-.58;
+          }
+        }
+      }
+      [mainHouse,secondHouse].forEach(detailHouse);
+
+      // Pokok kelapa dengan batang melengkung dan daun berjari.
+      const palms=[];
+      function coconutPalm(x,z,scale=1){
+        const palm=new THREE.Group();
+        palm.position.set(x,0,z);palm.scale.setScalar(scale);world.add(palm);
+        const trunk=mat(0x8b6546);
+        for(let i=0;i<6;i++){
+          const part=cylinder(palm,.105-i*.011,.13-i*.009,.51,trunk,i*.057,.26+i*.45,0,9);
+          part.rotation.z=-.14;
+          if(i%2===0)cylinder(palm,.135,.135,.045,materials.woodDark,i*.057,.35+i*.45,0,9);
+        }
+        const crown=new THREE.Group();
+        crown.position.set(.33,2.92,0);palm.add(crown);
+        for(let i=0;i<9;i++){
+          const angle=(i/9)*Math.PI*2;
+          const blade=object(crown,new THREE.ConeGeometry(.22,2.3,4),i%2?materials.leaf:materials.leafLight,Math.cos(angle)*.95,-.22,Math.sin(angle)*.95);
+          blade.rotation.z=Math.cos(angle)*1.16-Math.PI/2;
+          blade.rotation.x=Math.sin(angle)*1.13;
+          for(let j=0;j<2;j++){
+            const tip=ball(crown,.19,leafVein,Math.cos(angle)*(1.2+j*.2),-.35-j*.13,Math.sin(angle)*(1.2+j*.2),0);
+            tip.scale.set(.48,.33,1.3);
+            tip.rotation.y=angle;
+          }
+        }
+        for(let i=0;i<3;i++)ball(crown,.17,materials.woodDark,Math.sin(i*2.1)*.22,-.22,Math.cos(i*2.1)*.20,1);
+        palms.push({group:palm,crown,phase:x+z});
+      }
+      coconutPalm(-5.35,1.0,.90);
+      coconutPalm(4.45,-3.25,.76);
+      coconutPalm(-1.8,4.2,.76);
+
+      // Semak dan bunga di tepi rumah dan laluan kampung.
+      const flowerCenters=[[-3.3,-.2],[-2.7,2.7],[-.8,-2.9],[3.3,-3.1],[4.7,2.3]];
+      flowerCenters.forEach(([x,z],i)=>{
+        for(let n=0;n<5;n++){
+          const dx=Math.cos(n*2.4)*.29,dz=Math.sin(n*2.4)*.29;
+          const stem=cylinder(world,.025,.035,.35,materials.leaf,x+dx,.30,z+dz,5);
+          stem.castShadow=false;
+          ball(world,.08,i%2===0?petal:carvings,x+dx,.51,z+dz,1);
+        }
+      });
+      // Pagar kecil bercorak kayu di halaman.
+      for(let row of [-3.7,3.2]){
+        for(let i=0;i<9;i++){
+          const x=-4.05+i*.44;
+          cube(world,.07,.48,.08,materials.woodDark,x,.36,row);
+        }
+        cube(world,3.6,.045,.09,stepsMat,-2.29,.37,row);
+        cube(world,3.6,.045,.09,stepsMat,-2.29,.55,row);
+      }
+
+      // Perahu kedua di sisi jeti; papan sisi, rusuk perahu dan pendayung.
+      const mooredBoat=new THREE.Group();
+      mooredBoat.position.set(3.9,.19,1.78);
+      mooredBoat.rotation.y=-.31;
+      world.add(mooredBoat);
+      const boatHull=object(mooredBoat,new THREE.SphereGeometry(.85,14,9),materials.woodDark,0,0,0);
+      boatHull.scale.set(1.13,.29,.43);
+      const boatRim=object(mooredBoat,new THREE.TorusGeometry(.73,.045,5,28),carvings,0,.14,0);
+      boatRim.scale.set(1,.43,.46);
+      boatRim.rotation.x=Math.PI/2;
+      for(let i=-2;i<=2;i++){
+        cube(mooredBoat,.08,.20,.70,materials.wood,i*.23,.08,0);
+      }
+      const paddle=cylinder(mooredBoat,.025,.025,1.58,stepsMat,.23,.34,.25,7);
+      paddle.rotation.z=.58;
+      const paddleBlade=cube(mooredBoat,.18,.08,.33,materials.wood,.72,.67,.26);
+      paddleBlade.rotation.z=.58;
+      const rope=object(world,new THREE.CylinderGeometry(.015,.015,1.7,6),carvings,3.15,.36,1.96);
+      rope.rotation.z=1.1;
+
+      // Sungai: pusaran cahaya dan riak berlapis yang turut bergerak.
+      const riverSheens=[];
+      const sheenMat=mat(0xd4e9cf,{transparent:true,opacity:.65,emissive:0x60b2b6,emissiveIntensity:.25,side:THREE.DoubleSide});
+      for(let i=0;i<16;i++){
+        const x=-5.2+i*.65;
+        const u=(x+6.5)/13;
+        const z=1+Math.sin(u*Math.PI*1.7)*.57;
+        const ripple=object(world,new THREE.TorusGeometry(.13+(i%3)*.05,.015,4,18),sheenMat,x,.10,z+(i%2===0?.26:-.27));
+        ripple.rotation.x=-Math.PI/2;
+        ripple.scale.set(1.6,.62,1);
+        ripple.castShadow=false;
+        riverSheens.push({mesh:ripple,phase:i*.55});
+      }
+
+      // Pelita gantung kecil di hadapan rumah.
+      const villageLights=[];
+      for(let [x,z] of [[-3.7,-.35],[-.85,-.42],[2.15,-.65]]){
+        cylinder(world,.028,.035,.9,materials.woodDark,x,.57,z,6);
+        const small=ball(world,.115,glowMat,x,1.02,z,1);
+        const glow=new THREE.PointLight(0xffbd6e,1.0,2.3);
+        glow.position.set(x,1.02,z);world.add(glow);
+        villageLights.push({small,glow});
+      }
 
       // Kelip-kelip bermaya pada waktu senja.
       const glitters=[];
@@ -342,6 +480,14 @@ if (hero) {
           sampan.position.set(-.5+Math.sin(t*.32)*1.15,.17,1.5+Math.sin(t*.8)*.07);
           sampan.rotation.y=Math.sin(t*.6)*.14;
           trees.forEach((g,i)=>g.rotation.z=Math.sin(t*.7+i)*.018);
+          palms.forEach(({crown,phase})=>crown.rotation.z=Math.sin(t*.65+phase)*.045);
+          mooredBoat.position.y=.19+Math.sin(t*1.15+1)*.06;
+          mooredBoat.rotation.z=Math.sin(t*.85+1)*.055;
+          riverSheens.forEach(({mesh,phase})=>{
+            const scale=.75+.2*Math.sin(t*1.5+phase);
+            mesh.scale.set(scale*1.6,scale*.72,scale);
+          });
+          villageLights.forEach(({glow},i)=>glow.intensity=.8+Math.sin(t*3+i)*.22);
           glitters.forEach(({mesh,base,phase})=>{
             mesh.position.y=base+Math.sin(t*1.4+phase)*.2;
             mesh.scale.setScalar(.6+.45*(1+Math.sin(t*2+phase)));
@@ -353,8 +499,8 @@ if (hero) {
       }
       function cloudForTime(t){
         clouds.forEach((c,i)=>{
-          c.position.x=[-3.9,2.5,4.8][i]+Math.sin(t*.15+i*1.3)*.65;
-          c.position.y=[4.35,4.83,3.6][i]+Math.sin(t*.4+i)*.08;
+          c.position.x=[-3.9,2.5,4.8,-.6,5.7][i]+Math.sin(t*(.12+i*.02)+i*1.3)*.65;
+          c.position.y=[4.35,4.83,3.6,5.4,4.6][i]+Math.sin(t*.4+i)*.08;
         });
       }
       requestAnimationFrame(render);
