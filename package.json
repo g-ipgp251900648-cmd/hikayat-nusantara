@@ -1,11 +1,15 @@
 {
   "name": "hikayat-nusantara",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "node build.mjs",
-    "check": "node --check app.js && node --check build.mjs"
+    "start": "node server.js",
+    "check": "node --check app.js && node --check build.mjs && node --check server.js"
   },
-  "description": "Hikayat Nusantara Fasa 1: homepage dan tiga dashboard demo"
+  "description": "Hikayat Nusantara Fasa 1: Node.js Web Service dengan homepage dan tiga dashboard demo"
 }
