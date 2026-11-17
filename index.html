@@ -92,8 +92,8 @@
       <a class="sidebar-brand" href="#home">✺ <span>HIKAYAT<small>NUSANTARA</small></span></a>
       <div class="side-role">✦ RUANG MURID</div>
       <p class="side-label">PENGEMBARAAN</p>
-      <button class="side-link active" data-target="murid-ringkasan"><span>⌂</span> Ringkasan</button>
-      <button class="side-link" data-target="murid-misi"><span>🗺</span> Peta & misi</button>
+      <button class="side-link active" data-target="murid-misi"><span>🗺</span> Desa Hikayat 3D</button>
+      <button class="side-link" data-target="murid-ringkasan"><span>⌂</span> Ringkasan</button>
       <button class="side-link" data-target="murid-portfolio"><span>✒</span> Portfolio karya</button>
       <button class="side-link" data-target="murid-ganjaran"><span>✧</span> Ganjaran saya</button>
       <div class="side-spacer"></div><div class="side-note"><strong>Pelita Warisan</strong><p>Teruskan pengembaraan sehingga ke Pentas Hikayat.</p></div><a class="side-exit" href="#home">← Kembali ke portal utama</a>
@@ -101,13 +101,17 @@
     <div class="dash-main">
       <header class="dash-top"><button class="menu-button" aria-label="Buka menu" data-sidebar-toggle>☰</button><div class="breadcrumbs">Hikayat Nusantara <span>/</span> Murid <span>/</span> Ringkasan</div><div class="top-right"><span class="demo-chip">MOD DEMO</span><span class="avatar gold">PM</span></div></header>
       <div class="dash-content">
-        <section id="murid-ringkasan"><div class="dash-heading"><div><div class="eyebrow dark"><span class="dot"></span> PENGEMBARAAN ANDA</div><h1>Selamat datang, <em>Pahlawan Muda.</em></h1><p>Sambung perjalanan untuk menghidupkan semula kisah Pelita Warisan.</p></div><span class="heading-ornament">✺</span></div>
-          <div class="student-banner"><div><span class="mini-label">KEMAJUAN PENGEMBARAAN</span><h2>Separuh jalan menuju<br>Pentas Hikayat!</h2><p>2 daripada 4 misi telah diselesaikan dalam paparan contoh ini.</p><div class="progress-track"><span style="width:50%"></span></div><b>50% selesai</b></div><div class="banner-emoji">🏮</div></div>
-          <div class="stats-grid three"><div class="stat"><span>Misi selesai</span><strong>02 <small>/ 04</small></strong><em>Teruskan perjalanan</em></div><div class="stat"><span>XP terkumpul</span><strong>240 <small>XP</small></strong><em>Ganjaran demonstrasi</em></div><div class="stat"><span>Maklum balas</span><strong>02 <small>komen</small></strong><em>Daripada guru</em></div></div>
-        </section>
-        <section id="murid-misi" class="dash-section"><div class="section-line"><div><span class="mini-label">PETA DUNIA</span><h2>Jejak Pengembaraan</h2></div><span class="small-note">4 lokasi · Berdasarkan RPH</span></div>
-          <div class="adventure-map">
-            <svg viewBox="0 0 1000 440" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Peta bergambar dengan sungai, bukit, pepohon dan jalan pengembaraan">
+        <section id="murid-misi" class="dash-section"><div class="section-line"><div><span class="mini-label">DESA HIKAYAT · PENGEMBARAAN TAHUN 5</span><h2>Terokai Kampung Pelita Warisan</h2><p class="student-map-subtitle">Pilih satu daripada empat lokasi untuk meneroka misi Bahasa Melayu dan menghidupkan semula cahaya warisan.</p></div><span class="small-note">4 lokasi interaktif · Berdasarkan RPH</span></div>
+          <div class="adventure-map" id="desa-hikayat-map" aria-label="Peta pengembaraan Desa Hikayat">
+            <div class="desa-map-toolbar">
+              <span class="desa-map-kicker">✺ DESA HIKAYAT</span>
+              <div class="desa-map-actions">
+                <button type="button" class="desa-map-action" id="desa-toggle-2d" hidden>◈ Lihat 2D</button>
+                <button type="button" class="desa-map-action" id="desa-toggle-motion" hidden>Ⅱ Henti gerakan</button>
+              </div>
+            </div>
+            <div id="desa-map-stage" class="desa-map-stage" role="img" aria-label="Dunia kampung 3D: rumah naskhah, balai olah, taman bahasa dan pentas warisan dihubungkan sungai serta jambatan."></div>
+            <svg class="desa-map-fallback" viewBox="0 0 1000 440" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Peta bergambar dengan sungai, bukit, pepohon dan jalan pengembaraan">
               <defs><linearGradient id="land" x2="0" y2="1"><stop stop-color="#b8cc9e"/><stop offset="1" stop-color="#7caa83"/></linearGradient></defs>
               <rect width="1000" height="440" fill="url(#land)"/>
               <path d="M0 70Q135 10 250 80T500 55T760 80T1000 38V0H0Z" fill="#dae4bf"/>
@@ -119,21 +123,35 @@
               <g fill="#f0d8a7" stroke="#69523a" stroke-width="5"><path d="M120 295v-63h91v63Z"/><path d="M109 234l58-48 57 48Z" fill="#76513e"/><path d="M770 291v-62h95v62Z"/><path d="M754 232l64-49 64 49Z" fill="#76513e"/><path d="M350 250v-67h96v67Z"/><path d="M334 184l64-49 62 49Z" fill="#76513e"/></g>
               <g fill="#e8ca91"><circle cx="495" cy="298" r="12"/><circle cx="525" cy="325" r="7"/><circle cx="140" cy="120" r="10"/></g>
             </svg>
-            <button class="map-pin pin-one" data-mission="0"><span>✓</span><b>Jejak Naskhah</b></button>
-            <button class="map-pin pin-two" data-mission="1"><span>✓</span><b>Balai Olah</b></button>
-            <button class="map-pin pin-three" data-mission="2"><span>3</span><b>Warisan Bahasa</b></button>
-            <button class="map-pin pin-four" data-mission="3"><span>4</span><b>Pentas Hikayat</b></button>
-            <span class="map-caption">✦ PETA PELITA WARISAN</span>
+            <button type="button" class="map-pin pin-one" data-location="0" aria-label="Pilih lokasi Rumah Naskhah Pusaka"><span>1</span><b>Rumah Naskhah</b></button>
+            <button type="button" class="map-pin pin-two" data-location="1" aria-label="Pilih lokasi Balai Olah Hikayat"><span>2</span><b>Balai Hikayat</b></button>
+            <button type="button" class="map-pin pin-three" data-location="2" aria-label="Pilih lokasi Taman Bahasa"><span>3</span><b>Taman Bahasa</b></button>
+            <button type="button" class="map-pin pin-four" data-location="3" aria-label="Pilih lokasi Pentas Warisan"><span>4</span><b>Pentas Warisan</b></button>
+            <div class="desa-location-panel" id="desa-location-panel" hidden aria-live="polite">
+              <span id="desa-location-kicker">LOKASI 01</span>
+              <h3 id="desa-location-title">Rumah Naskhah</h3>
+              <p id="desa-location-desc">Temui petunjuk pertama.</p>
+              <div class="desa-location-actions">
+                <button type="button" id="desa-open-mission" class="desa-start-button">Lihat misi (demo) ↗</button>
+                <button type="button" id="desa-close-panel" class="desa-close-panel" aria-label="Tutup maklumat lokasi">✕</button>
+              </div>
+            </div>
+            <span class="map-caption">✦ 4 LOKASI · KLIK BANGUNAN ATAU LABEL</span>
           </div>
           <div class="mission-grid">
-            <button class="mission-card" data-mission="0"><span class="mission-number">01</span><div class="mission-emoji">📜</div><span class="mission-status done">✓ Selesai (demo)</span><h3>Jejak Naskhah Pusaka</h3><p>Susun lima peristiwa dan jawab tiga soalan pemahaman.</p><span class="mission-time">◷ 10 minit</span></button>
-            <button class="mission-card" data-mission="1"><span class="mission-number">02</span><div class="mission-emoji">🪶</div><span class="mission-status done">✓ Selesai (demo)</span><h3>Balai Olah Hikayat</h3><p>Pilih watak, latar, peristiwa dan ubah suai cerita.</p><span class="mission-time">◷ 15 minit</span></button>
-            <button class="mission-card" data-mission="2"><span class="mission-number">03</span><div class="mission-emoji">✒️</div><span class="mission-status next">Seterusnya</span><h3>Warisan Bahasa</h3><p>Empat cabaran ungkapan indah dan bahasa santun.</p><span class="mission-time">◷ 10 minit</span></button>
-            <button class="mission-card" data-mission="3"><span class="mission-number">04</span><div class="mission-emoji">🎭</div><span class="mission-status locked">Belum bermula</span><h3>Persembahan Hikayat</h3><p>Rancang dan rakam persembahan cerita anda.</p><span class="mission-time">◷ 15 minit</span></button>
+            <button class="mission-card" data-mission="0"><span class="mission-number">01</span><div class="mission-emoji">📜</div><span class="mission-status next">Pratonton (demo)</span><h3>Jejak Naskhah Pusaka</h3><p>Susun lima peristiwa dan jawab tiga soalan pemahaman.</p><span class="mission-time">◷ 10 minit</span></button>
+            <button class="mission-card" data-mission="1"><span class="mission-number">02</span><div class="mission-emoji">🪶</div><span class="mission-status next">Pratonton (demo)</span><h3>Balai Olah Hikayat</h3><p>Pilih watak, latar, peristiwa dan ubah suai cerita.</p><span class="mission-time">◷ 15 minit</span></button>
+            <button class="mission-card" data-mission="2"><span class="mission-number">03</span><div class="mission-emoji">✒️</div><span class="mission-status next">Pratonton (demo)</span><h3>Warisan Bahasa</h3><p>Empat cabaran ungkapan indah dan bahasa santun.</p><span class="mission-time">◷ 10 minit</span></button>
+            <button class="mission-card" data-mission="3"><span class="mission-number">04</span><div class="mission-emoji">🎭</div><span class="mission-status next">Pratonton (demo)</span><h3>Persembahan Hikayat</h3><p>Rancang dan rakam persembahan cerita anda.</p><span class="mission-time">◷ 15 minit</span></button>
           </div>
+          <p class="desa-notice">Prototaip interaktif: lokasi dan penerangan misi boleh diteroka. Jawapan, markah dan kemajuan sebenar belum disimpan.</p>
+        </section>
+        <section id="murid-ringkasan"><div class="dash-heading"><div><div class="eyebrow dark"><span class="dot"></span> PENGEMBARAAN ANDA</div><h1>Selamat datang, <em>Pahlawan Muda.</em></h1><p>Sambung perjalanan untuk menghidupkan semula kisah Pelita Warisan.</p></div><span class="heading-ornament">✺</span></div>
+          <div class="student-banner"><div><span class="mini-label">KEMAJUAN PENGEMBARAAN</span><h2>Empat lokasi menanti<br>pengembaraan anda!</h2><p>Peta dunia telah tersedia. Jelajah misi pertama untuk melihat arahan pembelajaran.</p><div class="progress-track"><span style="width:0%"></span></div><b>0% selesai · pratonton</b></div><div class="banner-emoji">🏮</div></div>
+          <div class="stats-grid three"><div class="stat"><span>Misi selesai</span><strong>00 <small>/ 04</small></strong><em>Teruskan perjalanan</em></div><div class="stat"><span>XP terkumpul</span><strong>00 <small>XP</small></strong><em>Ganjaran demonstrasi</em></div><div class="stat"><span>Maklum balas</span><strong>00 <small>komen</small></strong><em>Daripada guru</em></div></div>
         </section>
         <section id="murid-portfolio" class="dash-section"><div class="section-line"><div><span class="mini-label">KARYA SAYA</span><h2>Portfolio Pengembara</h2></div><span class="small-note">Pratonton contoh</span></div><div class="split-cards"><article class="paper-card"><div class="paper-icon">📖</div><span class="mini-label">DRAF HIKAYAT</span><h3>Rahsia Pelita di Hujung Desa</h3><p>“Di sebuah perkampungan yang damai, cahaya pelita keemasan menerangi malam...”</p><span class="paper-tag">Contoh karya · Belum disambungkan</span></article><article class="feedback-card"><div class="paper-icon">💬</div><span class="mini-label">KOMEN GURU</span><h3>Pesanan Sang Guru</h3><p>“Cuba gunakan ungkapan lebih indah untuk menggambarkan suasana kampung.”</p><span class="paper-tag">Maklum balas demonstrasi</span></article></div></section>
-        <section id="murid-ganjaran" class="dash-section"><div class="section-line"><div><span class="mini-label">LENCANA</span><h2>Khazanah Kejayaan</h2></div></div><div class="reward-row"><div>🏅 <b>Penjejak Pusaka</b><span>Misi 1</span></div><div>🌟 <b>Pengolah Cerita</b><span>Misi 2</span></div><div class="dim">✒️ <b>Penjaga Bahasa</b><span>Misi 3</span></div><div class="dim">🎭 <b>Pencerita Hebat</b><span>Misi 4</span></div></div></section>
+        <section id="murid-ganjaran" class="dash-section"><div class="section-line"><div><span class="mini-label">LENCANA</span><h2>Khazanah Kejayaan</h2></div></div><div class="reward-row"><div class="dim">🏅 <b>Penjejak Pusaka</b><span>Misi 1</span></div><div class="dim">🌟 <b>Pengolah Cerita</b><span>Misi 2</span></div><div class="dim">✒️ <b>Penjaga Bahasa</b><span>Misi 3</span></div><div class="dim">🎭 <b>Pencerita Hebat</b><span>Misi 4</span></div></div></section>
       </div>
     </div>
   </section>
