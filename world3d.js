@@ -222,8 +222,37 @@ if (hero) {
         for(let xx of [-1.16,1.16])cube(g,.09,.82,.09,materials.woodDark,xx,1.09,1.03);
         return g;
       }
+      // Tekstur artistik dijana sendiri dalam pelayar. Bukan gambar rujukan yang disalin.
+      function createGrainTexture(base,grain,kind){
+        const canvas=document.createElement("canvas");
+        canvas.width=256;canvas.height=256;
+        const context=canvas.getContext("2d");
+        if(!context)return null;
+        context.fillStyle=base;context.fillRect(0,0,256,256);
+        let seed=4321;
+        const rnd=()=>{seed=(seed*16807)%2147483647;return seed/2147483647;};
+        for(let i=0;i<(kind==="thatch"?1050:430);i++){
+          const x=rnd()*256,y=rnd()*256,length=(kind==="thatch"?8:14)+rnd()*38;
+          context.strokeStyle=i%4===0?"rgba(255,225,154,.65)":grain;
+          context.globalAlpha=.22+rnd()*.55;
+          context.lineWidth=.45+rnd()*.8;
+          context.beginPath();
+          context.moveTo(x,y);
+          context.lineTo(x+(kind==="thatch"?length*.15:0),y+length);
+          context.stroke();
+        }
+        context.globalAlpha=1;
+        const texture=new THREE.CanvasTexture(canvas);
+        texture.colorSpace=THREE.SRGBColorSpace;
+        texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+        texture.repeat.set(2,2);
+        return texture;
+      }
+      const thatchMap=createGrainTexture("#b98e4e","rgba(84,46,25,.75)","thatch");
+      const woodMap=createGrainTexture("#b37a4f","rgba(70,40,18,.6)","wood");
+      if(woodMap){materials.wood.map=woodMap;materials.wood.needsUpdate=true;}
       // Rumah berpanggung di kanan sungai, menghadap sawah dan jambatan.
-      const thatchRoof=mat(0xc89a51,{roughness:1});
+      const thatchRoof=new THREE.MeshStandardMaterial({color:0xf0d19b,map:thatchMap,roughness:1});
       const mainHouse=house(4.0,-1.2,1.62,thatchRoof);
       const secondHouse=house(7.5,-6.4,.95,mat(0xbb8a4c,{roughness:1}));
       house(7.8,3.4,.73,mat(0xb98a4e,{roughness:1}));
@@ -348,6 +377,31 @@ if (hero) {
         }
       }
       [mainHouse,secondHouse].forEach(detailHouse);
+
+      // Kain songket ringkas pada tingkap dan anjung untuk suasana warisan.
+      const clothColors=[mat(0xb44a34),mat(0x30657d),mat(0xd7a94c)];
+      function heritageTextiles(h){
+        for(let i=0;i<3;i++){
+          const x=-.55+i*.47;
+          cube(h,.34,.44,.045,clothColors[i],x,1.36,1.05);
+          for(let j=0;j<3;j++)
+            cube(h,.26,.016,.048,carvings,x,1.2+j*.11,1.077);
+        }
+      }
+      heritageTextiles(mainHouse);
+      // Tokoh penduduk kampung bersiluet ringkas, bukan imej individu sebenar.
+      const clothes=[mat(0xc44d35),mat(0x487b87),mat(0xd2ab55),mat(0x557b53)];
+      for(let i=0;i<4;i++){
+        const folk=new THREE.Group();
+        folk.position.set(1.4+i*.71,.07,3.65-(i%2)*.56);
+        world.add(folk);
+        cylinder(folk,.18,.21,.59,clothes[i],0,.45,0,7);
+        ball(folk,.15,mat(0xc18d5b),0,.83,0,1);
+        cylinder(folk,.20,.16,.09,materials.woodDark,0,.97,0,8);
+        for(let side of [-1,1]){
+          cylinder(folk,.052,.053,.41,materials.woodDark,side*.08,.09,0,5);
+        }
+      }
 
       // Pokok kelapa dengan batang melengkung dan daun berjari.
       const palms=[];
