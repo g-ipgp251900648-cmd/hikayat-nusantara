@@ -1,6 +1,6 @@
 {
   "name": "hikayat-nusantara",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -9,7 +9,7 @@
   "scripts": {
     "build": "node build.mjs",
     "start": "node server.js",
-    "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check build.mjs && node --check server.js"
+    "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check certificate-ui.js && node --check certificate-api.js && node --check build.mjs && node --check server.js"
   },
-  "description": "Hikayat Nusantara: animated 3D village and four interactive Bahasa Melayu Year 5 learning missions"
+  "description": "Hikayat Nusantara: interactive 3D learning missions and teacher-approved DEMO certificates"
 }
