@@ -9,7 +9,8 @@
   "scripts": {
     "build": "node build.mjs",
     "start": "node server.js",
-    "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check certificate-ui.js && node --check certificate-api.js && node --check build.mjs && node --check server.js"
+    "check": "node --check app.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check certificate-ui.js && node --check certificate-api.js && node --check build.mjs && node --check server.js",
+    "test": "node --test tests/certificate-api.test.mjs"
   },
   "description": "Hikayat Nusantara: interactive 3D learning missions and teacher-approved DEMO certificates"
 }
