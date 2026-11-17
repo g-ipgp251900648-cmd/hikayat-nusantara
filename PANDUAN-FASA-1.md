@@ -162,3 +162,54 @@ Gabungkan PR melalui butang *Merge pull request* di GitHub. Jika Render tidak au
 - Klik semua lokasi, kemudian **Lihat misi (demo)**.
 - Tukar ke 2D dan hentikan animasi.
 - Semak paparan telefon dan fungsi Dashboard Guru/Admin.
+
+
+## Fasa 2B — Fungsi pembelajaran sebenar (latihan demo setempat)
+
+Dashboard Murid kini bukan hanya pratonton. Empat misi boleh dibuka melalui label peta, kad misi, atau butang **Teruskan Misi** pada papan kemajuan.
+
+### Misi 1: Jejak Naskhah Pusaka (10 minit)
+- Cerita pendek asal berjudul *Cahaya di Desa Warisan* (5 perenggan).
+- Butang **Dengar cerita** menggunakan SpeechSynthesis API pada peranti yang menyokong bacaan Bahasa Melayu.
+- Murid menyusun **5 peristiwa** menggunakan butang naik/turun (sesuai juga untuk papan kekunci).
+- Murid menjawab **3 soalan pemahaman objektif**, melihat petunjuk jika salah dan mencuba semula.
+- Latihan misi selesai apabila urutan dan ketiga-tiga jawapan tepat.
+
+### Misi 2: Balai Olah Hikayat (15 minit)
+- Murid memilih **watak, latar dan peristiwa**.
+- **Bank Ungkapan Indah** memasukkan frasa pilihan ke dalam draf.
+- Murid menulis cerita yang diubah suai; semakan automatik asas memerlukan sekurang-kurangnya 70 aksara dan dua ungkapan dipilih yang benar-benar digunakan.
+- Semakan ini **bukan** penilaian mutu bahasa oleh guru, hanya galakan melengkapkan aktiviti.
+
+### Misi 3: Warisan Bahasa (10 minit)
+- **4 cabaran aneka pilihan** tentang ungkapan indah dan kesantunan bahasa.
+- Maklum balas/petunjuk jika jawapan belum tepat. Selesai jika semua betul.
+
+### Misi 4: Persembahan Hikayat (15 minit)
+- Ruang **permulaan, perkembangan, pengakhiran**.
+- Pilihan rancangan rakaman **suara** atau **video**.
+- Senarai semak latihan sebutan/nada.
+- Selesai dalam mod demonstrasi apabila tiga bahagian rancangan diisi dan latihan ditandakan.
+- **Tiada rakaman, kamera, mikrofon atau muat naik yang diaktifkan** dalam prototaip; ini bukan pengesahan hasil persembahan sebenar.
+
+### Ciri sistem
+- Pelita Pembimbing: petunjuk berdasarkan misi belum selesai.
+- Ganjaran latihan: XP maksimum 300; lencana misi menyala mengikut kemajuan.
+- Kemajuan, pilihan dan draf **disimpan dalam localStorage pada pelayar/peranti yang sama sahaja** (jika dibenarkan), bukan pada akaun murid atau pelayan.
+- Butang **Tetapkan semula latihan** meminta pengesahan sebelum memadam semua data latihan pada peranti itu.
+- Portfolio mengandungi pratonton draf Misi 2 yang diisi oleh pengguna setempat.
+- Komponen Dashboard Guru dan Admin **tidak disentuh**, dan masih data demonstrasi.
+
+### Amaran privasi dan pelaksanaan
+**Jangan gunakan nama penuh, maklumat peribadi, rakaman sebenar atau karya sulit murid** dalam prototaip yang belum mempunyai kawalan akaun. localStorage boleh dibaca oleh sesi lain yang menggunakan pelayar/peranti sama. Tiada penyegerakan merentas peranti, penyerahan guru atau pemarkahan guru sebenar.
+
+### Ujian selepas deploy Render
+1. Buka Dashboard Murid, tekan **Teruskan Misi 1** dan susun 5 peristiwa menggunakan anak panah.
+2. Jawab 3 soalan dan tekan **Semak**; pastikan petunjuk muncul jika salah.
+3. Buka Misi 2, pilih watak/latar/peristiwa, tambah dua ungkapan, tulis draf dan simpan.
+4. Jawab empat cabaran Misi 3; rancang 3 bahagian persembahan Misi 4.
+5. Semak lencana, XP, status 4/4 dan portfolio. Segarkan halaman: latihan di pelayar sama sepatutnya kekal.
+6. Uji butang **Tetapkan semula latihan**.
+7. Pastikan menu Guru dan Admin, peta 3D, Lihat 2D/3D dan mod henti gerakan berfungsi.
+
+Build: `npm run build`, Start: `npm start`. Semakan sintaks: `npm run check`.
