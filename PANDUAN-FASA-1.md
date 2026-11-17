@@ -213,3 +213,114 @@ Dashboard Murid kini bukan hanya pratonton. Empat misi boleh dibuka melalui labe
 7. Pastikan menu Guru dan Admin, peta 3D, Lihat 2D/3D dan mod henti gerakan berfungsi.
 
 Build: `npm run build`, Start: `npm start`. Semakan sintaks: `npm run check`.
+
+
+## Fasa 2C — Sijil Pengembara Warisan dengan kelulusan guru (DEMO)
+
+### Aliran sebenar untuk menguji prototaip
+1. Murid melengkapkan **semua empat latihan** dalam Dashboard Murid, termasuk rancangan **permulaan / perkembangan / pengakhiran** Misi 4 serta tanda telah berlatih.
+2. Di bahagian **Khazanah Kejayaan → Sijil Pengembara Warisan**, sijil berubah daripada *Dikunci* kepada *Sedia Dihantar*.
+3. Murid memasukkan **nama samaran DEMO** (contoh `Pengembara Melur`) sekali dan menekan **Hantar Misi 4 untuk Semakan Guru**.
+4. Rekod dihantar melalui API ke **memori server Node.js** sebagai *pending*. Sijil masih terkunci.
+5. Guru membuka **Dashboard Guru → Semakan Sijil**, menaip nama penyemak demo dan kunci guru dalam Render, kemudian membuka senarai penghantaran.
+6. Guru membaca rancangan tiga babak Misi 4, mengisi **respons bertulis**, dan memilih sama ada **Minta Pembetulan** atau **Luluskan Sijil DEMO**.
+7. Selepas guru meluluskan pada server, murid menekan **Semak Kelulusan**. Sijil demo muncul dengan **nama samaran automatik**, nama penyemak, tarikh, dan nombor rujukan sementara; murid boleh **Cetak / Simpan PDF** menggunakan dialog cetak pelayar.
+
+### Tetapan wajib pada Render (jangan simpan rahsia di GitHub!)
+- Buka Render → Web Service `hikayat-nusantara-portal` → **Environment**.
+- Tambah environment variable **`CERTIFICATE_TEACHER_KEY`** dengan nilai rahsia rawak sekurang-kurangnya **16 aksara**. Jangan tulis nilai tersebut di dalam kod, issue, screenshot, atau mesej awam.
+- Klik simpan dan deploy semula jika Render meminta.
+- Guru hanya memasukkan kunci ini dalam Dashboard Guru pada halaman yang menggunakan HTTPS.
+- Jika key tidak dikonfigurasikan, UI memaparkan status tidak tersedia dan **sijil tidak boleh diluluskan**. Ini sengaja dilakukan untuk menghalang kelulusan palsu.
+
+### Fail baharu
+- `certificate-api.js`: API demo terhad pada server untuk penghantaran, semakan guru, respons, kelulusan dan status sijil.
+- `certificate-ui.js`: paparan Dashboard Murid dan Guru, status sijil, nama automatik, sijil hiasan songket dan mod cetak A4 landscape.
+- `student-activities.js`: getter kemajuan empat misi sahaja; **bukan** keputusan kelulusan guru.
+- `server.js` membolehkan API di atas dan memaparkan `certificate-ui.js`; `build.mjs` menyalin modul UI untuk Render.
+
+### Penjelasan kritikal
+- Ini **bukan sistem sijil rasmi**. Pada sijil tertera `SIJIL DEMONSTRASI · BUKAN SIJIL RASMI SEKOLAH`.
+- Semua rekod sijil dalam server hanyalah **RAM yang sementara**; Render restart, redeploy atau proses tamat akan memadam rekod. Ini belum integrasi Neon/PostgreSQL.
+- Status siap misi ialah laporan **daripada pelayar**, belum disahkan oleh akaun murid. Oleh itu, guru mesti menyemak hasil Misi 4 secara manusiawi sebelum kelulusan.
+- Nama dalam sijil diperoleh daripada **nama contoh yang ditaip murid sekali**. Pengisian automatik daripada profil sebenar hanya boleh dilakukan selepas sistem log masuk sah siap.
+- Jangan gunakan nama penuh atau data sebenar kanak-kanak, atau rakaman, dalam prototaip terbuka ini. Tiada pengesahan pengguna murid, perlindungan rekod berterusan atau pengurusan peranan menyeluruh.
+- URL status memerlukan ID dan token rawak pemilik penghantaran; kunci guru hanya disimpan sementara di memori halaman dan tidak disimpan dalam localStorage.
+- Sistem sebenar memerlukan login guru/murid, kebenaran data, pangkalan data Neon, ID sijil berterusan, audit keputusan dan kawalan capaian.
+
+### Semak selepas deploy
+- Status sijil dikunci pada kemajuan kurang 4/4.
+- Setelah 4/4, hantar Misi 4 dengan nama contoh; sijil masih tidak boleh dicetak.
+- Tanpa kunci guru: permintaan semakan guru ditolak.
+- Dengan kunci guru salah: permintaan semakan ditolak.
+- Dengan kunci guru benar: komen guru dan kelulusan tersedia.
+- Minta Pembetulan: murid nampak maklum balas dan boleh baiki/hantar semula.
+- Lulus: murid memuat semula status, nama muncul automatik, dan cetak menyokong format landskap.
+- Restart Render: rekod demo hilang sebagaimana yang dinyatakan.
+
+
+## Fasa 2D — Graf Perkembangan Misi dan Bilangan Percubaan
+
+Dashboard Murid kini mempunyai menu **📈 Graf Percubaan** dan seksyen **Graf Perkembangan Misi** selepas Ringkasan.
+
+### Cara graf dijana secara automatik
+
+1. Murid membuka misi melalui peta, kad misi atau butang **Teruskan Misi**.
+2. **Misi 1:** murid menyusun lima peristiwa dan mesti menjawab ketiga-tiga soalan pemahaman sebelum menekan **Semak**. Setiap semakan lengkap dikira **satu percubaan**. Skor graf daripada **8 item**: 5 kedudukan peristiwa tepat + 3 jawapan objektif tepat.
+3. **Misi 2:** apabila draf tidak kosong dan butang **Semak Draf** ditekan, satu percubaan direkodkan. Graf peratus menunjukkan **2 kriteria asas**: sekurang-kurangnya 70 aksara dan sekurang-kurangnya 2 ungkapan pilihan digunakan. *Bukan* markah guru.
+4. **Misi 3:** keempat-empat soalan mesti dijawab sebelum **Semak**. Setiap semakan lengkap dikira satu percubaan; peratus berdasarkan **4 jawapan tepat**.
+5. **Misi 4:** semakan pelan yang mempunyai sekurang-kurangnya satu babak diisi akan direkodkan. Graf menunjukkan **4 kriteria asas**: tiga babak sekurang-kurangnya 20 aksara dan tanda sudah berlatih. *Bukan* penilaian persembahan guru.
+6. Perubahan prestasi direkodkan setiap kali disemak, sama ada belum lulus atau sudah lengkap; cubaan yang belum menjawab semua soalan kuiz **tidak dikira**.
+
+### Paparan Dashboard Murid
+- **Graf palang**: jumlah percubaan untuk Misi 1–4.
+- **Graf garis**: perkembangan peratusan mengikut nombor percubaan yang boleh dipilih untuk setiap misi.
+- **Ringkasan**: jumlah keseluruhan percubaan, bilangan misi disiapkan dan misi yang paling kerap dicuba.
+- **Jadual rekod**: sehingga 8 percubaan terkini dalam misi dipilih, lengkap dengan nombor cubaan, hasil semakan dan tarikh/jam.
+- **Tetingkap graf garis**: sehingga 12 percubaan terkini; storan menyimpan sehingga **30 rekod terbaharu per misi**, bersama jumlah keseluruhan yang terus meningkat.
+- **Tetapkan semula latihan** memadam jawapan, kemajuan serta sejarah percubaan dalam pelayar ini setelah pengesahan pengguna.
+
+### Privasi, skop dan had
+- Data disimpan pada `localStorage` dalam **pelayar/peranti murid** yang sama. Tiada akaun sebenar, storan awan atau perbandingan merentas murid.
+- Dashboard Guru **tidak secara automatik menerima graf percubaan individu**. Ciri itu memerlukan login dan pangkalan data Neon/PostgreSQL yang sebenar. Jangan menggambarkan graf demo sebagai rekod rasmi guru.
+- Graf hanya menunjukkan **kemajuan latihan setempat**, bukan pemarkahan akademik berpiawai. Kuiz 1/3 menunjukkan ketepatan; Misi 2/4 menunjukkan pemenuhan kriteria asas.
+- Gunakan hanya data latihan demonstrasi, bukan maklumat peribadi murid sebenar.
+
+### Semakan selepas deploy
+1. Buka Dashboard Murid → **Graf Percubaan**. Sebelum menjawab, semua percubaan mesti 0.
+2. Buka Misi 1 → cuba **Semak** sebelum menjawab ketiga-tiga soalan; jumlah tidak berubah.
+3. Jawab semua soalan dan tekan Semak, kemudian semak semula dengan jawapan berubah; graf palang Misi 1 bertambah menjadi 2, dan dua titik muncul dalam graf garis.
+4. Buka Misi 3; lengkapkan kuiz dan tekan Semak beberapa kali untuk melihat perubahan peratus yang jelas.
+5. Uji Misi 2/4: setiap semakan bermakna direkodkan sebagai percubaan, tetapi peratus hanya mewakili syarat asas tugasan.
+6. Segarkan halaman dan semak sejarah percubaan masih ada. Klik Tetapkan Semula Latihan dan pastikan rekod kembali 0.
+7. Semak paparan telefon, peta 3D dan aliran sijil guru masih berfungsi.
+
+**Status PR:** Cabang graf dibina di atas `feature/murid-aktiviti-interaktif-fasa2b` yang juga mengandungi kerja sijil PR #8. Pull Request baharu ke `main` akan memasukkan **kedua-dua** sistem sijil yang belum berada dalam `main` dan graf percubaan.
+
+
+## Fasa 2E — Aktiviti 1: Misteri Lima Helaian Naskhah (3D)
+
+Butang **Misi 1 — Jejak Naskhah Pusaka** dalam dashboard murid dan peta 3D kini memanggil `mission-one-3d.js`. Misi 2 hingga 4 menggunakan aktiviti interaktif asal tanpa perubahan.
+
+### Apa yang boleh dicuba
+- Peta dalaman Rumah Naskhah Pusaka menggunakan Three.js dengan lantai dan tiang kayu, rak kitab, peti pusaka, tingkap, meja, pelita, pokok tropika dan karakter **Hang Tuah 3D bergaya geometri asli** (tidak memerlukan model GLB berlesen).
+- Hang Tuah boleh bergerak menggunakan **WASD / arrow keys** serta butang anak panah skrin. Klik lokasi atau helaian untuk menuju objek dan mengutipnya. Tekan **E** untuk memeriksa helaian yang berada berdekatan.
+- Selepas **5/5 helaian** ditemui, murid membaca lima halaman cerita **Cahaya Pelita di Desa Warisan**, menyusun lima peristiwa, kemudian menjawab tiga soalan pemahaman.
+- Pemasa panduan 10 minit boleh dijeda, ditambah tiga minit atau dimatikan. Masa tamat tidak memadam jawapan.
+- Butang **♫ Main Muzik** memainkan **melodi instrumental asli sintesis Web Audio**, bukan rakaman seruling/gambus sebenar dan bukan muzik komersial.
+- Jawapan akhir dihantar ke jambatan skor `window.submitMissionOneAdventure` dalam `student-activities.js`. Modul itu mengesahkan lima helaian, lima halaman, urutan peristiwa dan tiga jawapan, kemudian merekodkan **satu percubaan** berskor **0–8**, serta memberikan status siap **60 XP** hanya selepas semua syarat benar. Graf Misi 1 dikemas kini melalui peristiwa `hikayat:attempt`.
+- Kemajuan permainan demo disimpan dalam `localStorage` bernama `hikayat-nusantara-misi1-world-v1`. Set semula latihan dalam dashboard turut menetapkan semula permainan demo.
+- Jika Three.js/WebGL gagal, murid masih boleh memilih lima lokasi melalui butang yang tersedia, meneruskan bacaan, menyusun peristiwa dan menjawab kuiz.
+
+### Cara uji selepas Pull Request digabungkan dan deployment selesai
+1. Masuk **Dashboard Murid → Misi 1** (atau pilih rumah pertama dalam peta Desa Hikayat 3D).
+2. Klik **Mulakan Pengembaraan**. Rumah 3D dan Hang Tuah dipaparkan; cuba butang muzik dan kawalan pergerakan.
+3. Kumpulkan lima helaian melalui papan kekunci, klik helaian atau butang lokasi. Semak setiap objek hanya boleh diambil sekali.
+4. Buka buku, baca semua lima halaman, atur lima peristiwa dan jawab tiga soalan.
+5. Cuba jawapan salah dahulu; pastikan percubaan meningkat pada **Graf Percubaan** dan mendapat petunjuk.
+6. Betulkan jawapan sehingga **8/8**; pastikan status Misi 1 selesai dan XP bertambah 60 sahaja.
+7. Segarkan laman; pastikan rekod disimpan. Uji paparan telefon, pemasa dan mod fallback jika WebGL dinyahaktifkan.
+8. Pastikan **Misi 2, 3, 4 dan status sijil** masih boleh digunakan seperti biasa.
+
+### Had dan kejujuran pelaksanaan
+Kod projek yang dibina dalam **Google AI Studio belum dieksport atau diberikan** kepada GitHub. Oleh itu, modul ini ialah **pelaksanaan baharu berdasarkan spesifikasi yang dibincangkan**, **bukan salinan tepat aset 3D, muzik dan kod prototaip Google AI Studio**. Sekiranya visual atau animasi yang sama sepenuhnya diperlukan, eksport sumber prototaip AI Studio dan semak aset/lesen sebelum penggantian. Graf dan kemajuan demo masih peranti setempat, bukan rekod murid rasmi. Sistem sijil kekal memerlukan kelulusan guru dan `CERTIFICATE_TEACHER_KEY` server.

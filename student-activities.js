@@ -45,7 +45,8 @@
     chosenPhrases:[],
     writtenStory:"",
     languageAnswers:["","","",""],
-    performance:{opening:"",middle:"",ending:"",format:"audio",practised:false}
+    performance:{opening:"",middle:"",ending:"",format:"audio",practised:false},
+    attempts:Array.from({length:4},()=>({count:0,history:[]}))
   });
   function load(){
     const base=empty();
@@ -67,10 +68,42 @@
         base.performance.format=parsed.performance.format==="video"?"video":"audio";
         base.performance.practised=parsed.performance.practised===true;
       }
+      // Migrate old localStorage safely: old sessions simply have 0 attempts.
+      if(Array.isArray(parsed.attempts)){
+        base.attempts=base.attempts.map((item,i)=>{
+          const saved=parsed.attempts[i];
+          if(!saved||typeof saved!=="object")return item;
+          const count=Math.min(100000,Math.max(0,Math.trunc(Number(saved.count)||0)));
+          const history=Array.isArray(saved.history)?saved.history.slice(-30).filter(entry=>
+            entry&&typeof entry==="object"&&Number.isFinite(entry.score)&&Number.isFinite(entry.total)
+            &&entry.total>0&&typeof entry.at==="string"
+          ).map(entry=>({
+            number:Math.min(100000,Math.max(1,Math.trunc(Number(entry.number)||1))),
+            score:Math.max(0,Math.min(entry.total,Math.trunc(entry.score))),
+            total:Math.max(1,Math.trunc(entry.total)),
+            percent:Math.max(0,Math.min(100,Math.round(100*entry.score/entry.total))),
+            success:entry.success===true,
+            at:entry.at.slice(0,35)
+          })):[];
+          return {count:Math.max(count,history.at(-1)?.number||0),history};
+        });
+      }
     }catch(e){console.warn("Data demo belum dapat dibaca.",e);}
     return base;
   }
   const state=load();
+  // Hanya baca kemajuan demo daripada modul misi, bukan bukti kelulusan guru.
+  window.getStudentCertificateProgress=()=>({
+    completed:[...state.completed],
+    performance:{...state.performance}
+  });
+  // Baca sahaja: graf dibina daripada percubaan dalam localStorage pelayar ini.
+  window.getStudentAttemptStats=()=>state.attempts.map(({count,history},i)=>({
+    mission:i+1,
+    completed:state.completed[i],
+    count,
+    history:history.map(entry=>({...entry}))
+  }));
   let activeMission=-1;
   let feedback="";
   let feedbackTone="note";
@@ -89,6 +122,23 @@
   function invalidate(index){if(state.completed[index]){state.completed[index]=false;updateProgress();}save();}
   const counter=()=>state.completed.filter(Boolean).length;
   const totalXP=()=>state.completed.reduce((acc,done,i)=>acc+(done?missions[i].xp:0),0);
+  function recordAttempt(index,score,total,success){
+    const entry=state.attempts[index];
+    if(!entry||entry.count>=100000)return;
+    entry.count++;
+    entry.history.push({
+      number:entry.count,
+      score,
+      total,
+      percent:Math.round(score*100/total),
+      success,
+      at:new Date().toISOString()
+    });
+    // Batasan storan: simpan hanya 30 semakan paling baharu bagi setiap misi.
+    if(entry.history.length>30)entry.history.splice(0,entry.history.length-30);
+    save();
+    window.dispatchEvent(new Event("hikayat:attempt"));
+  }
 
   const hud=document.createElement("section");
   hud.className="student-quest-hud";
@@ -105,7 +155,7 @@
       <button type="button" id="quest-continue">▶ Mula Misi 1</button>
       <button type="button" id="quest-reset">↺ Tetapkan semula latihan</button>
     </div>
-    <p class="quest-privacy">Latihan ini hanya disimpan pada pelayar/peranti yang digunakan (jika storan tersedia). Tiada jawapan dihantar kepada guru. Jangan tulis maklumat peribadi.</p>`;
+    <p class="quest-privacy">Rekod percubaan kuiz dan graf disimpan pada pelayar ini sahaja. Rancangan Misi 4 hanya dihantar jika anda memilih untuk menghantar kepada guru. Jangan tulis maklumat peribadi.</p>`;
   const map=document.getElementById("desa-hikayat-map");
   if(map)map.before(hud);
 
@@ -178,6 +228,7 @@
       if(p)p.textContent=state.writtenStory.trim()?state.writtenStory.slice(0,170)+(state.writtenStory.length>170?"…":""):"Draf cerita yang ditulis dalam Misi 2 akan dipaparkan di sini.";
       if(tag)tag.textContent="Draf latihan setempat · Tidak dihantar kepada guru";
     }
+    window.dispatchEvent(new Event("hikayat:progress"));
   }
 
   function introLayout(title,body){
@@ -298,9 +349,41 @@
     status(message+(saved?" Kemajuan latihan disimpan pada peranti ini.":" Storan tidak tersedia; kemajuan hanya sementara."),"success");
     renderDialog();
   }
+  // Jambatan rasmi bagi prototaip Misi 1 baharu. Jangan benarkan UI
+  // memberikan XP atau rekod percubaan tanpa semakan 8 item yang lengkap.
+  window.submitMissionOneAdventure=(payload)=>{
+    const found=payload?.found;
+    const pages=payload?.pages;
+    const sequence=payload?.sequence;
+    const answers=payload?.answers;
+    if(!Array.isArray(found)||found.length!==5||!found.every(x=>x===true)
+       ||!Array.isArray(pages)||pages.length!==5||!pages.every(x=>x===true)
+       ||!Array.isArray(sequence)||sequence.length!==5
+       ||[...sequence].sort().join()!=="0,1,2,3,4"
+       ||!Array.isArray(answers)||answers.length!==3
+       ||answers.some(answer=>!["0","1","2"].includes(String(answer))))
+      return {ok:false,message:"Selesaikan pencarian, bacaan dan semua soalan sebelum semakan."};
+    const positions=sequence.reduce((n,v,i)=>n+Number(i===v),0);
+    const comprehensionScore=answers.reduce((n,v,i)=>n+Number(String(v)===String(comprehension[i].correct)),0);
+    const success=positions===5&&comprehensionScore===3;
+    state.sequence=[...sequence];
+    state.readingAnswers=answers.map(String);
+    recordAttempt(0,positions+comprehensionScore,8,success);
+    if(success){
+      state.completed[0]=true;
+      save();updateProgress();
+    }else save();
+    return {ok:true,success,positions,comprehensionScore,score:positions+comprehensionScore,total:8};
+  };
   function checkReading(){
-    const correctSequence=state.sequence.every((value,i)=>value===i);
+    if(state.readingAnswers.some(answer=>answer==="")){
+      status("Jawab ketiga-tiga soalan pemahaman sebelum menekan Semak. Percubaan hanya dikira setelah semua dijawab.","try");
+      renderDialog();return;
+    }
+    const correctPositions=state.sequence.reduce((acc,value,i)=>acc+(value===i?1:0),0);
+    const correctSequence=correctPositions===5;
     const score=state.readingAnswers.reduce((acc,a,i)=>acc+(a===String(comprehension[i].correct)?1:0),0);
+    recordAttempt(0,correctPositions+score,8,correctSequence&&score===3);
     if(correctSequence&&score===3){
       complete(0,"Tahniah! Lima peristiwa tersusun dengan tepat dan ketiga-tiga jawapan pemahaman betul.");
     }else{
@@ -316,13 +399,24 @@
   function checkWriting(){
     const text=state.writtenStory.trim().toLocaleLowerCase("ms");
     const used=state.chosenPhrases.filter(p=>text.includes(p.toLocaleLowerCase("ms")));
+    if(!text){
+      status("Tulis dahulu draf cerita sebelum menyemak. Percubaan kosong tidak direkodkan.","try");
+      renderDialog();return;
+    }
+    const meetsLength=text.length>=70,meetsPhrases=used.length>=2;
+    recordAttempt(1,Number(meetsLength)+Number(meetsPhrases),2,meetsLength&&meetsPhrases);
     if(text.length<70)status("Tambah perincian pada draf. Tulis sekurang-kurangnya 70 aksara supaya cerita lebih jelas.","try");
     else if(used.length<2)status("Masukkan sekurang-kurangnya dua ungkapan indah yang dipilih ke dalam cerita.","try");
     else complete(1,"Bagus! Draf mempunyai perincian dan dua ungkapan indah. Semak lagi jalan cerita serta kesantunan bahasanya.");
     if(!state.completed[1])renderDialog();
   }
   function checkLanguage(){
+    if(state.languageAnswers.some(answer=>answer==="")){
+      status("Jawab keempat-empat cabaran bahasa sebelum menekan Semak. Percubaan hanya dikira setelah semua dijawab.","try");
+      renderDialog();return;
+    }
     const score=state.languageAnswers.reduce((acc,a,i)=>acc+(a===String(challenges[i].correct)?1:0),0);
+    recordAttempt(2,score,4,score===4);
     if(score===4)complete(2,"Syabas! Keempat-empat cabaran bahasa dijawab dengan tepat.");
     else{
       const incorrect=challenges.findIndex((q,i)=>state.languageAnswers[i]!==String(q.correct));
@@ -331,7 +425,14 @@
     }
   }
   function checkPerformance(){
-    const tooShort=["opening","middle","ending"].filter(key=>state.performance[key].trim().length<20);
+    const parts=["opening","middle","ending"];
+    if(parts.every(key=>!state.performance[key].trim())){
+      status("Isi dahulu rancangan persembahan. Percubaan kosong tidak dikira.","try");
+      renderDialog();return;
+    }
+    const tooShort=parts.filter(key=>state.performance[key].trim().length<20);
+    const criteria=parts.length-tooShort.length+Number(state.performance.practised);
+    recordAttempt(3,criteria,4,criteria===4);
     if(tooShort.length>0){
       status("Lengkapkan ketiga-tiga babak dengan sekurang-kurangnya 20 aksara setiap satu.","try");
       renderDialog();
@@ -421,6 +522,7 @@
     if(!window.confirm("Padam semua jawapan, draf dan kemajuan latihan yang disimpan pada peranti ini?"))return;
     Object.assign(state,empty());
     save();feedback="";updateProgress();helper.hidden=true;
+    window.dispatchEvent(new Event("hikayat:reset"));
   });
   helper.querySelector("#quest-helper-close")?.addEventListener("click",()=>helper.hidden=true);
   updateProgress();
