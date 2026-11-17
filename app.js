@@ -72,3 +72,29 @@ search.addEventListener("input",()=>{
  const text=search.value.toLocaleLowerCase("ms-MY").trim();
  document.querySelectorAll("#teacher-rows tr").forEach(row=>{row.hidden=!row.textContent.toLocaleLowerCase("ms-MY").includes(text)});
 });
+
+
+/* Pengalaman visual Fasa 1C: dunia 3D dan gerakan kad */
+import("./world3d.js").catch((err)=>console.warn("Pemandangan 3D tidak tersedia; menggunakan ilustrasi asal.",err));
+if (window.matchMedia?.("(hover:hover) and (pointer:fine)")?.matches &&
+    !window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches) {
+  document.querySelectorAll(".portal-card").forEach(card=>{
+    let frame=0, tx=0, ty=0;
+    card.addEventListener("pointermove",event=>{
+      const bounds=card.getBoundingClientRect();
+      tx=((event.clientY-bounds.top)/bounds.height-.5)*-8;
+      ty=((event.clientX-bounds.left)/bounds.width-.5)*9;
+      if(frame)return;
+      frame=requestAnimationFrame(()=>{
+        card.style.setProperty("--tilt-x",tx.toFixed(2)+"deg");
+        card.style.setProperty("--tilt-y",ty.toFixed(2)+"deg");
+        frame=0;
+      });
+    });
+    card.addEventListener("pointerleave",()=>{
+      if(frame){cancelAnimationFrame(frame);frame=0;}
+      card.style.setProperty("--tilt-x","0deg");
+      card.style.setProperty("--tilt-y","0deg");
+    });
+  });
+}
