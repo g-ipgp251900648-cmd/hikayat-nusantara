@@ -1,46 +1,59 @@
-# Hikayat Nusantara — Fasa 1
+# Hikayat Nusantara — Fasa 1 (Web Service)
 
 Prototaip visual **homepage** dan tiga dashboard (**Murid**, **Guru**, **Admin**) berdasarkan RPH *Misteri Pelita Warisan* Bahasa Melayu Tahun 5.
 
-## Apa yang telah berfungsi
+## Apa yang boleh diuji
 
-- Halaman utama dengan navigasi ke tiga dashboard.
-- Dashboard murid: peta ilustrasi, empat misi RPH, kad aktiviti, portfolio contoh dan lencana.
-- Dashboard guru: statistik contoh, carian dalam senarai murid dan pratonton komen.
-- Dashboard admin: statistik contoh, perbandingan kemajuan kelas, pemantauan guru dan senarai integrasi.
-- Paparan responsif untuk komputer dan telefon.
+- Homepage bertema nostalgia Nusantara serta pilihan Murid, Guru dan Admin.
+- Dashboard Murid: peta empat misi RPH, kad aktiviti, portfolio dan ganjaran (semuanya contoh).
+- Dashboard Guru: statistik kelas, graf, carian rekod contoh dan pratonton komen.
+- Dashboard Admin: statistik demo, perbandingan kemajuan kelas dan status cadangan integrasi.
+- Paparan responsif, menu, navigasi serta dialog penerangan misi.
+- Server Node.js menghidangkan UI dan endpoint pemeriksaan kesihatan `/health`.
 
-## Apa yang BELUM berfungsi
+## Batasan dan keselamatan
 
-- Tiada pengesahan identiti atau kebenaran peranan.
-- Tiada pangkalan data, storan media atau penyimpanan komen/markah.
-- Belum mengandungi permainan sebenar, editor cerita atau muat naik video.
-- Semua nama murid, markah, carta dan status ialah **data demonstrasi rekaan**, bukan rekod sebenar.
-- Jangan masukkan maklumat sebenar murid sehingga backend, pengesahan, perlindungan data dan kebenaran sekolah siap.
+- **Belum ada pengesahan pengguna atau kawalan peranan.** Setiap dashboard adalah pratonton yang boleh dibuka oleh sesiapa sahaja.
+- **Jangan masukkan data sebenar murid, guru atau sekolah**. Semua rekod, maklum balas dan skor adalah data rekaan.
+- **Belum ada penyimpanan data atau muat naik fail**. Ruang komen hanya boleh dipratonton, bukan disimpan.
+- Pangkalan data Neon, storan media, pengesahan akaun, jejak audit dan penyimpanan draf akan dibina pada fasa berikutnya.
 
-## Cara uji pada komputer
+## Cara uji di komputer
 
-Buka `index.html` dalam pelayar atau jalankan pelayan statik tempatan. Semua halaman dipaparkan daripada fail yang sama.
+1. Pasang Node.js versi 20 atau lebih baharu.
+2. Jalankan `npm run check`.
+3. Jalankan `npm run build`.
+4. Jalankan `npm start`.
+5. Buka `http://localhost:10000/`, lalu cuba pilihan Murid, Guru dan Admin.
+6. Semak `http://localhost:10000/health` — mesti memberi respons JSON `status: ok`.
 
-## Deploy ke Render (Static Site)
+## Deploy ke Render sebagai Web Service baharu
 
-1. Semak Pull Request `feature/homepage-tiga-dashboard`.
-2. Klik **Merge pull request** hanya apabila berpuas hati.
-3. Pada Render, cipta **Static Site** yang menggunakan repositori dan branch `main`, jika tiada site statik sedia ada.
-4. Tetapkan **Build Command**: `npm run build`.
-5. Tetapkan **Publish Directory**: `dist`.
-6. Pilih **Deploy** dan buka alamat `onrender.com` yang Render berikan.
+**Jangan ubah servis lama** `hikayat-nusantara-3d-preview`, kerana servis tersebut menjalankan Python dan menggunakan repository berlainan.
 
-Jika projek Render sedia ada ialah **Web Service**, jangan tukar tetapan secara terburu-buru. Nilai jenis service dahulu agar deployment lama tidak terjejas.
+1. Semak Pull Request `feature/render-node-web-service` dan gabungkan ke branch `main` selepas bersetuju.
+2. Pada Render Dashboard pilih **New → Web Service**.
+3. Sambungkan repository GitHub: `g-ipgp251900648-cmd/hikayat-nusantara` (tanda sempang).
+4. Pilih branch `main`, runtime `Node`, dan nama `hikayat-nusantara-portal` (jika masih tersedia).
+5. Root Directory: biarkan kosong.
+6. Build Command: `npm run build`.
+7. Start Command: `npm start`.
+8. Health Check Path: `/health` (jika pilihan ini tersedia).
+9. Pilih pelan sesuai; `Free` jika ditawarkan dan mencukupi.
+10. Cipta Web Service dan semak status deployment. Render memberikan URL sebenar selepas berjaya.
 
-## Struktur fail
+Fail `render.yaml` juga menyediakan konfigurasi sama sekiranya anda memilih kaedah Render Blueprint.
 
-- `index.html` — susun atur semua halaman
-- `styles.css` — visual nostalgia premium dan responsif
-- `app.js` — navigasi, dialog misi, carian dan pratonton komen
-- `build.mjs` — hasilkan folder `dist` tanpa dependency
-- `render.yaml` — konfigurasi pilihan untuk Render Blueprint
+## Fail penting
 
-## Fasa 2 seterusnya
+- `index.html` — homepage + ketiga-tiga dashboard.
+- `styles.css` — reka bentuk responsif.
+- `app.js` — navigasi, dialog misi, carian dan pratonton komen.
+- `build.mjs` — salin fail UI ke folder `dist`.
+- `server.js` — server Node.js, laluan UI dan `/health`.
+- `package.json` — arahan build, start dan check.
+- `render.yaml` — pilihan Blueprint Web Service.
 
-Bina pengesahan identiti pengguna, akses berasaskan peranan, Neon PostgreSQL, penyimpanan versi draf, jejak audit dan kawalan keselamatan. Hanya selepas itu, aktfikan penghantaran karya dan komen sebenar.
+## Fasa berikutnya
+
+Bina sistem log masuk dan kebenaran berasaskan peranan dahulu, kemudian hubungkan Neon PostgreSQL, storan fail, penghantaran karya, komen guru, pengumpulan markah dan statistik admin.
