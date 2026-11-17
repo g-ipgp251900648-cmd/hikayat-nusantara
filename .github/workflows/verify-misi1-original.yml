@@ -12,14 +12,18 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install dependencies including production build tools
-        run: npm install
+      - name: Install exactly as Render production
+        run: npm install --omit=dev
+        env:
+          NODE_ENV: production
       - name: Verify JavaScript syntax
         run: npm run check
       - name: Check Misi 1 original game integration
         run: npm test
-      - name: Build main site and original React 3D Misi 1
+      - name: Build main site and original React 3D Misi 1 under production settings
         run: npm run build
+        env:
+          NODE_ENV: production
       - name: Verify produced Vite assets
         run: |
           test -f dist/misi1/index.html
