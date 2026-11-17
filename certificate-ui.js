@@ -29,6 +29,20 @@
   const mount=document.createElement("section");
   mount.className="cert-status-widget";mount.id="murid-sijil";
   student.querySelector("#murid-ganjaran")?.append(mount);
+  const rewardNav=student.querySelector(".sidebar .side-link[data-target='murid-ganjaran']");
+  if(rewardNav){
+    const certNav=document.createElement("button");
+    certNav.type="button";certNav.className="side-link";
+    certNav.innerHTML="<span>🎓</span> Sijil Saya";
+    rewardNav.after(certNav);
+    certNav.addEventListener("click",()=>{
+      student.querySelectorAll(".side-link").forEach(x=>x.classList.toggle("active",x===certNav));
+      document.getElementById("murid-sijil")?.scrollIntoView({behavior:"smooth",block:"start"});
+      student.classList.remove("menu-open");
+      const shade=document.getElementById("sidebar-shade");
+      if(shade)shade.hidden=true;
+    });
+  }
   const nav=teacher.querySelector(".sidebar .side-link[data-target='guru-tugasan']");
   if(nav){
     const button=document.createElement("button");
@@ -38,6 +52,9 @@
     button.addEventListener("click",()=>{
       teacher.querySelectorAll(".side-link").forEach(x=>x.classList.toggle("active",x===button));
       document.getElementById("guru-sijil")?.scrollIntoView({behavior:"smooth",block:"start"});
+      teacher.classList.remove("menu-open");
+      const shade=document.getElementById("sidebar-shade");
+      if(shade)shade.hidden=true;
     });
   }
   const review=document.createElement("section");review.id="guru-sijil";review.className="dash-section cert-teacher-section";
