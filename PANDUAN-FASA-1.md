@@ -257,3 +257,42 @@ Build: `npm run build`, Start: `npm start`. Semakan sintaks: `npm run check`.
 - Minta Pembetulan: murid nampak maklum balas dan boleh baiki/hantar semula.
 - Lulus: murid memuat semula status, nama muncul automatik, dan cetak menyokong format landskap.
 - Restart Render: rekod demo hilang sebagaimana yang dinyatakan.
+
+
+## Fasa 2D — Graf Perkembangan Misi dan Bilangan Percubaan
+
+Dashboard Murid kini mempunyai menu **📈 Graf Percubaan** dan seksyen **Graf Perkembangan Misi** selepas Ringkasan.
+
+### Cara graf dijana secara automatik
+
+1. Murid membuka misi melalui peta, kad misi atau butang **Teruskan Misi**.
+2. **Misi 1:** murid menyusun lima peristiwa dan mesti menjawab ketiga-tiga soalan pemahaman sebelum menekan **Semak**. Setiap semakan lengkap dikira **satu percubaan**. Skor graf daripada **8 item**: 5 kedudukan peristiwa tepat + 3 jawapan objektif tepat.
+3. **Misi 2:** apabila draf tidak kosong dan butang **Semak Draf** ditekan, satu percubaan direkodkan. Graf peratus menunjukkan **2 kriteria asas**: sekurang-kurangnya 70 aksara dan sekurang-kurangnya 2 ungkapan pilihan digunakan. *Bukan* markah guru.
+4. **Misi 3:** keempat-empat soalan mesti dijawab sebelum **Semak**. Setiap semakan lengkap dikira satu percubaan; peratus berdasarkan **4 jawapan tepat**.
+5. **Misi 4:** semakan pelan yang mempunyai sekurang-kurangnya satu babak diisi akan direkodkan. Graf menunjukkan **4 kriteria asas**: tiga babak sekurang-kurangnya 20 aksara dan tanda sudah berlatih. *Bukan* penilaian persembahan guru.
+6. Perubahan prestasi direkodkan setiap kali disemak, sama ada belum lulus atau sudah lengkap; cubaan yang belum menjawab semua soalan kuiz **tidak dikira**.
+
+### Paparan Dashboard Murid
+- **Graf palang**: jumlah percubaan untuk Misi 1–4.
+- **Graf garis**: perkembangan peratusan mengikut nombor percubaan yang boleh dipilih untuk setiap misi.
+- **Ringkasan**: jumlah keseluruhan percubaan, bilangan misi disiapkan dan misi yang paling kerap dicuba.
+- **Jadual rekod**: sehingga 8 percubaan terkini dalam misi dipilih, lengkap dengan nombor cubaan, hasil semakan dan tarikh/jam.
+- **Tetingkap graf garis**: sehingga 12 percubaan terkini; storan menyimpan sehingga **30 rekod terbaharu per misi**, bersama jumlah keseluruhan yang terus meningkat.
+- **Tetapkan semula latihan** memadam jawapan, kemajuan serta sejarah percubaan dalam pelayar ini setelah pengesahan pengguna.
+
+### Privasi, skop dan had
+- Data disimpan pada `localStorage` dalam **pelayar/peranti murid** yang sama. Tiada akaun sebenar, storan awan atau perbandingan merentas murid.
+- Dashboard Guru **tidak secara automatik menerima graf percubaan individu**. Ciri itu memerlukan login dan pangkalan data Neon/PostgreSQL yang sebenar. Jangan menggambarkan graf demo sebagai rekod rasmi guru.
+- Graf hanya menunjukkan **kemajuan latihan setempat**, bukan pemarkahan akademik berpiawai. Kuiz 1/3 menunjukkan ketepatan; Misi 2/4 menunjukkan pemenuhan kriteria asas.
+- Gunakan hanya data latihan demonstrasi, bukan maklumat peribadi murid sebenar.
+
+### Semakan selepas deploy
+1. Buka Dashboard Murid → **Graf Percubaan**. Sebelum menjawab, semua percubaan mesti 0.
+2. Buka Misi 1 → cuba **Semak** sebelum menjawab ketiga-tiga soalan; jumlah tidak berubah.
+3. Jawab semua soalan dan tekan Semak, kemudian semak semula dengan jawapan berubah; graf palang Misi 1 bertambah menjadi 2, dan dua titik muncul dalam graf garis.
+4. Buka Misi 3; lengkapkan kuiz dan tekan Semak beberapa kali untuk melihat perubahan peratus yang jelas.
+5. Uji Misi 2/4: setiap semakan bermakna direkodkan sebagai percubaan, tetapi peratus hanya mewakili syarat asas tugasan.
+6. Segarkan halaman dan semak sejarah percubaan masih ada. Klik Tetapkan Semula Latihan dan pastikan rekod kembali 0.
+7. Semak paparan telefon, peta 3D dan aliran sijil guru masih berfungsi.
+
+**Status PR:** Cabang graf dibina di atas `feature/murid-aktiviti-interaktif-fasa2b` yang juga mengandungi kerja sijil PR #8. Pull Request baharu ke `main` akan memasukkan **kedua-dua** sistem sijil yang belum berada dalam `main` dan graf percubaan.
