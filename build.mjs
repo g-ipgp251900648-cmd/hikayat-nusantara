@@ -11,7 +11,7 @@ console.log('Hikayat Nusantara: binaan statik tersedia dalam dist/');
    Binary illustrations are committed as base64 text so GitHub's content API
    can preserve them; decode images locally before bundling with Vite. */
 import { execFileSync } from 'node:child_process';
-import { readdir,readFile,writeFile,mkdir } from 'node:fs/promises';
+import { readdir,readFile,writeFile } from 'node:fs/promises';
 const imgBase='mission-one-ai/src/assets/images_b64/';
 const imgOut='mission-one-ai/src/assets/images/';
 await mkdir(imgOut,{recursive:true});
