@@ -19,6 +19,8 @@ const PUBLIC_FILES = new Map([
   ["/mission-three-ai-bridge.js", ["mission-three-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/mission-four-ai-bridge.js", ["mission-four-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/student-learning-center.js", ["student-learning-center.js", "text/javascript; charset=utf-8"]],
+  ["/teacher-dashboard.js", ["teacher-dashboard.js", "text/javascript; charset=utf-8"]],
+  ["/teacher-dashboard.css", ["teacher-dashboard.css", "text/css; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
 const PORT = Number(process.env.PORT || 10000);
