@@ -104,7 +104,15 @@ export async function handleApi(request,response,pathname) {
   }
   let db;
   try {db=await database();}
-  catch {reject(response,503,'DATABASE_UNAVAILABLE');return true;}
+  catch(error) {
+    // Log only the standardized category; never print database URLs, passwords
+    // or raw error messages to shared hosting logs.
+    const rawCode = error?.code || error?.name;
+    const safeCode = typeof rawCode==='string' && /^[A-Za-z][A-Za-z0-9_]{1,63}$/.test(rawCode)
+      ? rawCode : 'UNKNOWN';
+    console.error('HN_DB_INITIALIZATION_FAILED:', safeCode);
+    reject(response,503,'DATABASE_UNAVAILABLE');return true;
+  }
   try {
     const method=request.method;
     if(pathname==='/api/auth/status'&&method==='GET') {
