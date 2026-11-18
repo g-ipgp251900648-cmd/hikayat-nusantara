@@ -228,6 +228,13 @@ export async function handleApi(request,response,pathname) {
       const r=await db.query("SELECT (SELECT count(*)::int FROM hn_classes WHERE teacher_id=$1) AS classes,(SELECT count(DISTINCT cm.student_id)::int FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id WHERE c.teacher_id=$1) AS students,(SELECT count(*)::int FROM hn_mission_progress mp JOIN hn_class_members cm ON cm.student_id=mp.student_id JOIN hn_classes c ON c.id=cm.class_id WHERE c.teacher_id=$1) AS recorded_mission_drafts",[user.id]);
       json(response,200,{ok:true,stats:r.rows[0]});return true;
     }
+    if(pathname==='/api/teacher/progress'&&method==='GET'&&user.role==='guru'){
+      const progress=await db.query(
+        "SELECT DISTINCT u.login_id,u.display_name,c.name AS class_name,mp.mission_id,mp.state,mp.updated_at FROM hn_mission_progress mp JOIN hn_class_members cm ON cm.student_id=mp.student_id JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=mp.student_id WHERE c.teacher_id=$1 AND c.organization_id=$2 ORDER BY mp.updated_at DESC LIMIT 200",
+        [user.id,user.organization_id]
+      );
+      json(response,200,{ok:true,progress:progress.rows});return true;
+    }
     if(pathname==='/api/student/progress'&&method==='GET'&&user.role==='murid'){
       const r=await db.query('SELECT mission_id,checkpoint,state,revision,updated_at FROM hn_mission_progress WHERE student_id=$1 ORDER BY mission_id',[user.id]);
       json(response,200,{ok:true,progress:r.rows});return true;
