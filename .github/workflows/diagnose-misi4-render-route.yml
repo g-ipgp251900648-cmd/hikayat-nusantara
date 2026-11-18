@@ -1,0 +1,24 @@
+name: Diagnose Misi 4 live Render route
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  live-route-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Probe public Render endpoints
+        shell: bash
+        run: |
+          set -u
+          BASE="https://hikayat-nusantara-portal.onrender.com"
+          for path in "/health" "/" "/mission-four-ai-bridge.js" "/misi4/" "/misi4/index.html"; do
+            echo "::group::GET $path"
+            curl --location --silent --show-error --max-time 85 --connect-timeout 15 \
+              --output /tmp/misi4-probe-body \
+              --write-out "HTTP=%{http_code} EFFECTIVE=%{url_effective} CONTENT_TYPE=%{content_type} SIZE=%{size_download} TIME=%{time_total}s\n" \
+              "$BASE$path" || echo "Transport error for $path"
+            printf 'Body preview: '; head -c 140 /tmp/misi4-probe-body 2>/dev/null | tr '\\n' ' ' || true
+            echo
+            echo "::endgroup::"
+          done
