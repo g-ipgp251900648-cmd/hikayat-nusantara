@@ -5,6 +5,7 @@
  */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { handleApi } from "./auth/api.js";
 
 const PUBLIC_FILES = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
@@ -24,6 +25,8 @@ const PUBLIC_FILES = new Map([
   ["/admin-dashboard.js", ["admin-dashboard.js", "text/javascript; charset=utf-8"]],
   ["/admin-dashboard.css", ["admin-dashboard.css", "text/css; charset=utf-8"]],
   ["/login-preview.html", ["login-preview.html", "text/html; charset=utf-8"]],
+  ["/login.html", ["login.html", "text/html; charset=utf-8"]],
+  ["/auth-client.js", ["auth-client.js", "text/javascript; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
 const PORT = Number(process.env.PORT || 10000);
@@ -35,7 +38,7 @@ const server = createServer(async (request, response) => {
   response.setHeader("X-Frame-Options", "DENY");
   response.setHeader("Cache-Control", "no-store");
 
-  if (method !== "GET" && method !== "HEAD") {
+  if (method !== "GET" && method !== "HEAD" && !(request.url || "").startsWith("/api/")) {
     response.writeHead(405, {
       "Content-Type": "text/plain; charset=utf-8",
       Allow: "GET, HEAD",
@@ -51,6 +54,11 @@ const server = createServer(async (request, response) => {
     response.writeHead(400, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Bad request");
     return;
+  }
+
+  // Authentication and account APIs are handled before static asset routes.
+  if (pathname.startsWith("/api/") && method !== "HEAD") {
+    if (await handleApi(request, response, pathname)) return;
   }
 
   if (pathname === "/health") {
