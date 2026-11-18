@@ -15,6 +15,7 @@ const PUBLIC_FILES = new Map([
   ["/world3d.js", ["world3d.js", "text/javascript; charset=utf-8"]],
   ["/student-map3d.js", ["student-map3d.js", "text/javascript; charset=utf-8"]],
   ["/student-activities.js", ["student-activities.js", "text/javascript; charset=utf-8"]],
+  ["/student-cloud-sync.js", ["student-cloud-sync.js", "text/javascript; charset=utf-8"]],
   ["/mission-one-ai-bridge.js", ["mission-one-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/mission-two-ai-bridge.js", ["mission-two-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/mission-three-ai-bridge.js", ["mission-three-ai-bridge.js", "text/javascript; charset=utf-8"]],
