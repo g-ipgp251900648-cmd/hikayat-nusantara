@@ -349,7 +349,7 @@
     "hembusan bayu menyapa dedaunan","hati yang tulus","cahaya harapan"
   ];
   function normalizeMisi2Text(value){
-    return typeof value==="string"?value.toLowerCase().replace(/\\s+/g," ").trim():"";
+    return typeof value==="string"?value.toLowerCase().replace(/\s+/g," ").trim():"";
   }
   window.submitMissionTwoFlightAttempt=(raw)=>{
     if(!raw||typeof raw!=="object"||
@@ -386,7 +386,7 @@
     }
     const keys=["watakDanLatar","peristiwaJelas","permulaanLengkap","perkembanganLengkap","pengakhiranLengkap","duaUngkapanIndah","bacaSemulaSantun"];
     if(keys.some(k=>check[k]!==true))return {ok:false};
-    const story=[draft.permulaan,draft.perkembangan,draft.pengakhiran].join("\\n\\n");
+    const story=[draft.permulaan,draft.perkembangan,draft.pengakhiran].join("\n\n");
     const used=misi2Phrases.filter(p=>normalizeMisi2Text(story).includes(normalizeMisi2Text(p)));
     if(used.length<2)return {ok:false};
     state.writtenStory=story.slice(0,6000);
