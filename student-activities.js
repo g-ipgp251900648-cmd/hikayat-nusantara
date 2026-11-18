@@ -1,4 +1,4 @@
-/** Hikayat Nusantara: empat aktiviti interaktif Dashboard Murid (data demonstrasi setempat sahaja). */
+/** Hikayat Nusantara: empat aktiviti interaktif Dashboard Murid (rekod latihan disimpan setempat pada pelayar). */
 (function studentActivities(){
   "use strict";
   const dashboard=document.getElementById("murid-view");
@@ -74,7 +74,7 @@
         base.performance.format=parsed.performance.format==="video"?"video":"audio";
         base.performance.practised=parsed.performance.practised===true;
       }
-    }catch(e){console.warn("Data demo belum dapat dibaca.",e);}
+    }catch(e){console.warn("Rekod latihan belum dapat dibaca.",e);}
     return base;
   }
   const state=load();
@@ -165,7 +165,7 @@
       const track=banner.querySelector(".progress-track span");
       if(h)h.textContent=done===4?"Pelita Warisan bersinar!":"Pengembaraan Desa Hikayat";
       if(p)p.textContent=`${done} daripada 4 latihan misi telah diselesaikan pada peranti ini.`;
-      if(b)b.textContent=`${done*25}% latihan selesai (demo)`;
+      if(b)b.textContent=`${done*25}% latihan selesai pada peranti ini`;
       if(track)track.style.width=`${done*25}%`;
     }
     dashboard.querySelectorAll(".mission-card[data-mission]").forEach(card=>{
@@ -188,7 +188,7 @@
       const h=portfolio.querySelector("h3");
       const p=portfolio.querySelector("p");
       const tag=portfolio.querySelector(".paper-tag");
-      if(h)h.textContent=state.writtenStory.trim()?"Draf Hikayat Saya":"Kitab Pengembara";
+      if(h)h.textContent=state.writtenStory.trim()?"Draf Hikayat Saya":"Belum ada draf cerita";
       if(p)p.textContent=state.writtenStory.trim()?state.writtenStory.slice(0,170)+(state.writtenStory.length>170?"…":""):"Draf cerita yang ditulis dalam Misi 2 akan dipaparkan di sini.";
       if(tag)tag.textContent="Draf latihan setempat · Tidak dihantar kepada guru";
     }
@@ -196,7 +196,7 @@
 
   function introLayout(title,body){
     return `<header class="student-play-top">
-      <div><span class="student-play-eyebrow">DESA HIKAYAT · MOD LATIHAN DEMO · ${missions[activeMission].time}</span>
+      <div><span class="student-play-eyebrow">DESA HIKAYAT · LATIHAN PADA PERANTI · ${missions[activeMission].time}</span>
       <h2>${missions[activeMission].icon} ${escapeHTML(title)}</h2>
       <p>${escapeHTML(body)}</p></div>
       <button type="button" class="student-play-close" data-action="close" aria-label="Tutup aktiviti">✕</button>
@@ -268,7 +268,7 @@
   }
   function renderMission4(){
     const parts=[["opening","Permulaan","Perkenalkan watak dan tempat cerita bermula."],["middle","Perkembangan","Jelaskan cabaran yang dihadapi dan tindakan watak."],["ending","Pengakhiran","Terangkan penyelesaian dan pengajaran cerita."]];
-    return `${introLayout(missions[3].name,"Rancang persembahan kreatif. Rakaman sebenar belum boleh dimuat naik dalam mod demo.")}
+    return `${introLayout(missions[3].name,"Rancang persembahan kreatif. Rakaman boleh disimpan ke peranti; penghantaran terus kepada guru belum tersedia.")}
       <div class="student-play-body">
         <section class="student-activity-section"><h3>🎭 Studio Persembahan Hikayat</h3>
         <div class="student-storyboard">${parts.map(([key,title,placeholder],i)=>`<label><span>Babak ${i+1}: ${title}</span><textarea rows="3" maxlength="900" data-performance="${key}" placeholder="${escapeHTML(placeholder)}">${escapeHTML(state.performance[key])}</textarea></label>`).join("")}</div>
@@ -325,7 +325,7 @@
     renderDialog();
   }
   // Misi 1: satu semakan komprehensif untuk 5 urutan + 3 soalan.
-  // Validasi ini terpakai dalam mod demo peranti murid sahaja.
+  // Validasi ini terpakai dalam latihan setempat pada peranti murid sahaja.
   window.submitMissionOneAdventure=(payload)=>{
     const found=payload?.found,pages=payload?.pages,sequence=payload?.sequence,answers=payload?.answers;
     if(!Array.isArray(found)||found.length!==5||!found.every(v=>v===true)
@@ -372,7 +372,7 @@
     return {ok:true,recorded:true};
   };
   // Five mastered gates + an actual three-part written hikayat + self-review.
-  // Local-demo validation only; does not constitute a teacher's assessment.
+  // Local training validation only; does not constitute a teacher's assessment.
   window.submitMissionTwoAdventure=(raw)=>{
     if(!raw||typeof raw!=="object"||raw.flightCompleted!==true)return {ok:false};
     const list=raw.collectedPhrases,records=raw.checkpointRecords,draft=raw.draft,check=raw.checklist;

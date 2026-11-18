@@ -48,7 +48,7 @@
         'Tulis pengakhiran serta pengajaran cerita.',
         'Pilih format latihan dan tandakan selesai selepas berlatih.'],
       proof:'Pelan tiga babak dan penanda latihan; bukan bukti rakaman sebenar.',
-      pass:'Ketiga-tiga babak dan latihan kendiri lengkap dalam sistem demo.',
+      pass:'Ketiga-tiga babak dan latihan kendiri lengkap pada peranti ini.',
       hint:'Latih suara dan nada mengikut emosi cerita. Rakaman sebenar memerlukan platform sokongan dan semakan guru.'
     }
   ];

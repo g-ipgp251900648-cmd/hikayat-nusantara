@@ -1,5 +1,5 @@
 /** Same-origin original AI Studio Misi 4; media stays inside its iframe.
- * Portal mode does NOT enable public demo accounts or teacher upload.
+ * Portal mode does NOT enable public sample accounts or teacher upload.
  * Only a backend-verified receipt may count toward official completion. */
 (() => {
   'use strict';
