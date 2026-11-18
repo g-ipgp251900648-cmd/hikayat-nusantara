@@ -136,6 +136,50 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+
+  // The existing portal does not authenticate student/teacher accounts yet.
+  // Therefore NEVER enable the ZIP's publicly switchable demo teacher accounts
+  // or accept children's recordings in ephemeral Render storage.
+  if (pathname === '/api/misi4/health') {
+    const body = JSON.stringify({
+      ok:true,service:'hikayat-nusantara-misi4',
+      storage:{configured:false,driver:'object-storage',maxUploadBytes:100*1024*1024,
+        note:'Penghantaran guru belum diaktifkan: autentikasi sebenar dan storan persendirian diperlukan. Rakaman boleh disimpan ke peranti.'}
+    });
+    response.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
+    response.end(method==='HEAD'?undefined:body);
+    return;
+  }
+  if(pathname.startsWith('/api/misi4/')){
+    response.writeHead(503,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
+    response.end(method==='HEAD'?undefined:JSON.stringify({error:'MISI4_BACKEND_NOT_CONFIGURED',
+      message:'Penghantaran rasmi kepada guru belum tersedia. Simpan rakaman ke peranti.'}));
+    return;
+  }
+
+  // Isolated same-origin route for original AI Studio Pentas Warisan game.
+  // Same-origin iframe and explicit Permissions-Policy allow browser permission prompts.
+  if(pathname==='/misi4'||pathname==='/misi4/'||pathname.startsWith('/misi4/')){
+    let rel='index.html';
+    try{if(pathname!=='/misi4'&&pathname!=='/misi4/')rel=decodeURIComponent(pathname.slice('/misi4/'.length));}
+    catch{response.writeHead(400);response.end('Invalid path');return;}
+    if(!rel||!/^[a-zA-Z0-9_./-]+$/.test(rel)||rel.split('/').includes('..')){
+      response.writeHead(400);response.end('Invalid path');return;
+    }
+    const ext=rel.split('.').at(-1).toLowerCase();
+    const mime=({html:'text/html',js:'text/javascript',css:'text/css',png:'image/png',jpg:'image/jpeg',
+      jpeg:'image/jpeg',webp:'image/webp',svg:'image/svg+xml',woff:'font/woff',woff2:'font/woff2',
+      json:'application/json',mp4:'video/mp4',webm:'video/webm'})[ext]||'application/octet-stream';
+    try{
+      const buf=await readFile(new URL('misi4/'+rel,BASE));
+      response.setHeader('X-Frame-Options','SAMEORIGIN');
+      response.setHeader('Permissions-Policy','camera=(self), microphone=(self), fullscreen=(self)');
+      response.writeHead(200,{'Content-Type':mime+(['html','js','css','svg','json'].includes(ext)?'; charset=utf-8':'')});
+      response.end(method==='HEAD'?undefined:buf);
+    }catch{response.writeHead(404);response.end(method==='HEAD'?undefined:'Misi 4 asset not found');}
+    return;
+  }
+
   const requestedFile = PUBLIC_FILES.get(pathname);
   if (!requestedFile) {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
