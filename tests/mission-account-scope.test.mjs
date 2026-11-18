@@ -45,3 +45,16 @@ test('identities are not used as authentication proofs in browser APIs',()=>{
   assert.match(api,/user\.role==='murid'/);
   assert.match(api,/WHERE student_id=\$1/);
 });
+
+
+test('Misi 3 and 4 original archives are scoped after extraction without altering game UI',()=>{
+  const patch=read('scripts/scope-extracted-storage.mjs');
+  const build=read('build.mjs');
+  assert.match(build,/await extractMisiFourSource\(\);\s*await scopeExtractedMissionStorage\(\)/);
+  assert.match(patch,/mission-three-ai\/src\/game\/rules\.ts/);
+  assert.match(patch,/mission-four-ai\/src\/App\.tsx/);
+  assert.match(patch,/window\.localStorage\.getItem\(MISI3_STORAGE_KEY/);
+  assert.match(patch,/localStorage\.getItem\(key\)/);
+  assert.match(patch,/document\.documentElement\.dataset\.hnAccount/);
+  assert.match(patch,/expected one occurrence/);
+});
