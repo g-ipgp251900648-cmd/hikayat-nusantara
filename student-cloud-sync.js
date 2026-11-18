@@ -108,25 +108,32 @@
         const body=await response.json();
         const rows=Array.isArray(body.progress)?body.progress:[];
         const merged=local&&typeof local==='object'?copy(local):{};
-        let restored=false;
+        let restored=false,conflict=false;
         for(const row of rows){
           const id=String(row.mission_id),index=Number(row.mission_id)-1;
           if(!Number.isInteger(index)||index<0||index>3)continue;
           const serverRev=Number(row.revision)||0;
           const oldRev=Number(revisions[id])||0;
-          // Never silently overwrite an untracked or unsent local draft.
-          if(!pending[id] && (!local || (oldRev>0 && serverRev>oldRev))){
+          // A fresh device restores from the cloud. Any local work is preserved until
+          // its matching saved revision has been confirmed, avoiding lost student work.
+          if(!local&&!pending[id]){
             restored=restoreSnapshot(merged,index,row.checkpoint)||restored;
+            revisions[id]=serverRev;
+          } else if(local && serverRev>oldRev){
+            conflict=true;
+            revisions[id]=oldRev;
+          } else if(!pending[id]){
+            revisions[id]=serverRev;
           }
-          revisions[id]=serverRev;
         }
         if(restored)writeJSON(storageKey,merged);
         writeJSON(metaKey,{revisions});
         initialized=true;
-        if(Object.keys(pending).length){status('Menyelaraskan perubahan tertangguh...');schedule();}
-        else if(local&&!Object.keys(meta.revisions||{}).length&&rows.length){
-          status('Draf peranti sedia ada dikekalkan; semak sebelum menyelaraskan.');
-        }else status(rows.length?'Draf terakhir dimuatkan daripada pelayan.':'Belum ada draf pada pelayan; draf peranti dikekalkan.');
+        if(conflict){
+          status('Terdapat draf berlainan pada pelayan. Draf peranti dikekalkan; jangan tindih versi lain.');
+          if(Object.keys(pending).length)schedule();
+        } else if(Object.keys(pending).length){status('Menyelaraskan perubahan tertangguh...');schedule();}
+        else status(rows.length?'Kemajuan pembelajaran tersedia.':'Belum ada draf pada pelayan; draf peranti dikekalkan.');
       }catch{
         initialized=true;
         status('Pelayan belum tersedia. Draf latihan kekal pada peranti ini.');
