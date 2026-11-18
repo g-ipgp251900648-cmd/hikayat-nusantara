@@ -35,7 +35,7 @@
     {name:"Jejak Naskhah Pusaka",icon:"📜",time:"10 minit",guide:"Baca dahulu. Susun peristiwa dari awal hingga akhir. Gunakan petunjuk masa dalam cerita.",xp:60},
     {name:"Balai Olah Hikayat",icon:"🪶",time:"15 minit",guide:"Pilih watak, latar dan peristiwa. Ubah suai cerita dengan sekurang-kurangnya dua ungkapan indah.",xp:90},
     {name:"Warisan Bahasa",icon:"✒️",time:"10 minit",guide:"Perhatikan kesantunan bahasa dan maksud ungkapan sebelum memilih jawapan.",xp:70},
-    {name:"Persembahan Hikayat",icon:"🎭",time:"15 minit",guide:"Susun persembahan kepada permulaan, perkembangan dan pengakhiran. Cuba baca dengan nada yang sesuai.",xp:80}
+    {name:"Persembahan Hikayat",icon:"🎭",time:"15 minit",guide:"Rancang tiga babak, latih sebutan dan rakam video atau suara sebenar. Muat turun hasil; penghantaran kepada guru memerlukan backend selamat.",xp:80}
   ];
   const empty=()=>({
     completed:[false,false,false,false],
@@ -44,6 +44,7 @@
     character:"Melur",setting:"tepi sungai",event:"menemukan pelita lama",
     chosenPhrases:[],
     writtenStory:"",
+    misi3ModifiedStory:"",
     languageAnswers:["","","",""],
     performance:{opening:"",middle:"",ending:"",format:"audio",practised:false},
     attempts:Array.from({length:4},()=>({count:0,history:[]}))
@@ -62,6 +63,7 @@
       for(const k of ["character","setting","event"])if(typeof parsed[k]==="string")base[k]=parsed[k].slice(0,120);
       if(Array.isArray(parsed.chosenPhrases))base.chosenPhrases=parsed.chosenPhrases.filter(x=>phrases.includes(x)).slice(0,5);
       if(typeof parsed.writtenStory==="string")base.writtenStory=parsed.writtenStory.slice(0,2500);
+      if(typeof parsed.misi3ModifiedStory==="string")base.misi3ModifiedStory=parsed.misi3ModifiedStory.slice(0,10000);
       if(Array.isArray(parsed.languageAnswers))base.languageAnswers=base.languageAnswers.map((_,i)=>String(parsed.languageAnswers[i]??"").slice(0,1));
       if(Array.isArray(parsed.attempts))base.attempts=base.attempts.map((entry,i)=>{
         const other=parsed.attempts[i];if(!other||typeof other!=="object")return entry;
@@ -300,6 +302,9 @@
     if(index===2&&typeof window.openMissionThreeAdventure==="function"){
       window.openMissionThreeAdventure();return;
     }
+    if(index===3&&typeof window.openMissionFourAdventure==="function"){
+      window.openMissionFourAdventure();return;
+    }
     activeMission=index;feedback="";
     renderDialog();
     if(!dialog.open)dialog.showModal();
@@ -424,6 +429,7 @@
     if(state.completed[2])return {ok:true,completed:true,alreadyCompleted:true};
     // The original game supplies an actual first-attempt language score out of 12.
     recordAttempt(2,payload.languageScore,12,true);
+    state.misi3ModifiedStory=payload.modifiedStory.slice(0,10000);
     state.completed[2]=true;
     save();updateProgress();
     return {ok:true,completed:true,alreadyCompleted:false};
