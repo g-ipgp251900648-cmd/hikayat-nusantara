@@ -1,8 +1,10 @@
 import { mkdir, copyFile, rm } from 'node:fs/promises';
+import { extractMisiThreeSource } from './scripts/extract-misi3.mjs';
 
+await extractMisiThreeSource();
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
-for (const file of ['index.html', 'styles.css', 'app.js', 'world3d.js', 'student-map3d.js', 'student-activities.js', 'mission-one-ai-bridge.js', 'mission-two-ai-bridge.js', 'student-learning-center.js']) {
+for (const file of ['index.html', 'styles.css', 'app.js', 'world3d.js', 'student-map3d.js', 'student-activities.js', 'mission-one-ai-bridge.js', 'mission-two-ai-bridge.js', 'mission-three-ai-bridge.js', 'student-learning-center.js']) {
   await copyFile(file, 'dist/' + file);
 }
 console.log('Hikayat Nusantara: binaan statik tersedia dalam dist/');
@@ -81,3 +83,19 @@ if(misiTwo.status!==0){
 }
 console.log('[Misi 2] Build completed and dist/misi2 assets are ready.');
 
+
+console.log('[Misi 3] Building ORIGINAL Taman Bahasa React/Three.js game...');
+const misiThree=spawnSync(process.execPath,
+  [viteEntry,'build','--config','mission-three-ai/vite.config.ts'],
+  {cwd:process.cwd(),encoding:'utf8',maxBuffer:20*1024*1024,env:process.env}
+);
+if(misiThree.stdout)process.stdout.write(misiThree.stdout);
+if(misiThree.stderr)process.stderr.write(misiThree.stderr);
+if(misiThree.error)throw misiThree.error;
+if(misiThree.status!==0){
+  const evidence=(misiThree.stderr||misiThree.stdout||'No diagnostics')
+    .split(/\r?\n/).filter(Boolean).slice(-24).join('\n');
+  console.error('[Misi 3] Vite build failed. Recent diagnostic output:\n'+evidence);
+  throw new Error('Original Misi 3 Vite build exited with status '+misiThree.status);
+}
+console.log('[Misi 3] Build completed and dist/misi3 assets are ready.');
