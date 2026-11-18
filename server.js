@@ -27,6 +27,9 @@ const PUBLIC_FILES = new Map([
   ["/login-preview.html", ["login-preview.html", "text/html; charset=utf-8"]],
   ["/login.html", ["login.html", "text/html; charset=utf-8"]],
   ["/auth-client.js", ["auth-client.js", "text/javascript; charset=utf-8"]],
+  ["/account-ui.js", ["account-ui.js", "text/javascript; charset=utf-8"]],
+  ["/login.html", ["login.html", "text/html; charset=utf-8"]],
+  ["/auth-client.js", ["auth-client.js", "text/javascript; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
 const PORT = Number(process.env.PORT || 10000);
