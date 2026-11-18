@@ -11,9 +11,18 @@ const missions=[
  {icon:"✒️",name:"Warisan Bahasa",time:"10 minit",description:"Murid menyelesaikan empat cabaran bahasa untuk memilih ungkapan, memperindah ayat dan menyemak kesantunan bahasa.",outcome:"Jawapan empat cabaran bahasa."},
  {icon:"🎭",name:"Persembahan Hikayat",time:"15 minit",description:"Murid merancang permulaan, perkembangan dan pengakhiran cerita, kemudian mempersembahkan karya menerusi rakaman suara atau video.",outcome:"Rakaman suara atau video persembahan."}
 ];
-function route(){
+let routeRequest=0;
+async function route(){
+ const ticket=++routeRequest;
  const hash=decodeURIComponent(location.hash.slice(1));
  const page=(["murid","guru","admin"].includes(hash)?hash:"home");
+ // Never reveal a role dashboard until the server confirms the authenticated role.
+ if(page!=="home"){
+   Object.entries(views).forEach(([key,el])=>{el.hidden=true;});
+   const allowed=await window.hnAuthorize(page);
+   if(!allowed||ticket!==routeRequest)return;
+ }
+ if(ticket!==routeRequest)return;
  Object.entries(views).forEach(([key,el])=>{el.hidden=key!==page;el.classList.remove("menu-open")});
  shade.hidden=true;
  document.title=(page==="home"?"Hikayat Nusantara — Pelita Warisan":("Dashboard "+page[0].toUpperCase()+page.slice(1)+" — Hikayat Nusantara"));
