@@ -6,7 +6,7 @@ await extractMisiThreeSource();
 await extractMisiFourSource();
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
-for (const file of ['index.html', 'styles.css', 'app.js', 'world3d.js', 'student-map3d.js', 'student-activities.js', 'mission-one-ai-bridge.js', 'mission-two-ai-bridge.js', 'mission-three-ai-bridge.js', 'mission-four-ai-bridge.js', 'student-learning-center.js']) {
+for (const file of ['index.html', 'styles.css', 'app.js', 'world3d.js', 'student-map3d.js', 'student-activities.js', 'mission-one-ai-bridge.js', 'mission-two-ai-bridge.js', 'mission-three-ai-bridge.js', 'mission-four-ai-bridge.js', 'student-learning-center.js', 'teacher-dashboard.js', 'teacher-dashboard.css']) {
   await copyFile(file, 'dist/' + file);
 }
 console.log('Hikayat Nusantara: binaan statik tersedia dalam dist/');
