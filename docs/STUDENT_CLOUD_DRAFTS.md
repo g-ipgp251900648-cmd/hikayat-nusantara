@@ -9,8 +9,8 @@
 - Semakan Guru memaparkan rekod checkpoint **Draf**, bukan markah akhir atau pentaksiran rasmi.
 
 ## Status dan batasan
-- **PR ini belum sesuai untuk data murid sebenar.**
-- Penyelarasan ini meliputi latihan HTML pada Dashboard Murid. Misi asal Google AI Studio dalam iframe menggunakan storan dalaman tersendiri; setiap misi perlu diintegrasikan dengan identiti akaun dan checkpoint sebelum penggunaan pada komputer yang dikongsi.
+- **PR ini belum sesuai untuk data murid sebenar.** Pengasingan kunci localStorage bagi Misi 1–4 mengurangkan percampuran rekod secara tidak sengaja, tetapi localStorage tidak disulitkan, boleh dilihat melalui alat pembangun pada komputer sama, dan belum menyelaraskan semua permainan dengan backend.
+- Penyelarasan cloud pada masa ini hanya meliputi latihan Dashboard Murid. Empat permainan Google AI Studio mempunyai kunci storan setempat yang diasingkan mengikut ID Murid melalui HTML yang disahkan pelayan; namun progres penuh dalam permainan asal masih belum diselaraskan merentas peranti.
 - Sesetengah interaksi asal Misi 1–4 belum dimuat naik ke backend. Rakaman Misi 4 masih hanya boleh disimpan setempat; penghantaran kepada Guru memerlukan storan objek persendirian.
 - Jurnal Pusat Pembelajaran masih disimpan pada peranti.
 - PBD, sijil dan pengesahan guru tidak diperoleh secara automatik daripada data draf.
