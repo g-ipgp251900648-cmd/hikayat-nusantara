@@ -540,3 +540,15 @@ body.hn-m1-lock{overflow:hidden}
  .hn-lc-howto>div{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media(prefers-reduced-motion:reduce){.hn-lc-section *{animation:none!important;transition:none!important}}
+
+/* Original Google AI Studio Misi 3 — immersive same-origin garden game overlay. */
+body.hn-m3-open{overflow:hidden!important}
+#hn-m3-overlay{position:fixed;inset:0;z-index:99999;display:flex;flex-direction:column;background:#0e241b;color:#f8efd7;font-family:'DM Sans',Arial,sans-serif}
+.hn-m3-top{flex:none;min-height:55px;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 15px;background:linear-gradient(115deg,#0d3829,#31664b);border-bottom:2px solid #d8ac5d}
+.hn-m3-heading{min-width:0;display:flex;flex-direction:column;gap:3px}
+.hn-m3-heading strong{font-size:15px;font-family:'Fraunces',Georgia,serif}
+.hn-m3-heading small{color:#e5d4ad;font-size:10px}
+#hn-m3-status{font-size:11px;color:#f2e6c9;max-width:380px}
+#hn-m3-close{flex:none;border:1px solid #d4b77c;border-radius:10px;padding:10px 13px;background:#f8eace;color:#184330;cursor:pointer;font-size:12px;font-weight:800}
+#hn-m3-frame{width:100%;flex:1;min-height:0;border:0;background:#142b20}
+@media(max-width:720px){.hn-m3-top{padding:6px 9px;gap:6px;min-height:60px}.hn-m3-heading strong{font-size:12px}.hn-m3-heading small{font-size:9px}#hn-m3-status{display:none}#hn-m3-close{font-size:10px;padding:9px}}
