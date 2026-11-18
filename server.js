@@ -17,6 +17,7 @@ const PUBLIC_FILES = new Map([
   ["/mission-one-ai-bridge.js", ["mission-one-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/mission-two-ai-bridge.js", ["mission-two-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/mission-three-ai-bridge.js", ["mission-three-ai-bridge.js", "text/javascript; charset=utf-8"]],
+  ["/mission-four-ai-bridge.js", ["mission-four-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/student-learning-center.js", ["student-learning-center.js", "text/javascript; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
@@ -132,6 +133,45 @@ const server = createServer(async (request, response) => {
     }catch(error){
       response.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});
       response.end(method==='HEAD'?undefined:'Misi 3 asset not found');
+    }
+    return;
+  }
+
+  // Privacy-safe preview only: no public demo account switching or upload endpoints.
+  // Real teacher submission requires verified student auth and durable private storage.
+  if(pathname==='/api/misi4/health'){
+    const body=JSON.stringify({
+      storage:{configured:false,driver:'object-storage',maxUploadBytes:100*1024*1024,
+        note:'Mod pratonton selamat. Kamera, mikrofon, pratonton dan muat turun fail tersedia jika pelayar menyokongnya. Penghantaran kepada guru belum diaktifkan sehingga log masuk selamat dan storan persendirian disambungkan.'},
+      authConfigured:false, uploadAvailable:false,
+    });
+    response.writeHead(200,{'Content-Type':'application/json; charset=utf-8'});
+    response.end(method==='HEAD'?undefined:body);return;
+  }
+
+  // Same-origin route for original Google AI Studio Misi 4 and Vite assets.
+  if(pathname==='/misi4'||pathname==='/misi4/'||pathname.startsWith('/misi4/')){
+    let rel='index.html';
+    try{
+      if(pathname!=='/misi4'&&pathname!=='/misi4/')rel=decodeURIComponent(pathname.slice('/misi4/'.length));
+    }catch(error){
+      response.writeHead(400,{'Content-Type':'text/plain; charset=utf-8'});
+      response.end(method==='HEAD'?undefined:'Invalid path');return;
+    }
+    if(!rel||!/^[a-zA-Z0-9_./-]+$/.test(rel)||rel.split('/').includes('..')){
+      response.writeHead(400,{'Content-Type':'text/plain; charset=utf-8'});
+      response.end(method==='HEAD'?undefined:'Invalid path');return;
+    }
+    const ext=rel.split('.').at(-1).toLowerCase();
+    const mime=({html:'text/html',js:'text/javascript',css:'text/css',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',svg:'image/svg+xml',woff:'font/woff',woff2:'font/woff2',json:'application/json'})[ext]||'application/octet-stream';
+    try{
+      const fileContents=await readFile(new URL('misi4/'+rel,BASE));
+      response.setHeader('X-Frame-Options','SAMEORIGIN');
+      response.writeHead(200,{'Content-Type':mime+(['html','js','css','svg','json'].includes(ext)?'; charset=utf-8':'')});
+      response.end(method==='HEAD'?undefined:fileContents);
+    }catch(error){
+      response.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});
+      response.end(method==='HEAD'?undefined:'Misi 4 asset not found');
     }
     return;
   }
