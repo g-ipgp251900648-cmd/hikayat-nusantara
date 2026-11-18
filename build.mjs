@@ -54,6 +54,22 @@ if(!viteEntry){
   viteEntry=viteCandidates.find(path=>existsSync(path));
 }
 if(!viteEntry)throw new Error('Vite is unavailable after npm install. Check Render Build Command and Root Directory.');
+// Fail the deployment build rather than running a live server without the
+// PostgreSQL runtime driver required by /api/auth/*.
+try {
+  await import('pg');
+  console.log('[Build] PostgreSQL runtime driver (pg) verified.');
+} catch (error) {
+  if (error?.code === 'ERR_MODULE_NOT_FOUND') {
+    throw new Error(
+      '[Build] PostgreSQL runtime dependency missing. ' +
+      'Check Render Build Command installs root package.json dependencies ' +
+      'and use Clear build cache & deploy.'
+    );
+  }
+  throw error;
+}
+
 console.log('[Misi 1] Vite executable located:',viteEntry);
 const result=spawnSync(process.execPath,
   [viteEntry,'build','--config','mission-one-ai/vite.config.ts'],
