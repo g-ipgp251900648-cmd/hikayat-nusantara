@@ -9,6 +9,7 @@ test('original Misi 4 route, launcher and camera permission are wired',()=>{
   assert.match(src('build.mjs'),/mission-four-ai\/vite\.config\.ts/);
   assert.match(src('server.js'),/pathname==='\/misi4'/);
   assert.match(src('mission-four-ai-bridge.js'),/camera; microphone/);
+  assert.match(src('server.js'),/\[\"\/mission-four-ai-bridge\\.js\",\s*\[\"mission-four-ai-bridge\\.js\"/);
   assert.match(src('mission-four-ai-bridge.js'),/event\.source!==iframe\.contentWindow/);
 });
 test('the unauthenticated Render portal cannot pretend teacher uploads succeeded',()=>{
