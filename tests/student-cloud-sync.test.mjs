@@ -97,3 +97,31 @@ test('if upload fails, local pending copy survives for retry',async()=>{
   assert.equal(outbox['4'].checkpoint.schema,1);
   assert.equal(outbox['4'].checkpoint.data.performance.format,'audio');
 });
+
+test('offline version never silently overwrites newer server draft',async()=>{
+  const local=practice();
+  local.readingAnswers=['2','2','2'];
+  const checkpoint={schema:1,data:{sequence:[0,1,2,3,4],readingAnswers:['1','1','1'],completed:true,attempts:{count:3,history:[]}}};
+  const storage=fakeStorage({
+    'my-progress':JSON.stringify(local),
+    'hn-draft-meta-studentD':JSON.stringify({revisions:{'1':1}}),
+    'hn-draft-outbox-studentD':JSON.stringify({
+      '1':{sequence:1234,baseRevision:1,checkpoint:{schema:1,data:{sequence:local.sequence,readingAnswers:local.readingAnswers,completed:false,attempts:local.attempts[0]}}}
+    })
+  });
+  const attempts=[];
+  const fetcher=async(url,opts={})=>{
+    if(url==='/api/student/progress')return new Response(JSON.stringify({ok:true,progress:[
+      {mission_id:1,revision:3,checkpoint}
+    ]}),{status:200});
+    attempts.push(JSON.parse(opts.body));
+    return new Response(JSON.stringify({error:'CHECKPOINT_CONFLICT'}),{status:409});
+  };
+  const cloud=loadCloud(storage,fetcher);
+  await cloud.prepare('studentD','my-progress');
+  await sleep(850);
+  assert.equal(attempts.length,1);
+  assert.equal(attempts[0].revision,1);
+  assert.deepEqual(JSON.parse(storage.getItem('my-progress')).readingAnswers,['2','2','2']);
+  assert.ok(JSON.parse(storage.getItem('hn-draft-outbox-studentD'))['1']);
+});
