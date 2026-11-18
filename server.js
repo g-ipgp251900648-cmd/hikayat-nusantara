@@ -21,6 +21,9 @@ const PUBLIC_FILES = new Map([
   ["/student-learning-center.js", ["student-learning-center.js", "text/javascript; charset=utf-8"]],
   ["/teacher-dashboard.js", ["teacher-dashboard.js", "text/javascript; charset=utf-8"]],
   ["/teacher-dashboard.css", ["teacher-dashboard.css", "text/css; charset=utf-8"]],
+  ["/admin-dashboard.js", ["admin-dashboard.js", "text/javascript; charset=utf-8"]],
+  ["/admin-dashboard.css", ["admin-dashboard.css", "text/css; charset=utf-8"]],
+  ["/login-preview.html", ["login-preview.html", "text/html; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
 const PORT = Number(process.env.PORT || 10000);
