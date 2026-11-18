@@ -1,4 +1,4 @@
-name: Verify Misi 1 and original Wau Sakti Misi 2
+name: Verify all four Hikayat Nusantara missions
 on:
   pull_request:
     branches: [main]
@@ -16,9 +16,9 @@ jobs:
       # The build script must install Vite if Render has not installed it.
       - name: Verify JavaScript syntax
         run: npm run check
-      - name: Check both original AI Studio games and portal integration
+      - name: Check four original AI Studio games and portal integration
         run: npm test
-      - name: Cold-build original Misi 1 and Misi 2 without preinstalled Vite
+      - name: Cold-build all four original AI Studio missions
         run: npm run build
         env:
           NODE_ENV: production
@@ -30,5 +30,7 @@ jobs:
           test -f dist/misi2/index.html
           find dist/misi2/assets -name '*.js' | grep -q .
           test -f dist/misi3/index.html
+          test -f dist/misi4/index.html
+          find dist/misi4/assets -name '*.js' | grep -q .
           find dist/misi3/assets -name '*.js' | grep -q .
           find dist/misi2/assets -name '*.css' | grep -q .
