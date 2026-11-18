@@ -30,5 +30,7 @@ jobs:
           test -f dist/misi2/index.html
           find dist/misi2/assets -name '*.js' | grep -q .
           test -f dist/misi3/index.html
+          test -f dist/misi4/index.html
           find dist/misi3/assets -name '*.js' | grep -q .
           find dist/misi2/assets -name '*.css' | grep -q .
+\n
