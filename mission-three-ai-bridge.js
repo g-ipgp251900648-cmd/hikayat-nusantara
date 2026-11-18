@@ -1,7 +1,7 @@
 /**
  * Misi 3 original AI Studio — Taman Bahasa, hosted at /misi3/ as a same-origin iframe.
  * The only authoritative completion is the game's validated victory payload.
- * This integration is demo/localStorage; no teacher/backend delivery is implied.
+ * This integration is localStorage-only; no teacher/backend delivery is implied.
  */
 (() => {
   'use strict';
