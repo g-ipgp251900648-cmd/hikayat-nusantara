@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ms">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#173f35">
+<title>Log Masuk — Hikayat Nusantara</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:linear-gradient(130deg,#e6ecdf,#faf7ef 60%,#efe8d8);font:15px/1.6 "DM Sans",sans-serif;color:#243d31;padding:24px}
+main{width:min(100%,440px)}header{text-align:center;margin-bottom:24px}.mark{display:grid;place-items:center;border-radius:50%;width:53px;height:53px;margin:0 auto 15px;background:#173f35;color:#f1d191;font-size:27px}
+h1{font:600 30px "Fraunces",Georgia,serif;margin:0 0 5px}header p{margin:0;font-size:13px;color:#65776b}
+.card{background:#fffdf8;padding:30px;border-radius:16px;border:1px solid #e3e6de;box-shadow:0 20px 60px #163a2f17}
+fieldset{border:0;margin:0 0 21px;padding:0}legend, label{display:block;font-size:12px;font-weight:700;margin:0 0 9px}
+.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.roles button{background:#f6f8f3;border:1px solid #dae2d9;border-radius:8px;padding:10px;cursor:pointer;font:700 13px "DM Sans",sans-serif;color:#355b46}
+.roles button[aria-pressed="true"]{background:#e6f0e5;border-color:#3f765c;box-shadow:inset 0 0 0 1px #3f765c}label{margin-top:15px}
+input{width:100%;padding:12px 13px;border:1px solid #d8dfd5;border-radius:8px;background:white;font:inherit;font-size:14px}input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #b9924e;outline-offset:2px}
+.submit{width:100%;border:0;border-radius:9px;padding:13px;margin-top:23px;background:#20563e;color:white;font:700 13px "DM Sans",sans-serif;cursor:pointer}.submit:disabled{opacity:.55;cursor:not-allowed}
+.info{font-size:12px;line-height:1.75;background:#f4f2e8;border:1px solid #e5dfca;border-radius:9px;padding:12px;margin:20px 0 0;color:#625a3e}
+footer{text-align:center;margin-top:21px;font-size:12px}footer a{color:#23593f;text-decoration:none;font-weight:700}#password-change[hidden],#login-form[hidden]{display:none}
+</style>
+<script src="/auth-client.js" defer></script>
+</head>
+<body>
+<main>
+<header><div class="mark" aria-hidden="true">✺</div><h1>Hikayat Nusantara</h1><p>Gerbang Masuk Pelita Warisan</p></header>
+<div class="card">
+<form id="login-form" autocomplete="on">
+<fieldset><legend>Pilih peranan pengguna</legend><div class="roles" id="roles">
+<button type="button" data-role="murid" aria-pressed="true">Murid</button>
+<button type="button" data-role="guru" aria-pressed="false">Guru</button>
+<button type="button" data-role="admin" aria-pressed="false">Admin</button>
+</div></fieldset>
+<label id="id-label" for="login-id">ID Murid</label><input id="login-id" name="username" required autocomplete="username" placeholder="Masukkan ID yang diberikan" maxlength="32" autocapitalize="characters">
+<label for="login-password">Kata Laluan</label><input id="login-password" name="password" type="password" required autocomplete="current-password">
+<button id="login-submit" class="submit" type="submit" disabled>Log Masuk</button>
+</form>
+<form id="password-change" hidden autocomplete="on">
+<h2 style="font-size:18px;margin:0 0 8px">Tetapkan Kata Laluan Baharu</h2>
+<p style="font-size:12px;color:#687669">Untuk keselamatan, tukar kata laluan sementara sebelum menggunakan dashboard.</p>
+<label for="current-password">Kata Laluan Sementara</label><input id="current-password" type="password" required autocomplete="current-password">
+<label for="new-password">Kata Laluan Baharu (12 aksara atau lebih)</label><input id="new-password" type="password" required minlength="12" maxlength="128" autocomplete="new-password">
+<button class="submit" type="submit">Simpan Kata Laluan</button>
+</form>
+<p class="info" id="login-status" role="status" aria-live="polite">Memeriksa sambungan sistem akaun...</p>
+</div>
+<footer><a href="/">← Kembali ke halaman utama</a></footer>
+</main>
+</body></html>
