@@ -1,5 +1,5 @@
 /* Hikayat Nusantara — Simple 12-menu Teacher Dashboard.
-   Public site remains DEMO. Real student accounts require authenticated backend.
+   User accounts are not yet authenticated. Real student accounts require a secure backend.
    Never generate/store student credentials in browser or localStorage. */
 (() => {
   'use strict';
@@ -25,7 +25,7 @@
     {id:'guru-tetapan',label:'Tetapan Guru',symbol:'⚙'}
   ];
 
-  // Existing original content remains in place, with its original demo labels.
+  // Original sections are kept but sample records and labels are removed.
   const existingProgress = document.getElementById('guru-murid');
   if (existingProgress) existingProgress.id = 'guru-pemantauan';
 
@@ -40,7 +40,7 @@
     return node;
   };
 
-  const notice = '<div class="hn-teacher-notice" role="status">Sistem pengurusan akaun sebenar belum disambungkan. Portal awam ini ialah prototaip; tiada ID atau kata laluan murid boleh diwujudkan di sini. Penyimpanan rasmi memerlukan log masuk guru dan pangkalan data yang selamat.</div>';
+  const notice = '<div class="hn-teacher-notice" role="status">Sistem pengurusan akaun sebenar belum disambungkan. Tiada akaun murid sebenar boleh diwujudkan di sini buat masa ini. Penyimpanan rasmi memerlukan log masuk guru dan pangkalan data yang selamat.</div>';
   const studentPage = wrapper('guru-pengurusan-murid','PENGURUSAN AKAUN','Pengurusan Murid',
     'Daftar murid, tempatkan dalam kelas serta urus ID dan kata laluan sementara melalui backend yang disahkan.',
     notice+
