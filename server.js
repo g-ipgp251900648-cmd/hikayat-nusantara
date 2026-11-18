@@ -15,6 +15,7 @@ const PUBLIC_FILES = new Map([
   ["/student-map3d.js", ["student-map3d.js", "text/javascript; charset=utf-8"]],
   ["/student-activities.js", ["student-activities.js", "text/javascript; charset=utf-8"]],
   ["/mission-one-ai-bridge.js", ["mission-one-ai-bridge.js", "text/javascript; charset=utf-8"]],
+  ["/mission-two-ai-bridge.js", ["mission-two-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/student-learning-center.js", ["student-learning-center.js", "text/javascript; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
@@ -76,6 +77,33 @@ const server = createServer(async (request, response) => {
     }catch(error){
       response.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});
       response.end(method==='HEAD'?undefined:'Misi 1 asset not found');
+    }
+    return;
+  }
+
+  // Same-origin route for original Google AI Studio Misi 2 and Vite assets.
+  if(pathname==='/misi2'||pathname==='/misi2/'||pathname.startsWith('/misi2/')){
+    let rel='index.html';
+    try{
+      if(pathname!=='/misi2'&&pathname!=='/misi2/')rel=decodeURIComponent(pathname.slice('/misi2/'.length));
+    }catch(error){
+      response.writeHead(400,{'Content-Type':'text/plain; charset=utf-8'});
+      response.end(method==='HEAD'?undefined:'Invalid path');return;
+    }
+    if(!rel||!/^[a-zA-Z0-9_./-]+$/.test(rel)||rel.split('/').includes('..')){
+      response.writeHead(400,{'Content-Type':'text/plain; charset=utf-8'});
+      response.end(method==='HEAD'?undefined:'Invalid path');return;
+    }
+    const ext=rel.split('.').at(-1).toLowerCase();
+    const mime=({html:'text/html',js:'text/javascript',css:'text/css',jpg:'image/jpeg',jpeg:'image/jpeg',png:'image/png',webp:'image/webp',svg:'image/svg+xml',woff:'font/woff',woff2:'font/woff2',json:'application/json'})[ext]||'application/octet-stream';
+    try{
+      const fileContents=await readFile(new URL('misi2/'+rel,BASE));
+      response.setHeader('X-Frame-Options','SAMEORIGIN');
+      response.writeHead(200,{'Content-Type':mime+(['html','js','css','svg','json'].includes(ext)?'; charset=utf-8':'')});
+      response.end(method==='HEAD'?undefined:fileContents);
+    }catch(error){
+      response.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});
+      response.end(method==='HEAD'?undefined:'Misi 2 asset not found');
     }
     return;
   }
