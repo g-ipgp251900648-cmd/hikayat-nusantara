@@ -19,15 +19,15 @@
       hint:'Perhatikan penanda masa dalam cerita, dan baca semula halaman berkaitan sebelum membuat pilihan.'
     },
     {
-      name:'Balai Olah Hikayat', icon:'🪶', time:'15 minit', xp:90, place:'Balai Olah Hikayat',
-      objective:'Mengolah hikayat secara kreatif menggunakan pilihan watak, latar, peristiwa dan bahasa indah.',
-      steps:['Pilih watak, latar dan peristiwa yang ingin diolah.',
-        'Pilih sekurang-kurangnya dua ungkapan indah daripada bank kata.',
-        'Tulis versi hikayat sendiri yang mempunyai jalan cerita jelas.',
-        'Semak semula penggunaan ungkapan dan kesantunan bahasa.'],
-      proof:'Draf hikayat murid disimpan dalam portfolio latihan pada peranti.',
-      pass:'Lengkapkan pilihan cerita, gunakan dua ungkapan dan semak draf mengikut keperluan aktiviti.',
-      hint:'Mulakan dengan latar yang jelas, kemudian ceritakan perkara yang berlaku kepada watak.'
+      name:'Wau Sakti: Pencarian Kata Indah', icon:'🪁', time:'120 saat penerbangan + bengkel', xp:90, place:'Langit Desa Hikayat & Balai Olah Hikayat',
+      objective:'Memilih lima ungkapan indah dan mengolah hikayat dengan permulaan, perkembangan, pengakhiran serta bahasa yang santun.',
+      steps:['Ikuti tutorial dan terbangkan Wau Bulan Sakti bersama Hang Tuah.',
+        'Singgah di lima Gerbang Bahasa, jawab soalan dan kumpul lima ungkapan indah.',
+        'Tiba di Balai Olah Hikayat, pilih watak, latar dan peristiwa.',
+        'Hasilkan cerita tiga bahagian dengan sekurang-kurangnya dua ungkapan serta lengkapkan semakan kendiri.'],
+      proof:'Lima checkpoint bahasa, graf percubaan penerbangan dan draf hikayat yang disimpan pada peranti.',
+      pass:'Lima ungkapan, Gerbang Balai, tiga bahagian cerita, dua ungkapan digunakan dan semakan kendiri lengkap.',
+      hint:'Space atau sentuh skrin untuk menaikkan wau, lepaskan untuk turun. Mod Latihan tanpa pemasa juga tersedia.'
     },
     {
       name:'Warisan Bahasa', icon:'✒️', time:'10 minit', xp:70, place:'Taman Bahasa',
