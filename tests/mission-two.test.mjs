@@ -43,7 +43,7 @@ test('Misi 2 merekod 5 markah checkpoint dan membuka 90 XP setelah karya lengkap
   assert.match(s,/misi2Phrases\.filter/);
   assert.match(s,/state\.completed\[1\]=true/);
   assert.match(s,/state\.writtenStory=story\.slice/);
-  assert.match(s,/localStorage\.removeItem\("hikayat_nusantara_misi2_state_v1"\)/);
+  assert.match(s,/localStorage\.removeItem\("hikayat_nusantara_misi2_state_v1:"\+account\.id\)/);
   const source=read('mission-two-ai/src/game/writing.ts');
   assert.match(source,/awardMissionXpOnce/);
   assert.match(source,/canCompleteMission/);
