@@ -1,4 +1,4 @@
-name: Verify Misi 1 and original Wau Sakti Misi 2
+name: Verify all original AI Studio missions
 on:
   pull_request:
     branches: [main]
@@ -18,7 +18,7 @@ jobs:
         run: npm run check
       - name: Check both original AI Studio games and portal integration
         run: npm test
-      - name: Cold-build original Misi 1 and Misi 2 without preinstalled Vite
+      - name: Cold-build original Misi 1–4 without preinstalled Vite
         run: npm run build
         env:
           NODE_ENV: production
@@ -32,3 +32,5 @@ jobs:
           test -f dist/misi3/index.html
           find dist/misi3/assets -name '*.js' | grep -q .
           find dist/misi2/assets -name '*.css' | grep -q .
+          test -f dist/misi4/index.html
+          find dist/misi4/assets -name '*.js' | grep -q .
