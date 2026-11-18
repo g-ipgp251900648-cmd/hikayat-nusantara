@@ -130,6 +130,28 @@
         });
       }
     }
+    const checkpoint=await request('/api/teacher/progress');
+    const progressArea=$('#guru-pemantauan .chart-panel');
+    if(checkpoint.ok&&progressArea){
+      progressArea.replaceChildren();
+      const tip=document.createElement('p');tip.className='tiny-text';
+      tip.textContent='Hanya rekod checkpoint yang disimpan dan disahkan oleh pelayan dipaparkan. Status draf bukan keputusan PBD.';
+      progressArea.appendChild(tip);
+      const table=document.createElement('div');table.className='table-wrap';
+      table.innerHTML='<table><thead><tr><th>Murid</th><th>Kelas</th><th>Misi</th><th>Status</th><th>Kemas Kini</th></tr></thead><tbody></tbody></table>';
+      const body=table.querySelector('tbody');
+      if(!checkpoint.data.progress.length){
+        const row=body.insertRow(),cell=row.insertCell();
+        cell.colSpan=5;cell.textContent='Belum ada checkpoint yang diselaraskan.';
+      }
+      for(const item of checkpoint.data.progress){
+        const row=body.insertRow();
+        for(const value of [item.display_name,item.class_name,'Misi '+item.mission_id,item.state==='draft'?'Draf':item.state==='verified'?'Disahkan':'Dihantar',new Date(item.updated_at).toLocaleString('ms-MY')]){
+          const cell=row.insertCell();cell.textContent=String(value);
+        }
+      }
+      progressArea.appendChild(table);
+    }
     notice($('#guru-pengurusan-murid'),'Akaun murid disimpan pada pangkalan data berpusat. Kata laluan sementara hanya dipaparkan selepas akaun berjaya dicipta.');
     notice($('#guru-pengurusan-kelas'),'Kelas yang dicipta akan disimpan dalam organisasi dan akaun guru ini.');
   }
