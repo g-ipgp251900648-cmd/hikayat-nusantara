@@ -6,12 +6,8 @@ import path from 'node:path';
 const ROOT='mission-four-ai';
 const EXPECTED_SHA='8bf748b07847b29084688f4466422cb9d2bfb191e02696eb054f072e16ef5ea0';
 export async function extractMisiFourSource(){
-  const chunks=[];
-  for(let i=0;i<11;i++){
-    const file='mission-four-ai-transfer/part-'+String(i).padStart(2,'0')+'.txt';
-    chunks.push((await readFile(file,'utf8')).trim());
-  }
-  const encoded=chunks.join('');
+  // One original-game bundle, uploadable to this GitHub branch in a single action.
+  const encoded=(await readFile('mission-four-ai-source.tar.br.b64','utf8')).trim();
   if(!/^[a-zA-Z0-9+/]+={0,2}$/.test(encoded))throw Error('Misi 4: invalid source archive.');
   const compressed=Buffer.from(encoded,'base64');
   if(createHash('sha256').update(compressed).digest('hex')!==EXPECTED_SHA)
