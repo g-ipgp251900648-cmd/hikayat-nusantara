@@ -60,7 +60,7 @@
         try{
           const response=await api('/api/student/progress/'+id,{
             method:'PUT',headers:{'Content-Type':'application/json'},
-            body:JSON.stringify({revision:revisions[id]||0,checkpoint:entry.checkpoint})
+            body:JSON.stringify({revision:Number.isInteger(entry.baseRevision)?entry.baseRevision:(revisions[id]||0),checkpoint:entry.checkpoint})
           });
           if(response.status===409){
             status('Terdapat versi lain pada pelayan. Draf peranti ini dikekalkan; semak bersama guru.');
@@ -77,6 +77,11 @@
           if(pending[id]?.sequence===entry.sequence){
             delete pending[id];
             writeJSON(pendingKey,pending);
+          } else if(pending[id] && pending[id].baseRevision===entry.baseRevision){
+            // Another edit arrived while uploading: advance only our own known version.
+            pending[id].baseRevision=data.revision;
+            writeJSON(pendingKey,pending);
+            schedule();
           }
         }catch{
           status('Sambungan terputus. Draf disimpan pada peranti dan akan dicuba semula.');
@@ -121,7 +126,7 @@
         if(Object.keys(pending).length){status('Menyelaraskan perubahan tertangguh...');schedule();}
         else if(local&&!Object.keys(meta.revisions||{}).length&&rows.length){
           status('Draf peranti sedia ada dikekalkan; semak sebelum menyelaraskan.');
-        }else status(rows.length?'Draf terakhir dimuatkan daripada pelayan.':'Tiada draf pelayan; kerja baharu akan disimpan secara automatik.');
+        }else status(rows.length?'Draf terakhir dimuatkan daripada pelayan.':'Belum ada draf pada pelayan; draf peranti dikekalkan.');
       }catch{
         initialized=true;
         status('Pelayan belum tersedia. Draf latihan kekal pada peranti ini.');
@@ -133,7 +138,8 @@
       if(!Number.isInteger(index)||index<0||index>3||!storageKey)return;
       const id=String(index+1);
       try{
-        pending[id]={sequence:Date.now()+Math.random(),checkpoint:takeSnapshot(state,index)};
+        const baseRevision=pending[id]?.baseRevision ?? (revisions[id]||0);
+        pending[id]={sequence:Date.now()+Math.random(),baseRevision,checkpoint:takeSnapshot(state,index)};
         if(!writeJSON(pendingKey,pending)){
           status('Storan peranti penuh. Sila hubungi guru sebelum keluar.');
           return;
