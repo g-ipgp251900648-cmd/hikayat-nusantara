@@ -297,6 +297,9 @@
     if(index===1&&typeof window.openMissionTwoAdventure==="function"){
       window.openMissionTwoAdventure();return;
     }
+    if(index===2&&typeof window.openMissionThreeAdventure==="function"){
+      window.openMissionThreeAdventure();return;
+    }
     activeMission=index;feedback="";
     renderDialog();
     if(!dialog.open)dialog.showModal();
@@ -399,6 +402,31 @@
     save();updateProgress();
     window.dispatchEvent(new Event("hikayat:attempt"));
     return {ok:true,completed:true,alreadyCompleted:wasCompleted};
+  };
+  // Misi 3: accept ONLY the original 3D game's complete learning payload.
+  // Mark once, count once, preserve the existing 70 XP calculation in totalXP().
+  window.submitMissionThreeAdventure = payload => {
+    if (!payload || payload.source !== 'hikayat-nusantara-misi-3' ||
+        payload.missionId !== 'misi-3' || payload.completed !== true ||
+        payload.xpAwarded !== 70 || payload.badgeId !== 'penjaga-bahasa-berbudi' ||
+        !Number.isInteger(payload.languageScore) ||
+        !Number.isInteger(payload.maxLanguageScore) || payload.maxLanguageScore !== 12 ||
+        payload.languageScore < 0 || payload.languageScore > 12 ||
+        !Number.isInteger(payload.totalAttempts) || payload.totalAttempts < 0 ||
+        !Number.isInteger(payload.expressionsUsedCount) || payload.expressionsUsedCount < 2 ||
+        typeof payload.modifiedStory !== 'string' ||
+        payload.modifiedStory.trim().length < 50 || payload.modifiedStory.length > 12000 ||
+        typeof payload.reflectionAnswer !== 'string' ||
+        payload.reflectionAnswer.trim().length < 4 || payload.reflectionAnswer.length > 2500 ||
+        !Number.isFinite(payload.completedAt) || payload.completedAt <= 0) {
+      return {ok:false,message:'Selesaikan empat cabaran, cerita yang diubah suai dan pemulihan Pokok Bahasa dahulu.'};
+    }
+    if(state.completed[2])return {ok:true,completed:true,alreadyCompleted:true};
+    // The original game supplies an actual first-attempt language score out of 12.
+    recordAttempt(2,payload.languageScore,12,true);
+    state.completed[2]=true;
+    save();updateProgress();
+    return {ok:true,completed:true,alreadyCompleted:false};
   };
   function checkReading(){
     const correctSequence=state.sequence.every((value,i)=>value===i);
