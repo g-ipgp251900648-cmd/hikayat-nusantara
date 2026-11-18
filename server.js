@@ -5,7 +5,7 @@
  */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { handleApi, authorizeMissionRequest } from "./auth/api.js";
+import { handleApi, missionUserFromRequest } from "./auth/api.js";
 
 const PUBLIC_FILES = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
@@ -32,6 +32,14 @@ const PUBLIC_FILES = new Map([
   ["/login.html", ["login.html", "text/html; charset=utf-8"]],
   ["/auth-client.js", ["auth-client.js", "text/javascript; charset=utf-8"]],
 ]);
+// Embed the authorized account ID only into the game's root HTML.
+// Never inject passwords or session tokens. No browser-stored ID is trusted by APIs.
+function scopedMissionHtml(fileContents, userId) {
+  if(!/^[0-9a-f-]{36}$/i.test(String(userId)))throw Error('Invalid account context');
+  const html=fileContents.toString('utf8');
+  if(!/<html\b/i.test(html))throw Error('Mission HTML root missing');
+  return html.replace(/<html\b/i,'<html data-hn-account="'+userId+'"');
+}
 const BASE = new URL("./dist/", import.meta.url);
 const PORT = Number(process.env.PORT || 10000);
 
@@ -74,7 +82,9 @@ const server = createServer(async (request, response) => {
 
 
   // Protect the four original mission applications even when opened by direct URL.
-  if (/^\/misi[1-4](?:\/|$)/.test(pathname) && !(await authorizeMissionRequest(request))) {
+  const missionRoute = /^\/misi[1-4](?:\/|$)/.test(pathname);
+  const missionUser = missionRoute ? await missionUserFromRequest(request) : null;
+  if (missionRoute && !missionUser) {
     response.writeHead(401, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
     response.end(method === "HEAD" ? undefined : "Sila log masuk menggunakan akaun Murid untuk membuka misi.");
     return;
@@ -99,7 +109,7 @@ const server = createServer(async (request, response) => {
       const fileContents=await readFile(new URL('misi1/'+rel,BASE));
       response.setHeader('X-Frame-Options','SAMEORIGIN');
       response.writeHead(200,{'Content-Type':mime+(['html','js','css','svg','json'].includes(ext)?'; charset=utf-8':'')});
-      response.end(method==='HEAD'?undefined:fileContents);
+      response.end(method==='HEAD'?undefined:(rel==='index.html'?scopedMissionHtml(fileContents,missionUser.id):fileContents));
     }catch(error){
       response.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});
       response.end(method==='HEAD'?undefined:'Misi 1 asset not found');
@@ -126,7 +136,7 @@ const server = createServer(async (request, response) => {
       const fileContents=await readFile(new URL('misi2/'+rel,BASE));
       response.setHeader('X-Frame-Options','SAMEORIGIN');
       response.writeHead(200,{'Content-Type':mime+(['html','js','css','svg','json'].includes(ext)?'; charset=utf-8':'')});
-      response.end(method==='HEAD'?undefined:fileContents);
+      response.end(method==='HEAD'?undefined:(rel==='index.html'?scopedMissionHtml(fileContents,missionUser.id):fileContents));
     }catch(error){
       response.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});
       response.end(method==='HEAD'?undefined:'Misi 2 asset not found');
@@ -153,7 +163,7 @@ const server = createServer(async (request, response) => {
       const fileContents=await readFile(new URL('misi3/'+rel,BASE));
       response.setHeader('X-Frame-Options','SAMEORIGIN');
       response.writeHead(200,{'Content-Type':mime+(['html','js','css','svg','json'].includes(ext)?'; charset=utf-8':'')});
-      response.end(method==='HEAD'?undefined:fileContents);
+      response.end(method==='HEAD'?undefined:(rel==='index.html'?scopedMissionHtml(fileContents,missionUser.id):fileContents));
     }catch(error){
       response.writeHead(404,{'Content-Type':'text/plain; charset=utf-8'});
       response.end(method==='HEAD'?undefined:'Misi 3 asset not found');
@@ -200,7 +210,7 @@ const server = createServer(async (request, response) => {
       response.setHeader('X-Frame-Options','SAMEORIGIN');
       response.setHeader('Permissions-Policy','camera=(self), microphone=(self), fullscreen=(self)');
       response.writeHead(200,{'Content-Type':mime+(['html','js','css','svg','json'].includes(ext)?'; charset=utf-8':'')});
-      response.end(method==='HEAD'?undefined:buf);
+      response.end(method==='HEAD'?undefined:(rel==='index.html'?scopedMissionHtml(buf,missionUser.id):buf));
     }catch{response.writeHead(404);response.end(method==='HEAD'?undefined:'Misi 4 asset not found');}
     return;
   }
