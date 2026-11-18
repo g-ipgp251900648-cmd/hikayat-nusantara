@@ -78,13 +78,16 @@ async function auditEvent(db,user,action,type,id){
 function uuid(value){return typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);}
 function cleanName(value){return typeof value==='string'?value.trim():'';}
 
-export async function authorizeMissionRequest(request) {
-  if(!databaseConfigured())return false;
+export async function missionUserFromRequest(request) {
+  if(!databaseConfigured())return null;
   try {
     const db=await database();
     const user=await findSession(db,request);
-    return Boolean(user&&user.role==='murid'&&!user.must_change_password);
-  }catch {return false;}
+    return user&&user.role==='murid'&&!user.must_change_password ? {id:user.id} : null;
+  }catch {return null;}
+}
+export async function authorizeMissionRequest(request) {
+  return Boolean(await missionUserFromRequest(request));
 }
 
 export async function handleApi(request,response,pathname) {

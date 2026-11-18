@@ -49,6 +49,11 @@ type AppScreen =
   | 'victory';
 
 const STORAGE_KEY = 'hikayat_nusantara_misi1_progress_v1';
+// The server adds this account scope only after verifying a pupil's session.
+function accountStorageKey(): string | null {
+  const id = typeof document !== 'undefined' ? document.documentElement.dataset.hnAccount : '';
+  return id && /^[0-9a-f-]{36}$/i.test(id) ? STORAGE_KEY + ':' + id : null;
+}
 
 interface StoredProfile {
   xp: number;
@@ -58,7 +63,9 @@ interface StoredProfile {
 
 function loadProfile(): StoredProfile {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const storageKey = accountStorageKey();
+    if (!storageKey) return { xp: 0, badges: [], attempts: [] };
+    const raw = localStorage.getItem(storageKey);
     if (!raw) return { xp: 0, badges: [], attempts: [] };
     const parsed = JSON.parse(raw) as Partial<StoredProfile>;
     return {
@@ -137,8 +144,10 @@ export default function App() {
   // Save persistent profile to localStorage
   useEffect(() => {
     try {
+      const storageKey = accountStorageKey();
+      if (!storageKey) return;
       localStorage.setItem(
-        STORAGE_KEY,
+        storageKey,
         JSON.stringify({ xp, badges, attempts })
       );
     } catch {

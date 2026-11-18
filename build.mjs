@@ -1,12 +1,14 @@
 import { mkdir, copyFile, rm } from 'node:fs/promises';
 import { extractMisiThreeSource } from './scripts/extract-misi3.mjs';
 import { extractMisiFourSource } from './scripts/extract-misi4.mjs';
+import { scopeExtractedMissionStorage } from './scripts/scope-extracted-storage.mjs';
 
 await extractMisiThreeSource();
 await extractMisiFourSource();
+await scopeExtractedMissionStorage();
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
-for (const file of ['index.html', 'styles.css', 'app.js', 'world3d.js', 'student-map3d.js', 'student-activities.js', 'mission-one-ai-bridge.js', 'mission-two-ai-bridge.js', 'mission-three-ai-bridge.js', 'mission-four-ai-bridge.js', 'student-learning-center.js', 'teacher-dashboard.js', 'teacher-dashboard.css', 'admin-dashboard.js', 'admin-dashboard.css', 'login-preview.html', 'login.html', 'auth-client.js', 'account-ui.js']) {
+for (const file of ['index.html', 'styles.css', 'app.js', 'world3d.js', 'student-map3d.js', 'student-activities.js', 'student-cloud-sync.js', 'mission-one-ai-bridge.js', 'mission-two-ai-bridge.js', 'mission-three-ai-bridge.js', 'mission-four-ai-bridge.js', 'student-learning-center.js', 'teacher-dashboard.js', 'teacher-dashboard.css', 'admin-dashboard.js', 'admin-dashboard.css', 'login-preview.html', 'login.html', 'auth-client.js', 'account-ui.js']) {
   await copyFile(file, 'dist/' + file);
 }
 console.log('Hikayat Nusantara: binaan statik tersedia dalam dist/');

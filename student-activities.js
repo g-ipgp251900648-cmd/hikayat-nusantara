@@ -7,6 +7,7 @@
   if(!account||account.role!=="murid"||account.mustChangePassword)return;
   const LEGACY_STORAGE_KEY="hikayat-nusantara-murid-demo-v2";
   const STORAGE_KEY="hikayat-nusantara-murid-v3-"+account.id;
+  await window.hnCloudDrafts?.prepare(account.id,STORAGE_KEY);
   // Old browser data cannot be assigned safely to a named pupil without confirmation.
   try {
     if(!localStorage.getItem(STORAGE_KEY)&&localStorage.getItem(LEGACY_STORAGE_KEY)){
@@ -104,9 +105,10 @@
   let activeMission=-1;
   let feedback="";
   let feedbackTone="note";
-  function save(){
+  function save(index=activeMission){
     try{
       localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+      window.hnCloudDrafts?.queue(index,state);
       return true;
     }catch(e){
       console.warn("Storan peranti tidak tersedia. Data hanya kekal sepanjang paparan ini.",e);
@@ -116,14 +118,14 @@
   const escapeHTML=(v)=>String(v).replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
   const pick=(list,current)=>list.map(value=>`<option value="${escapeHTML(value)}" ${current===value?"selected":""}>${escapeHTML(value)}</option>`).join("");
   function status(message,tone="note"){feedback=message;feedbackTone=tone;}
-  function invalidate(index){if(state.completed[index]){state.completed[index]=false;updateProgress();}save();}
+  function invalidate(index){if(state.completed[index]){state.completed[index]=false;updateProgress();}save(index);}
   const counter=()=>state.completed.filter(Boolean).length;
   const totalXP=()=>state.completed.reduce((acc,done,i)=>acc+(done?missions[i].xp:0),0);
   function recordAttempt(index,score,total,success){
     const entry=state.attempts[index];if(!entry||entry.count>=100000)return;
     entry.count++;entry.history.push({number:entry.count,score,total,percent:Math.round(score/total*100),success,at:new Date().toISOString()});
     if(entry.history.length>30)entry.history.splice(0,entry.history.length-30);
-    save();window.dispatchEvent(new Event("hikayat:attempt"));
+    save(index);window.dispatchEvent(new Event("hikayat:attempt"));
   }
 
   const hud=document.createElement("section");
@@ -341,7 +343,7 @@
   });
   function complete(index,message){
     state.completed[index]=true;
-    const saved=save();
+    const saved=save(index);
     updateProgress();
     status(message+(saved?" Kemajuan latihan disimpan pada peranti ini.":" Storan tidak tersedia; kemajuan hanya sementara."),"success");
     renderDialog();
@@ -361,13 +363,13 @@
     const score=positions+comprehensionScore,success=score===8;
     state.sequence=[...sequence];state.readingAnswers=answers.map(String);
     recordAttempt(0,score,8,success);
-    if(success){state.completed[0]=true;save();updateProgress();}
-    else save();
+    if(success){state.completed[0]=true;save(0);updateProgress();}
+    else save(0);
     return {ok:true,success,positions,comprehensionScore,score,total:8};
   };
 
   // Original Misi 2 Google AI Studio — one flight record per unique attempt.
-  const MISI2_IMPORTS_KEY="hikayat_misi2_portal_imported_flights_v1";
+  const MISI2_IMPORTS_KEY="hikayat_misi2_portal_imported_flights_v2-"+account.id;
   const importedFlights=new Set((()=>{try{
     const raw=JSON.parse(localStorage.getItem(MISI2_IMPORTS_KEY)||"[]");
     return Array.isArray(raw)?raw.filter(x=>typeof x==="string").slice(-80):[];
@@ -424,7 +426,7 @@
     state.event=draft.peristiwaId.slice(0,120);
     const wasCompleted=state.completed[1]===true;
     state.completed[1]=true;
-    save();updateProgress();
+    save(1);updateProgress();
     window.dispatchEvent(new Event("hikayat:attempt"));
     return {ok:true,completed:true,alreadyCompleted:wasCompleted};
   };
@@ -573,13 +575,14 @@
     open(next<0?0:next);
   });
   document.getElementById("quest-reset")?.addEventListener("click",()=>{
-    if(!window.confirm("Padam semua jawapan, draf dan kemajuan latihan yang disimpan pada peranti ini?"))return;
+    if(!window.confirm("Kosongkan semua draf latihan pada peranti dan akaun? Rekod kosong akan diselaraskan ke pelayan apabila sambungan tersedia."))return;
     Object.assign(state,empty());
-    save();feedback="";updateProgress();helper.hidden=true;
+    save();for(let i=0;i<4;i++)window.hnCloudDrafts?.queue(i,state);
+    feedback="";updateProgress();helper.hidden=true;
     importedFlights.clear();
     try{
       localStorage.removeItem(MISI2_IMPORTS_KEY);
-      localStorage.removeItem("hikayat_nusantara_misi2_state_v1");
+      localStorage.removeItem("hikayat_nusantara_misi2_state_v1:"+account.id);
     }catch(error){}
     window.dispatchEvent(new Event("hikayat:reset"));
   });

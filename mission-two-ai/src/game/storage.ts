@@ -10,6 +10,11 @@ import type {
 } from './types';
 
 export const MISI2_STORAGE_KEY = 'hikayat_nusantara_misi2_state_v1';
+// Read the account context embedded by the authenticated server response.
+export function mission2ScopedKey(): string | null {
+  const id=typeof document !== 'undefined' ? document.documentElement.dataset.hnAccount : '';
+  return id && /^[0-9a-f-]{36}$/i.test(id) ? MISI2_STORAGE_KEY + ':' + id : null;
+}
 
 export function createInitialCheckpointRecords(): CheckpointMasteryRecord[] {
   return CHECKPOINTS.map((cp) => ({
@@ -53,10 +58,10 @@ export function createDefaultMission2State(): PersistedMission2State {
 
 export function isLocalStorageAvailable(): boolean {
   try {
-    if (typeof window === 'undefined' || !window.localStorage) {
+    if (typeof window === 'undefined' || !window.localStorage || !mission2ScopedKey()) {
       return false;
     }
-    const probeKey = '__hikayat_misi2_probe__';
+    const probeKey = mission2ScopedKey() + ':probe';
     window.localStorage.setItem(probeKey, '1');
     window.localStorage.removeItem(probeKey);
     return true;
@@ -77,7 +82,7 @@ export function loadMission2State(): {
   }
 
   try {
-    const raw = window.localStorage.getItem(MISI2_STORAGE_KEY);
+    const raw = window.localStorage.getItem(mission2ScopedKey()!);
     if (!raw) {
       return { state: fallback, hasSavedProgress: false, storageAvailable: true };
     }
@@ -117,7 +122,7 @@ export function saveMission2State(state: PersistedMission2State): boolean {
       ...state,
       lastUpdated: Date.now(),
     };
-    window.localStorage.setItem(MISI2_STORAGE_KEY, JSON.stringify(payload));
+    window.localStorage.setItem(mission2ScopedKey()!, JSON.stringify(payload));
     return true;
   } catch {
     return false;
@@ -127,7 +132,7 @@ export function saveMission2State(state: PersistedMission2State): boolean {
 export function clearMission2State(): boolean {
   if (!isLocalStorageAvailable()) return false;
   try {
-    window.localStorage.removeItem(MISI2_STORAGE_KEY);
+    window.localStorage.removeItem(mission2ScopedKey()!);
     return true;
   } catch {
     return false;
