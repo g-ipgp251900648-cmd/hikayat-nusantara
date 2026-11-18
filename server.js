@@ -17,6 +17,7 @@ const PUBLIC_FILES = new Map([
   ["/mission-one-ai-bridge.js", ["mission-one-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/mission-two-ai-bridge.js", ["mission-two-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/mission-three-ai-bridge.js", ["mission-three-ai-bridge.js", "text/javascript; charset=utf-8"]],
+  ["/mission-four-ai-bridge.js", ["mission-four-ai-bridge.js", "text/javascript; charset=utf-8"]],
   ["/student-learning-center.js", ["student-learning-center.js", "text/javascript; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
