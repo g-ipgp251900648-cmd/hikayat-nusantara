@@ -1,5 +1,5 @@
 /* Pusat Warisan — Dashboard Admin (Fasa reka bentuk).
-   This is a navigation/layout preview only.
+   This navigation has no live data source or authenticated backend yet.
    Real accounts, teacher permissions, student records and audit logs require a secure backend.
    NEVER accept/store credentials, recordings or actual student data here. */
 (() => {
@@ -28,7 +28,7 @@
   ];
   const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const note = '<div class="hn-admin-notice" role="status">Mod reka bentuk: akaun, pangkalan data, log audit dan storan media belum diaktifkan. Tiada perubahan pengguna atau data murid akan disimpan di sini.</div>';
+  const note = '<div class="hn-admin-notice" role="status">Pengurusan akaun, pangkalan data, log audit dan storan media belum diaktifkan. Tiada perubahan pengguna atau data murid akan disimpan di sini.</div>';
   const emptyTable = headings => '<div class="table-wrap"><table><thead><tr>' +
     headings.map(h => '<th>' + escapeHTML(h) + '</th>').join('') +
     '</tr></thead><tbody><tr><td colspan="' + headings.length +
