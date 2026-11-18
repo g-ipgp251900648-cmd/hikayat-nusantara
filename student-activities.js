@@ -369,7 +369,7 @@
   };
 
   // Original Misi 2 Google AI Studio — one flight record per unique attempt.
-  const MISI2_IMPORTS_KEY="hikayat_misi2_portal_imported_flights_v1";
+  const MISI2_IMPORTS_KEY="hikayat_misi2_portal_imported_flights_v2-"+account.id;
   const importedFlights=new Set((()=>{try{
     const raw=JSON.parse(localStorage.getItem(MISI2_IMPORTS_KEY)||"[]");
     return Array.isArray(raw)?raw.filter(x=>typeof x==="string").slice(-80):[];
@@ -582,7 +582,7 @@
     importedFlights.clear();
     try{
       localStorage.removeItem(MISI2_IMPORTS_KEY);
-      localStorage.removeItem("hikayat_nusantara_misi2_state_v1");
+      localStorage.removeItem("hikayat_nusantara_misi2_state_v1:"+account.id);
     }catch(error){}
     window.dispatchEvent(new Event("hikayat:reset"));
   });
