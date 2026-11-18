@@ -22,6 +22,8 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+      - name: Inspect original Misi 3 and Misi 4 local persistence
+        run: node scripts/audit-storage.mjs
       - name: Verify produced Vite assets
         run: |
           test -f dist/misi1/index.html
