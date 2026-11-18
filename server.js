@@ -5,7 +5,7 @@
  */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
-import { handleApi } from "./auth/api.js";
+import { handleApi, authorizeMissionRequest } from "./auth/api.js";
 
 const PUBLIC_FILES = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
@@ -71,6 +71,13 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+
+  // Protect the four original mission applications even when opened by direct URL.
+  if (/^\/misi[1-4](?:\/|$)/.test(pathname) && !(await authorizeMissionRequest(request))) {
+    response.writeHead(401, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
+    response.end(method === "HEAD" ? undefined : "Sila log masuk menggunakan akaun Murid untuk membuka misi.");
+    return;
+  }
 
   // Same-origin route for original Google AI Studio Misi 1 and Vite assets.
   if(pathname==='/misi1'||pathname==='/misi1/'||pathname.startsWith('/misi1/')){
