@@ -34,7 +34,7 @@ test('Misi 2 stores all written story and flight records per authenticated pupil
   assert.match(source,/localStorage\.setItem\(mission2ScopedKey\(\)!/);
   assert.match(source,/localStorage\.removeItem\(mission2ScopedKey\(\)!/);
   const parent=read('student-activities.js');
-  assert.match(parent,/hikayat_misi2_portal_imported_flights_v2-"\\+account\.id/);
+  assert.match(parent,/hikayat_misi2_portal_imported_flights_v2-"\+account\.id/);
   assert.match(parent,/hikayat_nusantara_misi2_state_v1:"\+account\.id/);
 });
 
