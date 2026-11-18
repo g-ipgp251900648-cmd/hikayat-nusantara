@@ -110,7 +110,12 @@ export async function handleApi(request,response,pathname) {
     const rawCode = error?.code || error?.name;
     const safeCode = typeof rawCode==='string' && /^[A-Za-z][A-Za-z0-9_]{1,63}$/.test(rawCode)
       ? rawCode : 'UNKNOWN';
-    console.error('HN_DB_INITIALIZATION_FAILED:', safeCode);
+    const missingDependency = safeCode==='ERR_MODULE_NOT_FOUND'
+      ? /Cannot find package ['"]pg['"]/.test(String(error?.message||''))
+        ? 'PG_PACKAGE_NOT_INSTALLED'
+        : 'OTHER_DEPENDENCY_MISSING'
+      : 'NOT_APPLICABLE';
+    console.error('HN_DB_INITIALIZATION_FAILED:', safeCode, missingDependency);
     reject(response,503,'DATABASE_UNAVAILABLE');return true;
   }
   try {
