@@ -11,6 +11,7 @@
     window.removeEventListener('message',receive);
     overlay.remove(); overlay=null; iframe=null;
     document.body.classList.remove('hn-m4-open');
+    document.body.style.removeProperty('overflow');
   };
   function receive(event){
     if(!iframe||event.origin!==window.location.origin||event.source!==iframe.contentWindow)return;
