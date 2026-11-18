@@ -1,0 +1,18 @@
+/* Pusat Warisan: calm, minimal administrative UI. Does not restyle Dashboard Murid. */
+#admin-view .hn-admin-nav{display:flex;flex-direction:column;gap:1px;margin-bottom:12px}
+#admin-view .hn-admin-nav .side-link{font-size:12px;padding:10px 12px;margin:0;min-height:38px;border-radius:8px}
+#admin-view .hn-admin-nav .side-link span{font-size:17px;width:23px;flex-shrink:0}
+#admin-view .hn-admin-page{margin-top:0}
+#admin-view .hn-admin-intro{font-size:13px;color:var(--muted);line-height:1.75;max-width:760px;margin-bottom:20px}
+#admin-view .hn-admin-notice{padding:14px 17px;background:#fff8e7;color:#785725;border:1px solid #e7d7af;border-radius:10px;font-size:12px;line-height:1.7;margin:14px 0 22px}
+#admin-view .hn-admin-actions{display:flex;gap:10px;flex-wrap:wrap;margin:16px 0}
+#admin-view .hn-admin-actions button{border:1px solid #a8bfae;border-radius:8px;background:#eaf1e9;color:#234939;font-weight:750;padding:10px 13px;font-size:12px}
+#admin-view .hn-admin-actions button:disabled{opacity:.58;cursor:not-allowed}
+#admin-view .hn-admin-empty{padding:25px 14px;color:var(--muted);font-size:12px}
+#admin-view .hn-admin-muted{color:var(--muted);font-size:12px;line-height:1.8}
+#admin-view .hn-admin-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin:18px 0}
+#admin-view .hn-admin-tiles article{display:flex;flex-direction:column;gap:8px;padding:18px;background:var(--paper);border:1px solid var(--line);border-radius:11px}
+#admin-view .hn-admin-tiles small{font-size:10px;color:#a78343;letter-spacing:.12em;font-weight:800}
+#admin-view .hn-admin-tiles strong{color:#284a3c;font-size:15px}
+#admin-view .hn-admin-tiles span{color:var(--muted);font-size:11px}
+@media(max-width:620px){#admin-view .hn-admin-tiles{grid-template-columns:1fr}#admin-view .hn-admin-actions button{width:100%}}
