@@ -1,4 +1,4 @@
-name: Verify original Misi 1 integration
+name: Verify Misi 1 and original Wau Sakti Misi 2
 on:
   pull_request:
     branches: [main]
@@ -16,9 +16,9 @@ jobs:
       # The build script must install Vite if Render has not installed it.
       - name: Verify JavaScript syntax
         run: npm run check
-      - name: Check Misi 1 original game integration
+      - name: Check both original AI Studio games and portal integration
         run: npm test
-      - name: Cold-build original React 3D Misi 1 without preinstalled Vite
+      - name: Cold-build original Misi 1 and Misi 2 without preinstalled Vite
         run: npm run build
         env:
           NODE_ENV: production
@@ -27,3 +27,6 @@ jobs:
           test -f dist/misi1/index.html
           test -f dist/misi1/src/assets/images/story_page_1_1794930837095.jpg
           find dist/misi1/assets -name '*.js' | grep -q .
+          test -f dist/misi2/index.html
+          find dist/misi2/assets -name '*.js' | grep -q .
+          find dist/misi2/assets -name '*.css' | grep -q .

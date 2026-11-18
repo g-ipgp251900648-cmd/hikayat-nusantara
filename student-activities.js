@@ -294,6 +294,9 @@
     if(index===0&&typeof window.openMissionOneAdventure==="function"){
       window.openMissionOneAdventure();return;
     }
+    if(index===1&&typeof window.openMissionTwoAdventure==="function"){
+      window.openMissionTwoAdventure();return;
+    }
     activeMission=index;feedback="";
     renderDialog();
     if(!dialog.open)dialog.showModal();
@@ -333,6 +336,69 @@
     if(success){state.completed[0]=true;save();updateProgress();}
     else save();
     return {ok:true,success,positions,comprehensionScore,score,total:8};
+  };
+
+  // Original Misi 2 Google AI Studio — one flight record per unique attempt.
+  const MISI2_IMPORTS_KEY="hikayat_misi2_portal_imported_flights_v1";
+  const importedFlights=new Set((()=>{try{
+    const raw=JSON.parse(localStorage.getItem(MISI2_IMPORTS_KEY)||"[]");
+    return Array.isArray(raw)?raw.filter(x=>typeof x==="string").slice(-80):[];
+  }catch(error){return [];}})());
+  const misi2Phrases=[
+    "sinar keemasan menyelimuti desa","desa yang permai",
+    "hembusan bayu menyapa dedaunan","hati yang tulus","cahaya harapan"
+  ];
+  function normalizeMisi2Text(value){
+    return typeof value==="string"?value.toLowerCase().replace(/\s+/g," ").trim():"";
+  }
+  window.submitMissionTwoFlightAttempt=(raw)=>{
+    if(!raw||typeof raw!=="object"||
+       typeof raw.id!=="string"||!(/^(run|alt)_[0-9]{8,17}$/.test(raw.id))||
+       !Number.isInteger(raw.masteredCount)||raw.masteredCount<0||raw.masteredCount>5||
+       typeof raw.completedFlight!=="boolean"||
+       !Number.isInteger(raw.checkpointsReached)||raw.checkpointsReached<0||raw.checkpointsReached>5)
+      return {ok:false};
+    if(importedFlights.has(raw.id))return {ok:true,recorded:false};
+    importedFlights.add(raw.id);
+    try{localStorage.setItem(MISI2_IMPORTS_KEY,JSON.stringify([...importedFlights].slice(-80)));}
+    catch(error){/* Reading/writing game state still works in memory. */}
+    recordAttempt(1,raw.masteredCount,5,raw.completedFlight&&raw.masteredCount===5);
+    return {ok:true,recorded:true};
+  };
+  // Five mastered gates + an actual three-part written hikayat + self-review.
+  // Local-demo validation only; does not constitute a teacher's assessment.
+  window.submitMissionTwoAdventure=(raw)=>{
+    if(!raw||typeof raw!=="object"||raw.flightCompleted!==true)return {ok:false};
+    const list=raw.collectedPhrases,records=raw.checkpointRecords,draft=raw.draft,check=raw.checklist;
+    if(!Array.isArray(list)||list.length!==5||new Set(list).size!==5||
+       !misi2Phrases.every(v=>list.includes(v)))return {ok:false};
+    if(!Array.isArray(records)||records.length!==5||
+       records.some((r,i)=>r?.checkpointIndex!==i||r.masteredAfterCorrection!==true))
+      return {ok:false};
+    if(!draft||typeof draft!=="object"||!check||typeof check!=="object")return {ok:false};
+    for(const k of ["watakId","latarId","peristiwaId"]){
+      if(typeof draft[k]!=="string"||!draft[k].trim()||draft[k].length>80)return {ok:false};
+    }
+    for(const k of ["permulaan","perkembangan","pengakhiran"]){
+      const text=draft[k];
+      if(typeof text!=="string"||text.length>3500||text.replace(/_{2,}/g,"").trim().length<15||
+         text.trim().split(/\\s+/).length<3)return {ok:false};
+    }
+    const keys=["watakDanLatar","peristiwaJelas","permulaanLengkap","perkembanganLengkap","pengakhiranLengkap","duaUngkapanIndah","bacaSemulaSantun"];
+    if(keys.some(k=>check[k]!==true))return {ok:false};
+    const story=[draft.permulaan,draft.perkembangan,draft.pengakhiran].join("\n\n");
+    const used=misi2Phrases.filter(p=>normalizeMisi2Text(story).includes(normalizeMisi2Text(p)));
+    if(used.length<2)return {ok:false};
+    state.writtenStory=story.slice(0,6000);
+    state.chosenPhrases=used;
+    state.character=draft.watakId.slice(0,120);
+    state.setting=draft.latarId.slice(0,120);
+    state.event=draft.peristiwaId.slice(0,120);
+    const wasCompleted=state.completed[1]===true;
+    state.completed[1]=true;
+    save();updateProgress();
+    window.dispatchEvent(new Event("hikayat:attempt"));
+    return {ok:true,completed:true,alreadyCompleted:wasCompleted};
   };
   function checkReading(){
     const correctSequence=state.sequence.every((value,i)=>value===i);
@@ -457,6 +523,11 @@
     if(!window.confirm("Padam semua jawapan, draf dan kemajuan latihan yang disimpan pada peranti ini?"))return;
     Object.assign(state,empty());
     save();feedback="";updateProgress();helper.hidden=true;
+    importedFlights.clear();
+    try{
+      localStorage.removeItem(MISI2_IMPORTS_KEY);
+      localStorage.removeItem("hikayat_nusantara_misi2_state_v1");
+    }catch(error){}
     window.dispatchEvent(new Event("hikayat:reset"));
   });
   helper.querySelector("#quest-helper-close")?.addEventListener("click",()=>helper.hidden=true);
