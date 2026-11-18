@@ -1,6 +1,6 @@
 /**
- * Hikayat Nusantara — pelayan Node.js untuk prototaip Fasa 1.
- * Hanya fail UI demonstrasi dipaparkan; TIADA endpoint data murid atau log masuk.
+ * Hikayat Nusantara — pelayan Node.js untuk portal pembelajaran yang belum mempunyai autentikasi.
+ * Pelayan hanya menyajikan UI awam; TIADA endpoint data murid atau log masuk.
  * Fail /dist dijana oleh npm run build dan bersifat sementara (deploy sahaja).
  */
 import { createServer } from "node:http";
@@ -144,7 +144,7 @@ const server = createServer(async (request, response) => {
 
 
   // The existing portal does not authenticate student/teacher accounts yet.
-  // Therefore NEVER enable the ZIP's publicly switchable demo teacher accounts
+  // Therefore NEVER enable the ZIP's publicly switchable sample teacher accounts
   // or accept children's recordings in ephemeral Render storage.
   if (pathname === '/api/misi4/health') {
     const body = JSON.stringify({
@@ -206,5 +206,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Hikayat Nusantara berjalan di port ${PORT} (Fasa 1, mod demonstrasi)`);
+  console.log(`Hikayat Nusantara berjalan di port ${PORT} (paparan awam tanpa autentikasi)`);
 });
