@@ -1,11 +1,16 @@
 /** Pusat Pembelajaran Murid: panduan empat misi, graf percubaan dan jurnal kendiri setempat. */
-(() => {
+(async () => {
   'use strict';
   const root = document.getElementById('murid-pusat');
   if (!root) return;
+  const account=await window.hnGetSession?.().catch(()=>null);
+  if(!account||account.role!=='murid'||account.mustChangePassword)return;
   const $ = selector => root.querySelector(selector);
-  const STORAGE = 'hikayat-nusantara-murid-demo-v2';
-  const JOURNAL_KEY = 'hikayat-nusantara-refleksi-demo-v1';
+  // Legacy keys remain intact for explicit user-confirmed import in student-activities.js.
+  const LEGACY_STORAGE = 'hikayat-nusantara-murid-demo-v2';
+  const LEGACY_JOURNAL = 'hikayat-nusantara-refleksi-demo-v1';
+  const STORAGE = 'hikayat-nusantara-murid-v3-' + account.id;
+  const JOURNAL_KEY = 'hikayat-nusantara-refleksi-v3-' + account.id;
   const missions = [
     {
       name:'Jejak Naskhah Pusaka', icon:'📜', time:'10 minit', xp:60, place:'Rumah Naskhah Pusaka',

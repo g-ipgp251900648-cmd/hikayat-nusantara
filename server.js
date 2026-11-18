@@ -5,6 +5,7 @@
  */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
+import { handleApi, authorizeMissionRequest } from "./auth/api.js";
 
 const PUBLIC_FILES = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
@@ -24,6 +25,11 @@ const PUBLIC_FILES = new Map([
   ["/admin-dashboard.js", ["admin-dashboard.js", "text/javascript; charset=utf-8"]],
   ["/admin-dashboard.css", ["admin-dashboard.css", "text/css; charset=utf-8"]],
   ["/login-preview.html", ["login-preview.html", "text/html; charset=utf-8"]],
+  ["/login.html", ["login.html", "text/html; charset=utf-8"]],
+  ["/auth-client.js", ["auth-client.js", "text/javascript; charset=utf-8"]],
+  ["/account-ui.js", ["account-ui.js", "text/javascript; charset=utf-8"]],
+  ["/login.html", ["login.html", "text/html; charset=utf-8"]],
+  ["/auth-client.js", ["auth-client.js", "text/javascript; charset=utf-8"]],
 ]);
 const BASE = new URL("./dist/", import.meta.url);
 const PORT = Number(process.env.PORT || 10000);
@@ -35,7 +41,7 @@ const server = createServer(async (request, response) => {
   response.setHeader("X-Frame-Options", "DENY");
   response.setHeader("Cache-Control", "no-store");
 
-  if (method !== "GET" && method !== "HEAD") {
+  if (method !== "GET" && method !== "HEAD" && !(request.url || "").startsWith("/api/")) {
     response.writeHead(405, {
       "Content-Type": "text/plain; charset=utf-8",
       Allow: "GET, HEAD",
@@ -53,6 +59,11 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  // Authentication and account APIs are handled before static asset routes.
+  if (pathname.startsWith("/api/") && method !== "HEAD") {
+    if (await handleApi(request, response, pathname)) return;
+  }
+
   if (pathname === "/health") {
     const body = JSON.stringify({ status: "ok", app: "hikayat-nusantara", phase: 1 });
     response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
@@ -60,6 +71,13 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+
+  // Protect the four original mission applications even when opened by direct URL.
+  if (/^\/misi[1-4](?:\/|$)/.test(pathname) && !(await authorizeMissionRequest(request))) {
+    response.writeHead(401, { "Content-Type": "text/plain; charset=utf-8", "Cache-Control": "no-store" });
+    response.end(method === "HEAD" ? undefined : "Sila log masuk menggunakan akaun Murid untuk membuka misi.");
+    return;
+  }
 
   // Same-origin route for original Google AI Studio Misi 1 and Vite assets.
   if(pathname==='/misi1'||pathname==='/misi1/'||pathname.startsWith('/misi1/')){

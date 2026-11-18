@@ -1,10 +1,32 @@
 /** Hikayat Nusantara: empat aktiviti interaktif Dashboard Murid (rekod latihan disimpan setempat pada pelayar). */
-(function studentActivities(){
+(async function studentActivities(){
   "use strict";
   const dashboard=document.getElementById("murid-view");
   if(!dashboard)return;
+  const account=await window.hnGetSession?.().catch(()=>null);
+  if(!account||account.role!=="murid"||account.mustChangePassword)return;
+  const LEGACY_STORAGE_KEY="hikayat-nusantara-murid-demo-v2";
+  const STORAGE_KEY="hikayat-nusantara-murid-v3-"+account.id;
+  // Old browser data cannot be assigned safely to a named pupil without confirmation.
+  try {
+    if(!localStorage.getItem(STORAGE_KEY)&&localStorage.getItem(LEGACY_STORAGE_KEY)){
+      const note=document.createElement("div");
+      note.className="hn-legacy-import-note";
+      note.style.cssText="padding:14px;margin:12px 0;border:1px solid #d4c28a;background:#fff8e7;border-radius:10px;font-size:12px";
+      const text=document.createElement("p");
+      text.textContent="Rekod latihan lama ditemui pada peranti ini. Import hanya jika rekod ini memang milik anda; jika berkongsi peranti, sila semak dengan guru.";
+      const button=document.createElement("button");button.type="button";button.textContent="Import rekod latihan saya";
+      button.style.cssText="padding:9px;border-radius:8px;border:1px solid #9fb1a0;background:#e7f0e7;cursor:pointer";
+      button.addEventListener("click",()=>{
+        if(!confirm("Pastikan rekod ini milik anda. Import ke akaun ini?"))return;
+        localStorage.setItem(STORAGE_KEY,localStorage.getItem(LEGACY_STORAGE_KEY));
+        location.reload();
+      });
+      note.append(text,button);
+      dashboard.querySelector(".dash-content")?.prepend(note);
+    }
+  }catch(error){console.warn("Import rekod lama tidak tersedia.");}
 
-  const STORAGE_KEY="hikayat-nusantara-murid-demo-v2";
   const story=[
     "Pada suatu petang, Melur berjalan di tepi sungai Desa Warisan. Di celah akar pokok tua, dia ternampak sebuah pelita tembaga yang berdebu.",
     "Melur membawa pelita itu kepada Tok Penghulu. Beliau bercerita bahawa pelita tersebut pernah menjadi tanda panduan penduduk ketika kampung dilanda kabus tebal.",
