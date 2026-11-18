@@ -300,6 +300,9 @@
     if(index===2&&typeof window.openMissionThreeAdventure==="function"){
       window.openMissionThreeAdventure();return;
     }
+    if(index===3&&typeof window.openMissionFourAdventure==="function"){
+      window.openMissionFourAdventure();return;
+    }
     activeMission=index;feedback="";
     renderDialog();
     if(!dialog.open)dialog.showModal();
