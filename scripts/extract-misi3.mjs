@@ -6,7 +6,7 @@ import { join, dirname } from 'node:path';
 // Source from the user's ORIGINAL Google AI Studio Misi 3 ZIP; compressed only
 // to transfer as one binary file through the GitHub web upload interface.
 // This retains the original TSX, game data, art generation and minigame logic.
-const ARCHIVE = 'mission-three-ai-original.tar.br';
+const ARCHIVE = 'mission-three-ai-original.tar.br.b64';
 const ROOT = 'mission-three-ai';
 function cString(buffer) { return buffer.toString('utf8').split('\0',1)[0]; }
 export async function extractMisiThreeSource() {
@@ -15,9 +15,11 @@ export async function extractMisiThreeSource() {
       console.log('[Misi 3] Existing original source detected; archive not needed.');
       return;
     }
-    throw new Error('[Misi 3] Original Google AI Studio source archive is missing. Upload mission-three-ai-original.tar.br to the GitHub branch root before deployment.');
+    throw new Error('[Misi 3] Original Google AI Studio source archive is missing. The original Misi 3 source archive is missing from the GitHub branch.');
   }
-  const compressed=await readFile(ARCHIVE);
+  const encoded=(await readFile(ARCHIVE,'utf8')).trim();
+  if(!/^[A-Za-z0-9+/]+={0,2}$/.test(encoded))throw new Error('[Misi 3] Source archive is not valid base64.');
+  const compressed=Buffer.from(encoded,'base64');
   const archive=brotliDecompressSync(compressed);
   await mkdir(ROOT,{recursive:true});
   let offset=0,count=0;
