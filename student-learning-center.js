@@ -42,12 +42,12 @@
     },
     {
       name:'Persembahan Hikayat', icon:'🎭', time:'15 minit', xp:80, place:'Pentas Warisan',
-      objective:'Merancang dan berlatih menyampaikan hikayat dengan sebutan, nada dan susunan cerita yang sesuai.',
+      objective:'Merancang tiga babak, berlatih sebutan/nada dan merakam persembahan hikayat melalui kamera atau mikrofon secara sukarela.',
       steps:['Tulis pembukaan untuk memperkenalkan watak dan latar.',
         'Tulis perkembangan dengan peristiwa dan tindakan watak.',
         'Tulis pengakhiran serta pengajaran cerita.',
-        'Pilih format latihan dan tandakan selesai selepas berlatih.'],
-      proof:'Pelan tiga babak dan penanda latihan; bukan bukti rakaman sebenar.',
+        'Rakam video atau suara, pratonton hasil, kemudian simpan fail ke peranti. Penghantaran rasmi memerlukan akaun/storan guru yang selamat.'],
+      proof:'Studio rakaman video/audio dan pemilih fail asli. Penghantaran guru belum aktif sehingga backend selamat tersedia.',
       pass:'Ketiga-tiga babak dan latihan kendiri lengkap dalam sistem demo.',
       hint:'Latih suara dan nada mengikut emosi cerita. Rakaman sebenar memerlukan platform sokongan dan semakan guru.'
     }
