@@ -1,0 +1,25 @@
+name: Check live 12-menu teacher dashboard
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  live-asset-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check public Render assets
+        shell: bash
+        run: |
+          set -u
+          BASE="https://hikayat-nusantara-portal.onrender.com"
+          for path in "/health" "/teacher-dashboard.js" "/teacher-dashboard.css" "/"; do
+            echo "::group::GET $path"
+            curl --location --silent --show-error --max-time 75 --connect-timeout 15 \
+              --output /tmp/hikayat-teacher-check \
+              --write-out "HTTP=%{http_code} CONTENT_TYPE=%{content_type} BYTES=%{size_download} URL=%{url_effective}\n" \
+              "$BASE$path" || echo "Transport error for $path"
+            if [ "$path" = "/teacher-dashboard.js" ]; then
+              grep -q "guru-pengurusan-murid" /tmp/hikayat-teacher-check && echo "MENU_SOURCE=present" || echo "MENU_SOURCE=missing"
+            fi
+            echo "::endgroup::"
+          done
