@@ -27,4 +27,13 @@ CREATE INDEX IF NOT EXISTS hn_misi4_student_date
   ON hn_misi4_submissions(organization_id,student_id,submitted_at DESC);
 CREATE INDEX IF NOT EXISTS hn_misi4_class_date
   ON hn_misi4_submissions(organization_id,class_id,submitted_at DESC);
+CREATE TABLE IF NOT EXISTS hn_misi4_workflow (
+  student_id uuid PRIMARY KEY REFERENCES hn_users(id) ON DELETE CASCADE,
+  organization_id uuid NOT NULL REFERENCES hn_organizations(id),
+  story_plan jsonb,
+  rehearsal jsonb,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hn_misi4_workflow_org
+  ON hn_misi4_workflow(organization_id);
 COMMIT;
