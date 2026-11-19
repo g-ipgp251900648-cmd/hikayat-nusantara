@@ -28,13 +28,13 @@ jobs:
                 const s=await readFile(file,'utf8');
                 if(file.endsWith('SubmissionHallModal.tsx')) {
                   console.log('COMPONENT_BEGIN',file);
-                  console.log(s.slice(12500,17000));
+                  console.log(s.slice(12500,13800));
                   console.log('COMPONENT_END');
                 }else if(/backendReady|storageHealth|onSubmitToTeacher|handleRealSubmit/.test(s)){
                   console.log('RELATED',file);
-                  for(const needle of ['backendReady','storageHealth','onSubmitToTeacher','handleRealSubmit']){
+                  for(const needle of ['setStorageHealth(', 'const handleSubmissionConfirmed', 'interface SubmissionRecord', 'type SubmissionRecord', '/api/misi4/health', '/api/misi4/state']){
                     let pos=0,count=0;
-                    while((pos=s.indexOf(needle,pos))>=0&&count++<14){console.log('MATCH',needle,s.slice(Math.max(0,pos-420),pos+750));pos+=needle.length;}
+                    while((pos=s.indexOf(needle,pos))>=0&&count++<6){console.log('MATCH',needle,s.slice(Math.max(0,pos-420),pos+1700));pos+=needle.length;}
                   }
                 }
               }
