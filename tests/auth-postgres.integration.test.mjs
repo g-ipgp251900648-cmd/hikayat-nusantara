@@ -206,6 +206,53 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.equal(teacherProgressA.data.progress.length,1);
     assert.equal(teacherProgressB.data.progress.length,0);
     assert.equal(teacherProgressA.data.progress[0].state,'draft');
+
+    // Server-backed mission monitoring shared across pupil, teacher, and
+    // organization administrators, without exposing raw stories or media.
+    const summarySave=await api('/api/student/progress/3',{
+      method:'PUT',cookie:studentA.cookie,body:{
+        revision:0,
+        checkpoint:{kind:'practice-v1',completed:true,attemptCount:3,lastScore:10,lastTotal:12}
+      }
+    });
+    assert.equal(summarySave.status,200);
+    const pupilRecords=await api('/api/student/progress',{cookie:studentA.cookie});
+    assert.equal(pupilRecords.data.progress.length,2);
+    assert.equal(pupilRecords.data.progress.find(r=>r.mission_id===3).checkpoint.completed,true);
+    const teacherSummary=await api('/api/teacher/progress',{cookie:a.cookie});
+    assert.equal(teacherSummary.status,200);
+    const mission3=teacherSummary.data.progress.find(r=>r.missionId===3);
+    assert.equal(mission3.loginId,pupilA.student.login_id);
+    assert.equal(mission3.completed,true);
+    assert.equal(mission3.attemptCount,3);
+    assert.equal(mission3.lastScore,10);
+    assert.equal(mission3.lastTotal,12);
+    assert.equal(mission3.state,'draft'); // Must not claim teacher/PBD verification.
+    assert.equal(mission3.recordType,'latihan');
+    // Raw written answers must not be copied into teacher results.
+    assert.equal(Object.hasOwn(mission3,'checkpoint'),false);
+    const adminSummary=await api('/api/admin/progress',{cookie:admin.cookie});
+    assert.equal(adminSummary.status,200);
+    assert.equal(adminSummary.data.progress.find(r=>r.missionId===3).completed,true);
+    for(const privileged of [gkmpSession,panitiaSession]){
+      assert.equal((await api('/api/admin/progress',{cookie:privileged.cookie})).status,200);
+    }
+    const forbiddenTeacherAdmin=await api('/api/admin/progress',{cookie:a.cookie});
+    assert.equal(forbiddenTeacherAdmin.status,404);
+    assert.equal((await api('/api/teacher/progress',{cookie:b.cookie})).data.progress.length,0);
+    assert.equal((await api('/api/admin/progress',{cookie:studentA.cookie})).status,404);
+    // No real Misi 4 submission is inferred from a student-declared practice flag.
+    const misi4Plan=await api('/api/student/progress/4',{
+      method:'PUT',cookie:studentA.cookie,body:{
+        revision:0,checkpoint:{kind:'practice-v1',completed:true,attemptCount:0,lastScore:null,lastTotal:null}
+      }
+    });
+    assert.equal(misi4Plan.status,200);
+    const misi4Monitor=(await api('/api/admin/progress',{cookie:admin.cookie})).data.progress.find(r=>r.missionId===4);
+    assert.equal(misi4Monitor.completed,true);
+    assert.equal(misi4Monitor.state,'draft');
+    assert.equal(misi4Monitor.recordType,'latihan');
+
     assert.equal((await fetch(base+'/misi1/')).status,401);
     assert.equal((await fetch(base+'/misi1/',{headers:{Cookie:a.cookie}})).status,401);
 
@@ -537,6 +584,9 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const crossOrgDelete=await api('/api/admin/users/delete',{method:'POST',cookie:otherAdmin.cookie,
       body:{userId:teacherA.teacher.id,confirmationId:teacherA.teacher.login_id}});
     assert.equal(crossOrgDelete.status,404);
+    const outsideProgress=await api('/api/admin/progress',{cookie:otherAdmin.cookie});
+    assert.equal(outsideProgress.status,200);
+    assert.deepEqual(outsideProgress.data.progress,[]);
     const outsideLeaders=await api('/api/admin/leaders',{cookie:otherAdmin.cookie});
     assert.equal(outsideLeaders.status,200);
     assert.deepEqual(outsideLeaders.data.leaders,[]);
