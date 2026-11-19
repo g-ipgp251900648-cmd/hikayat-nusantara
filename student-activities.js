@@ -132,6 +132,12 @@
   const statusText=text=>{
     const node=document.getElementById('quest-cloud-status');
     if(node)node.textContent=text;
+    const chip=dashboard.querySelector('.system-status-chip');
+    if(chip){
+      if(text.includes('berjaya disimpan'))chip.textContent='KEMAJUAN DISIMPAN';
+      else if(/terganggu|Tidak dapat|belum dihantar|berubah/.test(text))chip.textContent='CUBA SEGERAK SEMULA';
+      else chip.textContent='MEMUATKAN KEMAJUAN';
+    }
   };
   function queueCloud(){
     if(!cloud.ready)return;
@@ -284,7 +290,7 @@
       <button type="button" id="quest-reset">↺ Tetapkan semula latihan</button>
     </div>
     <p class="quest-privacy">Jawapan dan draf kekal pada peranti anda. Guru hanya melihat ringkasan kemajuan; markah latihan bukan markah rasmi.</p>
-    <p id="quest-cloud-status" class="quest-privacy" role="status">Menyambungkan kemajuan ke Neon...</p>
+    <p id="quest-cloud-status" class="quest-privacy" role="status">Menyediakan kemajuan anda...</p>
     <button type="button" id="quest-sync-now">↻ Segerakkan Kemajuan</button>`;
   const map=document.getElementById("desa-hikayat-map");
   if(map)map.before(hud);
@@ -332,8 +338,8 @@
       const b=banner.querySelector("b");
       const track=banner.querySelector(".progress-track span");
       if(h)h.textContent=done===4?"Pelita Warisan bersinar!":"Pengembaraan Desa Hikayat";
-      if(p)p.textContent=`${done} daripada 4 latihan misi telah diselesaikan pada peranti ini.`;
-      if(b)b.textContent=`${done*25}% latihan selesai pada peranti ini`;
+      if(p)p.textContent=`${done} daripada 4 latihan misi telah diselesaikan.`;
+      if(b)b.textContent=`${done*25}% latihan selesai`;
       if(track)track.style.width=`${done*25}%`;
     }
     dashboard.querySelectorAll(".mission-card[data-mission]").forEach(card=>{
@@ -358,7 +364,7 @@
       const tag=portfolio.querySelector(".paper-tag");
       if(h)h.textContent=state.writtenStory.trim()?"Draf Hikayat Saya":"Belum ada draf cerita";
       if(p)p.textContent=state.writtenStory.trim()?state.writtenStory.slice(0,170)+(state.writtenStory.length>170?"…":""):"Draf cerita yang ditulis dalam Misi 2 akan dipaparkan di sini.";
-      if(tag)tag.textContent="Draf latihan setempat · Tidak dihantar kepada guru";
+      if(tag)tag.textContent="Draf latihan · Belum dihantar kepada Guru";
     }
   }
 
