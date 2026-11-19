@@ -6,8 +6,8 @@
   let overlay=null, iframe=null;
   async function sendRecording(file,status){
     if(!file)return;
-    if(!['video/webm','video/mp4'].includes(file.type)||file.size<1024||file.size>100*1024*1024){
-      status.textContent='Gunakan rakaman WebM/MP4 sehingga 100 MB.';return;
+    if(!['video/webm','video/mp4'].includes(file.type)||file.size<1024||file.size>2*1024*1024){
+      status.textContent='Gunakan rakaman WebM/MP4 sehingga 2 MB.';return;
     }
     const putJson=async(url,body)=>{
       const r=await fetch(url,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -19,14 +19,14 @@
     try{
       const started=await putJson('/api/misi4/initiate',{bytes:file.size,mime:file.type});
       status.textContent='Memuat naik rakaman kepada Guru…';
-      const result=await fetch(started.uploadUrl,{method:'PUT',headers:{'Content-Type':file.type},body:file});
-      if(!result.ok)throw Error('UPLOAD_FAILED');
-      const receipt=await putJson('/api/misi4/complete',{id:started.id});
+      const result=await fetch(started.uploadUrl,{method:'POST',credentials:'include',headers:{'Content-Type':file.type},body:file});
+      const receipt=await result.json().catch(()=>({}));
+      if(!result.ok||receipt.ok!==true)throw Error(receipt.error||'UPLOAD_FAILED');
       const verified=await fetch('/api/misi4/state',{credentials:'include',cache:'no-store'});
       const state=await verified.json();
       if(!verified.ok||!state.submissions?.some(s=>s.id===receipt.id))throw Error('RECEIPT_NOT_VERIFIED');
       window.submitMissionFourAdventure?.({receipt:receipt.referenceNo,submissionId:receipt.id,verified:true});
-      status.textContent='✓ Rakaman diterima pelayan dan tersedia dalam dashboard guru.';
+      status.textContent='✓ Rakaman berjaya dihantar. Guru boleh melihatnya dalam Portfolio Digital.';
     }catch(e){
       status.textContent='Penghantaran gagal ('+String(e.message).slice(0,70)+'). Simpan rakaman ke peranti dan cuba lagi.';
     }
