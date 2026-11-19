@@ -64,16 +64,16 @@
     const x=stateOf(key),line=el('div','','hn-learning-filters');
     const c=select((current.classes||[]).map(r=>[r.id,r.name+' ('+r.school_year+')']),x.classId);
     line.append(field('Kelas',c));
-    c.addEventListener('change',()=>{x.classId=c.value;x.studentId='';render(key);});
+    c.addEventListener('change',()=>{x.classId=c.value;x.studentId='';x.videoId='';render(key);});
     if(student){
       const people=ownStudents(x.classId);
       const p=select(people.map(r=>[r.id,r.display_name+' · '+r.login_id]),x.studentId);
-      p.addEventListener('change',()=>{x.studentId=p.value;render(key);});
+      p.addEventListener('change',()=>{x.studentId=p.value;x.videoId='';render(key);});
       line.append(field('Murid',p));
     }
     if(mission){
       const m=select(names.map((name,i)=>[i+1,'Misi '+(i+1)+' · '+name]),x.missionId);
-      m.addEventListener('change',()=>{x.missionId=Number(m.value);render(key);});
+      m.addEventListener('change',()=>{x.missionId=Number(m.value);x.videoId='';render(key);});
       line.append(field('Misi',m));
     }
     root.append(line);return x;
