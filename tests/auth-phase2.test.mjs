@@ -63,6 +63,23 @@ test('frontend protects dashboards and maintains per-user local practice storage
   assert.match(src('student-activities.js'),/Import rekod latihan saya/);
 });
 
+test('every pupil dashboard greets only the authenticated account name',()=>{
+  const html=src('index.html');
+  const student=src('student-activities.js');
+  const css=src('styles.css');
+  for(const id of ['hn-student-top-name','hn-student-welcome',
+      'hn-student-welcome-summary','hn-student-avatar','hn-student-attempt-summary']){
+    assert.match(html,new RegExp('id="'+id+'"'));
+  }
+  assert.match(student,/const pupilName=String\(account\.name\|\|''\)/);
+  assert.match(student,/welcome\.textContent='Selamat Datang, '\+pupilName\+'!'/);
+  assert.match(student,/welcomeSummary\.textContent=pupilName\+'!'/);
+  assert.match(student,/topName\.textContent=pupilName/);
+  assert.doesNotMatch(student,/welcome\.innerHTML|topName\.innerHTML/);
+  assert.match(css,/\.hn-student-welcome/);
+  assert.match(student,/hn-student-attempt-summary/);
+});
+
 test('only three login portals while GKMP and Ketua Panitia share Admin',()=>{
   const login=src('login.html');
   const client=src('auth-client.js');
