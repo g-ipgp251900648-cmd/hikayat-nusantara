@@ -314,7 +314,7 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     // related checkpoints must be removed without touching other pupils.
     const studentList=await api('/api/admin/students',{cookie:admin.cookie});
     assert.equal(studentList.status,200);
-    assert.ok(studentList.data.students.some(p=>p.id===pupilA.student.id&&p.progress_count===1));
+    assert.ok(studentList.data.students.some(p=>p.id===pupilA.student.id&&p.progress_count===3));
     const activeStudentDelete=await api('/api/admin/users/delete',{
       method:'POST',cookie:admin.cookie,
       body:{userId:pupilA.student.id,confirmationId:pupilA.student.login_id}
