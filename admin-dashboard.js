@@ -1,7 +1,4 @@
-/* Pusat Warisan — Dashboard Admin (Fasa reka bentuk).
-   This navigation has no live data source or authenticated backend yet.
-   Real accounts, teacher permissions, student records and audit logs require a secure backend.
-   NEVER accept/store credentials, recordings or actual student data here. */
+/* Pusat Warisan — Dashboard Admin. Rekod aktif datang daripada API berautentikasi. */
 (() => {
   'use strict';
   const dashboard = document.getElementById('admin-view');
@@ -29,7 +26,7 @@
   ];
   const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const note = '<div class="hn-admin-notice" role="status">Pengurusan akaun dan rekod kemajuan latihan menggunakan Neon. Storan media, penghantaran video dan pentaksiran PBD rasmi belum diaktifkan.</div>';
+  const pendingPages=new Set(['admin-organisasi','admin-audit','admin-penghantaran','admin-media','admin-notifikasi','admin-backup']);
   const emptyTable = headings => '<div class="table-wrap"><table><thead><tr>' +
     headings.map(h => '<th>' + escapeHTML(h) + '</th>').join('') +
     '</tr></thead><tbody><tr><td colspan="' + headings.length +
@@ -42,7 +39,7 @@
     section.id=id; section.className='dash-section hn-admin-page';
     section.innerHTML='<div class="section-line"><div><span class="mini-label">' +
       escapeHTML(eyebrow) + '</span><h2>' + escapeHTML(title) +
-      '</h2></div></div><p class="hn-admin-intro">' + escapeHTML(intro) + '</p>' + note + body;
+      '</h2></div></div><p class="hn-admin-intro">' + escapeHTML(intro) + '</p>' + (pendingPages.has(id)?'<p class="hn-admin-muted">Fungsi ini sedang disediakan.</p>':'') + body;
     content.appendChild(section);
   };
 
@@ -62,7 +59,7 @@
     'Pantau penyelesaian Misi 1–4 dan masalah penyelarasan tanpa memaparkan data peribadi secara terbuka.',
     '<div class="hn-admin-tiles">' + ['Jejak Naskhah Pusaka','Balai Olah Hikayat','Warisan Bahasa','Pentas Warisan'].map((x,i)=>
       '<article><small>MISI ' + (i+1) + '</small><strong>' + escapeHTML(x) +
-      '</strong><span>Status sinkronisasi: belum tersedia</span></article>').join('') + '</div>');
+      '</strong><span>Status misi</span></article>').join('') + '</div>');
   make('admin-audit','JEJAK SISTEM','Aktiviti & Log Audit',
     'Log audit akan menyimpan siapa, tindakan apa, bila, organisasi dan keputusan tindakan. Elakkan merekod kata laluan atau kandungan sensitif.',
     emptyTable(['Masa','Pengguna / Peranan','Peristiwa','Organisasi','Hasil']));
@@ -85,7 +82,7 @@
   make('admin-backup','KESELAMATAN DATA','Sandaran & Pemulihan',
     'Semak status sandaran, tempoh simpanan dan ujian pemulihan. Jangan dakwa backup aktif sebelum diuji.',
     stats(['Sandaran terakhir','Status integriti','Pemulihan terakhir']) +
-    '<p class="hn-admin-muted">Pelan sandaran akan dilaksanakan bersama pangkalan data berpusat dan storan persendirian.</p>');
+    '<p class="hn-admin-muted">Sandaran dan pemulihan akan disediakan selepas pengujian keselamatan selesai.</p>');
 
   // Replace ADMIN navigation only. Student experience and Teacher navigation are untouched.
   sidebar.querySelectorAll('.side-link[data-target]').forEach(node => node.remove());
