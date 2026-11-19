@@ -12,13 +12,21 @@ CREATE TABLE IF NOT EXISTS hn_users (
   login_id varchar(32) NOT NULL UNIQUE,
   display_name varchar(100) NOT NULL,
   password_hash text NOT NULL,
-  role varchar(10) NOT NULL CHECK (role IN ('admin','guru','murid')),
+  role varchar(10) NOT NULL CHECK (role IN ('admin','guru','murid','gkmp','panitia')),
   active boolean NOT NULL DEFAULT true,
   must_change_password boolean NOT NULL DEFAULT true,
   failed_logins integer NOT NULL DEFAULT 0,
   locked_until timestamptz,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+-- Backward-compatible upgrade for databases created with three original roles.
+ALTER TABLE hn_users DROP CONSTRAINT IF EXISTS hn_users_role_check;
+ALTER TABLE hn_users ADD CONSTRAINT hn_users_role_check
+  CHECK (role IN ('admin','guru','murid','gkmp','panitia'));
+-- Only one active person for each leadership position in an organization.
+CREATE UNIQUE INDEX IF NOT EXISTS hn_one_active_bm_leader_per_org
+  ON hn_users(organization_id,role)
+  WHERE active AND role IN ('gkmp','panitia');
 CREATE INDEX IF NOT EXISTS hn_users_org_role ON hn_users(organization_id,role);
 CREATE TABLE IF NOT EXISTS hn_classes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),

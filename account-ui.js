@@ -5,6 +5,7 @@
   const safe=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const request=(url,options)=>window.hnApiRequest(url,options);
   let teacherReady=false,adminReady=false;
+  const adminRoles=['admin','gkmp','panitia'];
   let myClasses=[];
   const notice=(root,text)=>{const target=root?.querySelector('.hn-teacher-notice,.hn-admin-notice');if(target)target.textContent=text;};
   function dialog(title,fields,submit) {
@@ -60,7 +61,7 @@
   }
 
   async function loadAdmin(){
-    const [summary,teachers]=await Promise.all([request('/api/admin/overview'),request('/api/admin/teachers')]);
+    const [summary,teachers,leaders]=await Promise.all([request('/api/admin/overview'),request('/api/admin/teachers'),request('/api/admin/leaders')]);
     if(summary.ok) {
       const values=[summary.data.stats.students,summary.data.stats.teachers,summary.data.stats.classes,'—'];
       $('#admin-ringkasan')?.querySelectorAll('.stats-grid.four .stat strong').forEach((el,i)=>{el.textContent=String(values[i]??'—');});
@@ -85,6 +86,44 @@
       for(const val of [user.display_name,user.login_id,user.active?'Aktif':'Digantung']){
         const td=document.createElement('td');td.textContent=String(val);tr.appendChild(td);
       }body.appendChild(tr);
+    }
+    root.append(table);
+    renderLeaders(leaders);
+  }
+
+  function renderLeaders(result){
+    const root=$('#admin-kepimpinan');
+    if(!root)return;
+    if(!result.ok){
+      root.textContent='Rekod kepimpinan tidak dapat dibaca. Pastikan migrasi Neon sudah dijalankan.';
+      return;
+    }
+    root.replaceChildren();
+    const heading=document.createElement('div');heading.className='section-line';
+    const inner=document.createElement('div');
+    const title=document.createElement('h2');title.textContent='Kepimpinan Bahasa Melayu';inner.append(title);heading.append(inner);root.append(heading);
+    const description=document.createElement('p');description.className='hn-admin-intro';
+    description.textContent='GKMP dan Ketua Panitia mempunyai fungsi serta akses Dashboard Admin yang sama, terhad kepada organisasi ini.';root.append(description);
+    const actions=document.createElement('div');actions.className='hn-admin-actions';
+    actions.append(makeButton('+ Tambah Pentadbir BM',()=>dialog('Daftar Kepimpinan BM',[
+      {key:'role',label:'Jawatan',options:[{value:'gkmp',label:'Guru Kanan Mata Pelajaran Bahasa Melayu'},{value:'panitia',label:'Ketua Panitia Bahasa Melayu'}]},
+      {key:'name',label:'Nama Penuh'}
+    ],async data=>{
+      const r=await request('/api/admin/leaders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+      if(r.ok){showCredential(r.data.leader.display_name,r.data.leader.login_id,r.data.temporaryPassword);loadAdmin();}
+      return r;
+    })));
+    root.append(actions);
+    const table=document.createElement('div');table.className='table-wrap';
+    table.innerHTML='<table><thead><tr><th>Jawatan</th><th>Nama</th><th>ID Pengguna</th><th>Status</th></tr></thead><tbody></tbody></table>';
+    const tbody=table.querySelector('tbody');
+    if(!result.data.leaders.length){const row=tbody.insertRow(),cell=row.insertCell();cell.colSpan=4;cell.textContent='Belum ada akaun Guru Kanan atau Ketua Panitia.';}
+    for(const person of result.data.leaders){
+      const row=tbody.insertRow();
+      const label=person.role==='gkmp'?'Guru Kanan Mata Pelajaran Bahasa Melayu':'Ketua Panitia Bahasa Melayu';
+      for(const value of [label,person.display_name,person.login_id,person.active?'Aktif':'Digantung']){
+        const cell=row.insertCell();cell.textContent=String(value);
+      }
     }
     root.append(table);
   }
@@ -183,7 +222,7 @@
     try {
       const u=await window.hnGetSession();
       if(u?.mustChangePassword)return;
-      if(u?.role==='admin'&&!adminReady){adminReady=true;await loadAdmin();}
+      if(adminRoles.includes(u?.role)&&!adminReady){adminReady=true;await loadAdmin();}
       if(u?.role==='guru'){
         if(!teacherReady){teacherReady=true;connectTeacher();}
         await loadTeacher();

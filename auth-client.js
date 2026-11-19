@@ -7,7 +7,9 @@
     try {data=await response.json();}catch {data={};}
     return {ok:response.ok,status:response.status,data};
   }
-  const roles=['murid','guru','admin'];
+  const roles=['murid','guru','admin','gkmp','panitia'];
+  const adminLike=role=>['admin','gkmp','panitia'].includes(role);
+  const dashboardRole=role=>adminLike(role)?'admin':role;
   let remembered=null;
   window.hnGetSession=async () => {
     const result=await request('/api/auth/session');
@@ -18,7 +20,7 @@
     if(!roles.includes(role))return false;
     try {
       const user=await window.hnGetSession();
-      if(user?.role===role&&!user.mustChangePassword)return true;
+      if(user&&!user.mustChangePassword&&(user.role===role||(role==='admin'&&adminLike(user.role))))return true;
       location.replace('/login.html?role='+encodeURIComponent(role));
     } catch {location.replace('/login.html?role='+encodeURIComponent(role));}
     return false;
@@ -54,19 +56,19 @@
   const setRole=role=>{
     chosen=role;
     roleButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.role===role)));
-    document.getElementById('id-label').textContent='ID '+({murid:'Murid',guru:'Guru',admin:'Admin'}[role]);
+    document.getElementById('id-label').textContent='ID '+({murid:'Murid',guru:'Guru',admin:'Admin',gkmp:'Guru Kanan BM',panitia:'Ketua Panitia BM'}[role]);
   };
   roleButtons.forEach(b=>b.addEventListener('click',()=>setRole(b.dataset.role)));
   setRole(chosen);
   const message=text=>{status.textContent=text;};
   async function afterLogin(user) {
-    sessionRole=user.role;
+    sessionRole=dashboardRole(user.role);
     if(user.mustChangePassword){
       form.hidden=true;changeForm.hidden=false;
       message('Sila tukar kata laluan sementara sebelum memasuki dashboard.');
       return;
     }
-    location.replace('/#'+user.role);
+    location.replace('/#'+dashboardRole(user.role));
   }
   (async()=>{
     try {

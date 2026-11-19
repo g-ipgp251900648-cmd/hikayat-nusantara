@@ -92,6 +92,42 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
       assert.ok(r.data.temporaryPassword.length>=12);
       return r.data;
     }
+    // All leadership roles share Admin permissions within their organization.
+    async function registerLeader(role,name) {
+      const r=await api('/api/admin/leaders',{
+        method:'POST',cookie:admin.cookie,body:{role,name}
+      });
+      assert.equal(r.status,201,JSON.stringify(r.data));
+      assert.equal(r.data.leader.role,role);
+      assert.match(r.data.leader.login_id,/^HN-(GK|KP)-/);
+      assert.ok(r.data.temporaryPassword.length>=12);
+      return r.data;
+    }
+    const gkmp=await registerLeader('gkmp','Guru Kanan Bahasa Melayu');
+    const panitia=await registerLeader('panitia','Ketua Panitia Bahasa Melayu');
+    const leadershipList=await api('/api/admin/leaders',{cookie:admin.cookie});
+    assert.equal(leadershipList.data.leaders.length,2);
+    const duplicate=await api('/api/admin/leaders',{method:'POST',cookie:admin.cookie,
+      body:{role:'gkmp',name:'Guru Kanan Kedua'}});
+    assert.equal(duplicate.status,409);
+    const gkmpSession=await signin(gkmp.leader.login_id,gkmp.temporaryPassword);
+    const panitiaSession=await signin(panitia.leader.login_id,panitia.temporaryPassword);
+    assert.equal(gkmpSession.data.user.role,'gkmp');
+    assert.equal(panitiaSession.data.user.role,'panitia');
+    assert.equal((await api('/api/admin/overview',{cookie:gkmpSession.cookie})).status,403);
+    await updatePassword(gkmpSession.cookie,gkmp.temporaryPassword,makePassword());
+    await updatePassword(panitiaSession.cookie,panitia.temporaryPassword,makePassword());
+    for(const session of [gkmpSession,panitiaSession]) {
+      assert.equal((await api('/api/admin/overview',{cookie:session.cookie})).status,200);
+      assert.equal((await api('/api/admin/teachers',{cookie:session.cookie})).status,200);
+      assert.equal((await api('/api/admin/leaders',{cookie:session.cookie})).status,200);
+    }
+    const addedByGkmp=await api('/api/admin/teachers',{method:'POST',cookie:gkmpSession.cookie,
+      body:{name:'Guru Daftar GKMP'}});
+    assert.equal(addedByGkmp.status,201);
+    const addedByPanitia=await api('/api/admin/teachers',{method:'POST',cookie:panitiaSession.cookie,
+      body:{name:'Guru Daftar Panitia'}});
+    assert.equal(addedByPanitia.status,201);
     const teacherA=await registerTeacher('Guru Amanah');
     const teacherB=await registerTeacher('Guru Bestari');
     const a=await signin(teacherA.teacher.login_id,teacherA.temporaryPassword);
@@ -176,6 +212,9 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const fromOtherOrg=await api('/api/admin/teachers',{cookie:otherAdmin.cookie});
     assert.equal(fromOtherOrg.status,200);
     assert.deepEqual(fromOtherOrg.data.teachers,[]);
+    const outsideLeaders=await api('/api/admin/leaders',{cookie:otherAdmin.cookie});
+    assert.equal(outsideLeaders.status,200);
+    assert.deepEqual(outsideLeaders.data.leaders,[]);
     const otherStats=await api('/api/admin/overview',{cookie:otherAdmin.cookie});
     assert.equal(otherStats.data.stats.teachers,0);
     assert.equal(otherStats.data.stats.students,0);

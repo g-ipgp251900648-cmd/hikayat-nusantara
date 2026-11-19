@@ -4,6 +4,8 @@ import { hashPassword, verifyPassword, validLoginId, validPassword, validName, t
 const COOKIE_NAME='hn_session';
 const EIGHT_HOURS=8*60*60;
 const attempts=new Map();
+const adminRoles=new Set(['admin','gkmp','panitia']);
+const canAdmin = role => adminRoles.has(role);
 function json(response,status,data,extra={}) {
   response.writeHead(status,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',...extra});
   response.end(JSON.stringify(data));
@@ -181,11 +183,11 @@ export async function handleApi(request,response,pathname) {
     if(!user)return true;
 
     if(pathname==='/api/admin/overview'&&method==='GET'){
-      if(user.role!=='admin'){reject(response,403,'FORBIDDEN');return true;}
+      if(!canAdmin(user.role)){reject(response,403,'FORBIDDEN');return true;}
       const r=await db.query("SELECT (SELECT count(*)::int FROM hn_users WHERE organization_id=$1 AND role='guru' AND active) AS teachers,(SELECT count(*)::int FROM hn_users WHERE organization_id=$1 AND role='murid' AND active) AS students,(SELECT count(*)::int FROM hn_classes WHERE organization_id=$1) AS classes",[user.organization_id]);
       json(response,200,{ok:true,stats:r.rows[0]});return true;
     }
-    if(pathname==='/api/admin/teachers'&&user.role==='admin'){
+    if(pathname==='/api/admin/teachers'&&canAdmin(user.role)){
       if(method==='GET'){
         const r=await db.query("SELECT id,login_id,display_name,active,created_at FROM hn_users WHERE organization_id=$1 AND role='guru' ORDER BY created_at DESC LIMIT 300",[user.organization_id]);
         json(response,200,{ok:true,teachers:r.rows});return true;
@@ -198,6 +200,35 @@ export async function handleApi(request,response,pathname) {
         const r=await db.query("INSERT INTO hn_users(organization_id,login_id,display_name,password_hash,role) VALUES($1,$2,$3,$4,'guru') RETURNING id,login_id,display_name",[user.organization_id,id,name,hashed]);
         await auditEvent(db,user,'create_teacher','user',r.rows[0].id);
         json(response,201,{ok:true,teacher:r.rows[0],temporaryPassword:password});return true;
+      }
+    }
+    if(pathname==='/api/admin/leaders'&&canAdmin(user.role)){
+      if(method==='GET'){
+        const r=await db.query(
+          "SELECT id,login_id,display_name,role,active,created_at FROM hn_users WHERE organization_id=$1 AND role IN ('gkmp','panitia') ORDER BY role,created_at DESC LIMIT 20",
+          [user.organization_id]
+        );
+        json(response,200,{ok:true,leaders:r.rows});return true;
+      }
+      if(method==='POST'){
+        const body=await readBody(request);
+        const name=cleanName(body.name),role=body.role;
+        if(!validName(name)||!['gkmp','panitia'].includes(role)){
+          reject(response,400,'INVALID_LEADERSHIP_ACCOUNT');return true;
+        }
+        const id=uniqueId(role),password=temporaryPassword(),hashed=await hashPassword(password);
+        let result;
+        try {
+          result=await db.query(
+            'INSERT INTO hn_users(organization_id,login_id,display_name,password_hash,role) VALUES($1,$2,$3,$4,$5) RETURNING id,login_id,display_name,role',
+            [user.organization_id,id,name,hashed,role]
+          );
+        } catch(error) {
+          if(error?.code==='23505'){reject(response,409,'LEADERSHIP_POSITION_OCCUPIED');return true;}
+          throw error;
+        }
+        await auditEvent(db,user,'create_bm_leader','user',result.rows[0].id);
+        json(response,201,{ok:true,leader:result.rows[0],temporaryPassword:password});return true;
       }
     }
     if(pathname==='/api/teacher/classes'&&user.role==='guru'){

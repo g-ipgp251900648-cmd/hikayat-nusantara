@@ -11,7 +11,7 @@ main{width:min(100%,440px)}header{text-align:center;margin-bottom:24px}.mark{dis
 h1{font:600 30px "Fraunces",Georgia,serif;margin:0 0 5px}header p{margin:0;font-size:13px;color:#65776b}
 .card{background:#fffdf8;padding:30px;border-radius:16px;border:1px solid #e3e6de;box-shadow:0 20px 60px #163a2f17}
 fieldset{border:0;margin:0 0 21px;padding:0}legend, label{display:block;font-size:12px;font-weight:700;margin:0 0 9px}
-.roles{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.roles button{background:#f6f8f3;border:1px solid #dae2d9;border-radius:8px;padding:10px;cursor:pointer;font:700 13px "DM Sans",sans-serif;color:#355b46}
+.roles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.roles button{background:#f6f8f3;border:1px solid #dae2d9;border-radius:8px;padding:10px;cursor:pointer;font:700 13px "DM Sans",sans-serif;color:#355b46}
 .roles button[aria-pressed="true"]{background:#e6f0e5;border-color:#3f765c;box-shadow:inset 0 0 0 1px #3f765c}label{margin-top:15px}
 input{width:100%;padding:12px 13px;border:1px solid #d8dfd5;border-radius:8px;background:white;font:inherit;font-size:14px}input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #b9924e;outline-offset:2px}
 .submit{width:100%;border:0;border-radius:9px;padding:13px;margin-top:23px;background:#20563e;color:white;font:700 13px "DM Sans",sans-serif;cursor:pointer}.submit:disabled{opacity:.55;cursor:not-allowed}
@@ -29,6 +29,8 @@ footer{text-align:center;margin-top:21px;font-size:12px}footer a{color:#23593f;t
 <button type="button" data-role="murid" aria-pressed="true">Murid</button>
 <button type="button" data-role="guru" aria-pressed="false">Guru</button>
 <button type="button" data-role="admin" aria-pressed="false">Admin</button>
+<button type="button" data-role="gkmp" aria-pressed="false">Guru Kanan BM</button>
+<button type="button" data-role="panitia" aria-pressed="false">Ketua Panitia BM</button>
 </div></fieldset>
 <label id="id-label" for="login-id">ID Murid</label><input id="login-id" name="username" required autocomplete="username" placeholder="Masukkan ID yang diberikan" maxlength="32" autocapitalize="characters">
 <label for="login-password">Kata Laluan</label><input id="login-password" name="password" type="password" required autocomplete="current-password">
