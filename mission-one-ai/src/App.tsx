@@ -340,10 +340,10 @@ export default function App() {
   // Progress events are only delivered to a same-origin parent portal. The
   // standalone Google AI Studio preview continues to work without any parent.
   const notifyHikayatPortal = useCallback((eventType: 'attempt' | 'victory' | 'snapshot', payload: {
-    foundScrolls: ScrollId[];
-    readStoryPages: number[];
-    orderedIds: string[];
-    quizAnswers: Record<string, string | undefined>;
+    foundScrolls?: ScrollId[];
+    readStoryPages?: number[];
+    orderedIds?: string[];
+    quizAnswers?: Record<string, string | undefined>;
     signature?: string;
     attemptCount?: number;
     lastScore?: number | null;
