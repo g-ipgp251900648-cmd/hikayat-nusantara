@@ -113,7 +113,7 @@ test('teacher can reset forgotten pupil passwords for one class or selected pupi
   assert.match(ui,/studentId:target.id/);
 
   assert.match(ui,/openCredentialRecovery/);
-  assert.match(ui,/Muat Turun Senarai Kata Laluan/);
+  assert.match(ui,/Muat Turun ID & Kata Laluan Baharu/);
   assert.match(teacher,/hn-reissue-credentials/);
 });
 
