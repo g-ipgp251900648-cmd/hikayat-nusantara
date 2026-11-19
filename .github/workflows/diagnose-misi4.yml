@@ -1,0 +1,45 @@
+name: Diagnose Misi 4 preview submission source
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/diagnose-misi4.yml'
+      - 'scripts/extract-misi4.mjs'
+      - 'scripts/patch-misi4-submit.mjs'
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Inspect source for preview submission handler
+        run: |
+          node --input-type=module <<'JS'
+          import { extractMisiFourSource } from './scripts/extract-misi4.mjs';
+          import { readdir,readFile } from 'node:fs/promises';
+          import path from 'node:path';
+          await extractMisiFourSource();
+          async function walk(dir) {
+            for (const entry of await readdir(dir, {withFileTypes:true})) {
+              const file=path.join(dir,entry.name);
+              if(entry.isDirectory()) await walk(file);
+              else if(/\.(?:tsx?|jsx?)$/.test(entry.name)){
+                const s=await readFile(file,'utf8');
+                const needles=['Mod Pratonton','Storan Pelayan Belum Dikonfigurasi','Hantar Persembahan kepada Guru','backendConfigured','storageConfigured','submissionEnabled'];
+                const hits=needles.filter(x=>s.includes(x));
+                if(hits.length) {
+                  console.log('FILE',file,'MATCHES',hits.join(', '),'LENGTH',s.length);
+                  for(const h of hits){
+                    let pos=0,c=0;
+                    while((pos=s.indexOf(h,pos))>=0&&c++<3){
+                      console.log('CONTEXT FOR',h,'\\n',s.slice(Math.max(0,pos-1400),Math.min(s.length,pos+1600)));
+                      pos+=h.length;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          await walk('mission-four-ai');
+          JS
