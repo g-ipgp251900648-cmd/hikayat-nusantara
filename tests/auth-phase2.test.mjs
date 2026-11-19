@@ -113,7 +113,7 @@ test('guide lists and teacher/admin charts are based on real saved progress',()=
   assert.match(ui,/return records\.filter/);
   assert.match(ui,/role','progressbar'|role','progressbar/); // accessible progress bars
   assert.match(html,/id="admin-kelas"/);
-  assert.match(html,/id="admin-laporan"|admin-laporan/);
+  assert.match(src('admin-dashboard.js'),/'admin-laporan'/);
   assert.doesNotMatch(ui,/Math\.random\(\).*completed/);
 });
 
