@@ -446,7 +446,7 @@
   function open(index){
     if(index<0||index>3)return;
     if(index===0&&typeof window.openMissionOneAdventure==="function"){
-      window.openMissionOneAdventure();return;
+      window.openMissionOneAdventure(account.id);return;
     }
     if(index===1&&typeof window.openMissionTwoAdventure==="function"){
       window.openMissionTwoAdventure();return;
@@ -480,6 +480,41 @@
   }
   // Misi 1: satu semakan komprehensif untuk 5 urutan + 3 soalan.
   // Validasi ini terpakai dalam latihan setempat pada peranti murid sahaja.
+  // Receive the exact number displayed by the account-scoped original AI Studio
+  // game. Snapshot messages reconcile earlier attempts that the old bridge
+  // ignored, while fresh attempt messages continue counting across devices.
+  window.syncMissionOneGameAttempts=(payload,{newAttempt=false}={})=>{
+    const count=payload?.attemptCount,latestScore=payload?.lastScore;
+    if(!Number.isSafeInteger(count)||count<0||count>100000||
+       (count>0&&(!Number.isInteger(latestScore)||latestScore<0||latestScore>8)))
+      return {ok:false};
+    const entry=state.attempts[0],before=entry.count;
+    const target=newAttempt?Math.max(count,before+1):Math.max(count,before);
+    let changed=target!==before;
+    entry.count=target;
+    const known=new Set(entry.history.map(x=>x.number));
+    const records=Array.isArray(payload.attempts)?payload.attempts:[];
+    for(const item of records){
+      if(!Number.isSafeInteger(item?.number)||item.number<1||item.number>target||
+         !Number.isInteger(item.score)||item.score<0||item.score>8||
+         typeof item.at!=='string'||item.at.length>40||known.has(item.number))continue;
+      entry.history.push({number:item.number,score:item.score,total:8,
+        percent:Math.round(item.score/8*100),success:item.score===8,at:item.at});
+      known.add(item.number);changed=true;
+    }
+    if(newAttempt&&target>before&&!known.has(target)){
+      entry.history.push({number:target,score:latestScore,total:8,
+        percent:Math.round(latestScore/8*100),success:latestScore===8,
+        at:new Date().toISOString()});changed=true;
+    }
+    if(changed){
+      entry.history.sort((x,y)=>x.number-y.number);
+      if(entry.history.length>30)entry.history.splice(0,entry.history.length-30);
+      save();
+      window.dispatchEvent(new Event('hikayat:attempt'));
+    }
+    return {ok:true,count:entry.count,recorded:changed};
+  };
   window.submitMissionOneAdventure=(payload)=>{
     const found=payload?.found,pages=payload?.pages,sequence=payload?.sequence,answers=payload?.answers;
     if(!Array.isArray(found)||found.length!==5||!found.every(v=>v===true)
@@ -492,7 +527,8 @@
     const comprehensionScore=answers.reduce((count,v,i)=>count+Number(String(v)===String(comprehension[i].correct)),0);
     const score=positions+comprehensionScore,success=score===8;
     state.sequence=[...sequence];state.readingAnswers=answers.map(String);
-    recordAttempt(0,score,8,success);
+    // Victory is separate from quiz attempts. Do not add a fourth attempt
+    // when the pupil clicks the mission-completion button.
     if(success){state.completed[0]=true;save();updateProgress();}
     else save();
     return {ok:true,success,positions,comprehensionScore,score,total:8};

@@ -48,7 +48,14 @@ type AppScreen =
   | 'paused'
   | 'victory';
 
-const STORAGE_KEY = 'hikayat_nusantara_misi1_progress_v1';
+const ORIGINAL_STORAGE_KEY = 'hikayat_nusantara_misi1_progress_v1';
+// The portal passes its authenticated pupil's identifier to isolate game records
+// between pupil accounts on the same browser. Standalone AI Studio previews keep
+// the original legacy storage key.
+const pupilProfile = typeof window !== 'undefined'
+  ? new URLSearchParams(window.location.search).get('profile') : null;
+const STORAGE_KEY = pupilProfile && /^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(pupilProfile)
+  ? ORIGINAL_STORAGE_KEY + '-student-' + pupilProfile : ORIGINAL_STORAGE_KEY;
 
 interface StoredProfile {
   xp: number;
@@ -332,12 +339,16 @@ export default function App() {
 
   // Progress events are only delivered to a same-origin parent portal. The
   // standalone Google AI Studio preview continues to work without any parent.
-  const notifyHikayatPortal = useCallback((eventType: 'attempt' | 'victory', payload: {
-    foundScrolls: ScrollId[];
-    readStoryPages: number[];
-    orderedIds: string[];
-    quizAnswers: Record<string, string | undefined>;
-    signature: string;
+  const notifyHikayatPortal = useCallback((eventType: 'attempt' | 'victory' | 'snapshot', payload: {
+    foundScrolls?: ScrollId[];
+    readStoryPages?: number[];
+    orderedIds?: string[];
+    quizAnswers?: Record<string, string | undefined>;
+    signature?: string;
+    attemptCount?: number;
+    lastScore?: number | null;
+    lastTotal?: number | null;
+    attempts?: { attemptNumber: number; totalScore: number; timestampIso: string }[];
   }) => {
     if (window.parent === window) return;
     window.parent.postMessage({
@@ -347,6 +358,23 @@ export default function App() {
       payload,
     }, window.location.origin);
   }, []);
+
+  // The parent portal needs the number shown in this game's attempt graph,
+  // not only fully completed missions. The snapshot also repairs older
+  // game-count / portal-count mismatches after the pupil confirms ownership.
+  useEffect(() => {
+    const previous = attempts.at(-1);
+    notifyHikayatPortal('snapshot', {
+      attemptCount: attempts.length,
+      lastScore: previous?.totalScore ?? null,
+      lastTotal: previous ? 8 : null,
+      attempts: attempts.slice(-30).map(a => ({
+        attemptNumber: a.attemptNumber,
+        totalScore: a.totalScore,
+        timestampIso: a.timestampIso,
+      })),
+    });
+  }, [attempts, notifyHikayatPortal]);
 
   const handleSubmitQuizCheck = useCallback(() => {
     audioEngine.playSoftClick();
@@ -360,8 +388,8 @@ export default function App() {
     setAttempts((prev) =>
       recordAttempt(prev, seqScore, qRes.correctCount, sig)
     );
-    // Send only a complete, new assessment check. The parent validates all
-    // evidence before updating XP and attempt statistics.
+    // Every new fully answered quiz check counts as an attempt in the game
+    // AND the teacher's record, even if the child has not found all pages.
     if (!isDuplicate && QUIZ_QUESTIONS.every((q) => Boolean(quizAnswers[q.id]))) {
       notifyHikayatPortal('attempt', {
         foundScrolls: [...foundScrolls],
@@ -369,6 +397,9 @@ export default function App() {
         orderedIds,
         quizAnswers: { ...quizAnswers },
         signature: sig,
+        attemptCount: attempts.length + 1,
+        lastScore: seqScore + qRes.correctCount,
+        lastTotal: 8,
       });
     }
 
