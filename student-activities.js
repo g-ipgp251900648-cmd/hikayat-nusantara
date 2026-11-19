@@ -1,10 +1,22 @@
-/** Hikayat Nusantara: empat aktiviti interaktif Dashboard Murid (rekod latihan disimpan setempat pada pelayar). */
+/** Hikayat Nusantara: misi pembelajaran dengan simpanan peranti dan ringkasan kemajuan berpusat. */
 (async function studentActivities(){
   "use strict";
   const dashboard=document.getElementById("murid-view");
   if(!dashboard)return;
   const account=await window.hnGetSession?.().catch(()=>null);
   if(!account||account.role!=="murid"||account.mustChangePassword)return;
+  // A different greeting is rendered for every authenticated pupil. The
+  // account name comes only from the server session; never from URL or storage.
+  const pupilName=String(account.name||'').replace(/\s+/g,' ').trim().slice(0,100)||'Pengembara Muda';
+  const welcome=document.getElementById('hn-student-welcome');
+  if(welcome)welcome.textContent='Selamat Datang, '+pupilName+'!';
+  const welcomeSummary=document.getElementById('hn-student-welcome-summary');
+  if(welcomeSummary)welcomeSummary.textContent=pupilName+'!';
+  const topName=document.getElementById('hn-student-top-name');
+  if(topName){topName.textContent=pupilName;topName.title=pupilName;}
+  const avatar=document.getElementById('hn-student-avatar');
+  if(avatar)avatar.textContent=pupilName.split(' ').filter(Boolean).slice(0,2)
+    .map(part=>part[0]?.toLocaleUpperCase('ms-MY')||'').join('')||'M';
   const LEGACY_STORAGE_KEY="hikayat-nusantara-murid-demo-v2";
   const STORAGE_KEY="hikayat-nusantara-murid-v3-"+account.id;
   // Old browser data cannot be assigned safely to a named pupil without confirmation.
@@ -120,6 +132,12 @@
   const statusText=text=>{
     const node=document.getElementById('quest-cloud-status');
     if(node)node.textContent=text;
+    const chip=dashboard.querySelector('.system-status-chip');
+    if(chip){
+      if(text.includes('berjaya disimpan'))chip.textContent='KEMAJUAN DISIMPAN';
+      else if(/terganggu|Tidak dapat|belum dihantar|berubah/.test(text))chip.textContent='CUBA SEGERAK SEMULA';
+      else chip.textContent='MEMUATKAN KEMAJUAN';
+    }
   };
   function queueCloud(){
     if(!cloud.ready)return;
@@ -155,10 +173,10 @@
                     cloud.signatures[j]=JSON.stringify(summaryFor(j));
                 }
               }
-              statusText('Versi pelayan berubah. Cuba segerakkan semula.');
+              statusText('Rekod telah berubah. Sila segerakkan semula.');
               cloud.pending=true;
             }
-          }else statusText('Kemajuan latihan belum dapat diselaraskan. Simpanan peranti masih ada.');
+          }else statusText('Kemajuan belum dihantar. Rekod latihan masih ada pada peranti.');
           return;
         }
         cloud.revisions[i]=result.data.revision;
@@ -166,16 +184,16 @@
         cloud.signatures[i]=signature;
         if(JSON.stringify(summaryFor(i))!==signature)cloud.pending=true;
       }
-      statusText('✓ Rekod latihan diselaraskan ke Neon untuk pemantauan Guru dan Admin. Bukan markah PBD.');
+      statusText('✓ Kemajuan latihan berjaya disimpan.');
     }catch{
-      statusText('Tiada sambungan. Kemajuan setempat kekal, cuba segerakkan semula apabila talian pulih.');
+      statusText('Sambungan terganggu. Cuba segerakkan semula apabila internet pulih.');
     }finally{
       cloud.busy=false;
       if(cloud.pending)queueCloud();
     }
   }
   async function initializeCloud(){
-    statusText('Menyemak rekod kemajuan dalam Neon...');
+    statusText('Memuatkan kemajuan anda...');
     try{
       const result=await window.hnApiRequest('/api/student/progress');
       if(!result.ok)throw Error('Progress endpoint unavailable');
@@ -219,11 +237,11 @@
         updateProgress();
         window.dispatchEvent(new Event('hikayat:attempt'));
       }
-      statusText('✓ Sambungan Neon aktif. Kemajuan latihan boleh dipantau Guru dan Admin.');
+      statusText('✓ Kemajuan anda sedia untuk diselaraskan.');
       queueCloud();
     }catch{
       // Retry on focus or reconnect without blocking offline practice.
-      statusText('Sambungan Neon belum tersedia. Latihan kekal pada peranti sehingga penyelarasan berjaya.');
+      statusText('Tidak dapat menghubungi sistem. Rekod latihan masih ada pada peranti.');
     }
   }
   window.addEventListener('online',()=>cloud.ready?queueCloud():void initializeCloud());
@@ -253,7 +271,7 @@
     const entry=state.attempts[index];if(!entry||entry.count>=100000)return;
     entry.count++;entry.history.push({number:entry.count,score,total,percent:Math.round(score/total*100),success,at:new Date().toISOString()});
     if(entry.history.length>30)entry.history.splice(0,entry.history.length-30);
-    save();window.dispatchEvent(new Event("hikayat:attempt"));
+    save();updateProgress();window.dispatchEvent(new Event("hikayat:attempt"));
   }
 
   const hud=document.createElement("section");
@@ -271,8 +289,8 @@
       <button type="button" id="quest-continue">▶ Mula Misi 1</button>
       <button type="button" id="quest-reset">↺ Tetapkan semula latihan</button>
     </div>
-    <p class="quest-privacy">Jawapan dan draf kekal pada peranti ini. Hanya ringkasan kemajuan latihan diselaraskan ke Neon untuk Guru dan Admin; bukan pentaksiran rasmi. Jangan tulis maklumat peribadi.</p>
-    <p id="quest-cloud-status" class="quest-privacy" role="status">Menyambungkan kemajuan ke Neon...</p>
+    <p class="quest-privacy">Jawapan dan draf kekal pada peranti anda. Guru hanya melihat ringkasan kemajuan; markah latihan bukan markah rasmi.</p>
+    <p id="quest-cloud-status" class="quest-privacy" role="status">Menyediakan kemajuan anda...</p>
     <button type="button" id="quest-sync-now">↻ Segerakkan Kemajuan</button>`;
   const map=document.getElementById("desa-hikayat-map");
   if(map)map.before(hud);
@@ -311,6 +329,8 @@
     const stats=dashboard.querySelectorAll(".stats-grid.three .stat strong");
     if(stats[0])stats[0].innerHTML=`${String(done).padStart(2,"0")} <small>/ 04</small>`;
     if(stats[1])stats[1].innerHTML=`${xp} <small>XP</small>`;
+    const attemptSummary=document.getElementById('hn-student-attempt-summary');
+    if(attemptSummary)attemptSummary.textContent=String(state.attempts.reduce((sum,row)=>sum+row.count,0));
     const banner=dashboard.querySelector(".student-banner");
     if(banner){
       const h=banner.querySelector("h2");
@@ -318,8 +338,8 @@
       const b=banner.querySelector("b");
       const track=banner.querySelector(".progress-track span");
       if(h)h.textContent=done===4?"Pelita Warisan bersinar!":"Pengembaraan Desa Hikayat";
-      if(p)p.textContent=`${done} daripada 4 latihan misi telah diselesaikan pada peranti ini.`;
-      if(b)b.textContent=`${done*25}% latihan selesai pada peranti ini`;
+      if(p)p.textContent=`${done} daripada 4 latihan misi telah diselesaikan.`;
+      if(b)b.textContent=`${done*25}% latihan selesai`;
       if(track)track.style.width=`${done*25}%`;
     }
     dashboard.querySelectorAll(".mission-card[data-mission]").forEach(card=>{
@@ -344,7 +364,7 @@
       const tag=portfolio.querySelector(".paper-tag");
       if(h)h.textContent=state.writtenStory.trim()?"Draf Hikayat Saya":"Belum ada draf cerita";
       if(p)p.textContent=state.writtenStory.trim()?state.writtenStory.slice(0,170)+(state.writtenStory.length>170?"…":""):"Draf cerita yang ditulis dalam Misi 2 akan dipaparkan di sini.";
-      if(tag)tag.textContent="Draf latihan setempat · Tidak dihantar kepada guru";
+      if(tag)tag.textContent="Draf latihan · Belum dihantar kepada Guru";
     }
   }
 
@@ -511,6 +531,7 @@
       entry.history.sort((x,y)=>x.number-y.number);
       if(entry.history.length>30)entry.history.splice(0,entry.history.length-30);
       save();
+      updateProgress();
       window.dispatchEvent(new Event('hikayat:attempt'));
     }
     return {ok:true,count:entry.count,recorded:changed};

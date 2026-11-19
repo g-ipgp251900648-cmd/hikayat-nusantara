@@ -213,7 +213,7 @@
     heading.append(makeButton('↻ Muat Semula Rekod',()=>admin?loadAdmin():loadTeacher()));
     root.append(heading);
     const description=document.createElement('p');description.className='hn-admin-intro';
-    description.textContent='Data kemajuan latihan disimpan dalam Neon. Selesai bermaksud latihan portal selesai, BUKAN penilaian PBD atau bukti video sudah dihantar. Misi 4 hanya mencatat pelan latihan, bukan rakaman.';
+    description.textContent='Lihat kemajuan latihan setiap murid. Status selesai bukan markah pentaksiran rasmi. Misi 4 menunjukkan latihan persembahan, bukan penghantaran video.';
     root.append(description);
     const countByMission=[0,0,0,0];
     for(let i=1;i<=4;i++){
@@ -269,7 +269,7 @@
     const monitor=$('#admin-misi'),report=$('#admin-laporan');
     if(!monitor)return;
     if(!studentResult.ok||!progressResult.ok){
-      monitor.replaceChildren(document.createTextNode('Kemajuan belum dapat dimuat daripada Neon. Cuba muat semula halaman.'));
+      monitor.replaceChildren(document.createTextNode('Kemajuan belum dapat dipaparkan. Sila cuba muat semula.'));
       return;
     }
     const people=studentResult.data.students;
@@ -279,7 +279,7 @@
       report.replaceChildren();
       const heading=document.createElement('h2');heading.textContent='Analitik Kemajuan Pembelajaran';
       const text=document.createElement('p');text.className='hn-admin-intro';
-      text.textContent='Ringkasan kemajuan latihan berdasarkan Neon. Tidak termasuk pentaksiran PBD atau video Misi 4 yang belum diserahkan.';
+      text.textContent='Ringkasan kemajuan empat misi. Rakaman video dan penilaian rasmi tidak termasuk dalam laporan ini.';
       report.append(heading,text);
       const stats=document.createElement('div');stats.className='stats-grid three';
       const measures=[
@@ -296,7 +296,7 @@
       report.append(stats);
     }
     const chip=$('#admin-view .system-status-chip');
-    if(chip)chip.textContent='DATA NEON DISAMBUNGKAN';
+    if(chip)chip.textContent='REKOD TERKINI';
   }
 
   async function loadAdmin(){
@@ -339,7 +339,7 @@
     const root=$('#admin-kepimpinan');
     if(!root)return;
     if(!result.ok){
-      root.textContent='Rekod kepimpinan tidak dapat dibaca. Pastikan migrasi Neon sudah dijalankan.';
+      root.textContent='Maklumat kepimpinan belum dapat dipaparkan. Sila cuba lagi atau hubungi pentadbir sistem.';
       return;
     }
     root.replaceChildren();
@@ -430,11 +430,11 @@
           val[2].textContent=String(new Set(checkpoint.data.progress.filter(p=>p.completed).map(p=>p.studentId+'-'+p.missionId)).size);
           val[3].textContent=String(myClasses.length);
         }
-      }else progressArea.textContent='Kemajuan belum dapat dimuat daripada Neon. Cuba muat semula.';
+      }else progressArea.textContent='Kemajuan belum dapat dipaparkan. Sila cuba muat semula.';
     }
-    if(checkpoint.ok){const chip=$('#guru-view .system-status-chip');if(chip)chip.textContent='DATA NEON DISAMBUNGKAN';}
-    notice($('#guru-pengurusan-murid'),'Akaun murid disimpan pada pangkalan data berpusat. Kata laluan sementara hanya dipaparkan selepas akaun berjaya dicipta.');
-    notice($('#guru-pengurusan-kelas'),'Kelas yang dicipta akan disimpan dalam organisasi dan akaun guru ini.');
+    if(checkpoint.ok){const chip=$('#guru-view .system-status-chip');if(chip)chip.textContent='REKOD TERKINI';}
+    notice($('#guru-pengurusan-murid'),'Kata laluan sementara hanya dipaparkan selepas pendaftaran berjaya. Simpan secara selamat.');
+    notice($('#guru-pengurusan-kelas'),'Setiap kelas yang didaftarkan boleh diurus melalui akaun Guru ini.');
   }
   // Teacher-only, private CSV import. Names never enter the public GitHub repo.
   function readRosterCsv(source){

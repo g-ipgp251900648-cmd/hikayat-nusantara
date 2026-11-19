@@ -1,6 +1,4 @@
-/* Hikayat Nusantara — Simple 12-menu Teacher Dashboard.
-   User accounts are not yet authenticated. Real student accounts require a secure backend.
-   Never generate/store student credentials in browser or localStorage. */
+/* Dashboard Guru Hikayat Nusantara. Akaun disahkan melalui pelayan; kata laluan tidak disimpan dalam pelayar. */
 (() => {
   'use strict';
   const dashboard = document.getElementById('guru-view');
@@ -40,19 +38,19 @@
     return node;
   };
 
-  const notice = '<div class="hn-teacher-notice" role="status">Akaun, kelas dan ringkasan kemajuan latihan disambungkan ke Neon. Penghantaran karya dan pentaksiran PBD rasmi memerlukan fungsi berasingan yang belum diaktifkan.</div>';
+  const notice = '<div class="hn-teacher-notice" role="status">Urus akaun dan kelas di sini. Rekod kemajuan murid dipaparkan dalam Pemantauan Empat Misi.</div>';
   const studentPage = wrapper('guru-pengurusan-murid','PENGURUSAN AKAUN','Pengurusan Murid',
-    'Daftar murid, tempatkan dalam kelas serta urus ID dan kata laluan sementara melalui backend yang disahkan.',
+    'Daftar murid, susun kelas dan urus kata laluan sementara dengan selamat.',
     notice+
     '<div class="hn-teacher-toolbar"><input id="hn-student-search" type="search" aria-label="Cari murid" placeholder="Cari nama atau ID murid..." disabled><select id="hn-student-class" aria-label="Tapis mengikut kelas" disabled><option>Semua kelas</option></select><button type="button" id="hn-preview-student">Lihat Borang Pendaftaran</button><button type="button" id="hn-add-student" disabled>+ Daftar Murid</button><button type="button" id="hn-import-students" disabled>Import Murid (CSV)</button><button type="button" id="hn-reissue-credentials" disabled>Jana Semula Kata Laluan Sementara</button></div>'+
-    '<div class="stats-grid three"><div class="stat"><span>Murid berdaftar</span><strong id="hn-student-count">—</strong><em>Data sebenar sahaja</em></div><div class="stat"><span>Akaun aktif</span><strong id="hn-student-active">—</strong><em>Memerlukan autentikasi</em></div><div class="stat"><span>Belum ditetapkan kelas</span><strong id="hn-student-unassigned">—</strong><em>Memerlukan pangkalan data</em></div></div>'+
+    '<div class="stats-grid three"><div class="stat"><span>Murid berdaftar</span><strong id="hn-student-count">—</strong><em>Mengikut kelas</em></div><div class="stat"><span>Akaun aktif</span><strong id="hn-student-active">—</strong><em>Akaun murid</em></div><div class="stat"><span>Belum ditetapkan kelas</span><strong id="hn-student-unassigned">—</strong><em>Memerlukan pangkalan data</em></div></div>'+
     '<div class="table-wrap"><table><thead><tr><th>Nama Murid</th><th>ID Murid</th><th>Kelas</th><th>Status</th></tr></thead><tbody id="hn-student-rows"><tr><td colspan="4">Belum ada data murid yang disahkan.</td></tr></tbody></table></div>'
   );
   const classPage = wrapper('guru-pengurusan-kelas','PENGURUSAN KELAS','Pengurusan Kelas',
     'Cipta kelas mengikut sesi akademik, tempatkan murid berdaftar dan pantau keahlian kelas.',
     notice+
     '<div class="hn-teacher-toolbar"><input id="hn-class-search" type="search" aria-label="Cari kelas" placeholder="Cari nama kelas..." disabled><button type="button" id="hn-preview-class">Lihat Borang Kelas</button><button type="button" id="hn-add-class" disabled>+ Cipta Kelas</button></div>'+
-    '<div class="stats-grid three"><div class="stat"><span>Jumlah kelas</span><strong id="hn-class-count">—</strong><em>Data sebenar sahaja</em></div><div class="stat"><span>Jumlah keahlian</span><strong id="hn-class-enrolments">—</strong><em>Memerlukan autentikasi</em></div><div class="stat"><span>Sesi akademik</span><strong id="hn-class-year">—</strong><em>Mengikut akaun guru</em></div></div>'+
+    '<div class="stats-grid three"><div class="stat"><span>Jumlah kelas</span><strong id="hn-class-count">—</strong><em>Mengikut kelas</em></div><div class="stat"><span>Jumlah keahlian</span><strong id="hn-class-enrolments">—</strong><em>Akaun murid</em></div><div class="stat"><span>Sesi akademik</span><strong id="hn-class-year">—</strong><em>Mengikut akaun guru</em></div></div>'+
     '<div class="table-wrap"><table><thead><tr><th>Nama Kelas</th><th>Tahun</th><th>Sesi</th><th>Jumlah Murid</th><th>Status</th><th>Tindakan</th></tr></thead><tbody id="hn-class-rows"><tr><td colspan="6">Belum ada kelas yang disahkan.</td></tr></tbody></table></div>'
   );
 
@@ -73,7 +71,7 @@
   for (const [id,eyebrow,title,lead,features] of newPages) {
     wrapper(id,eyebrow,title,lead,
       '<div class="hn-teacher-feature-list">'+features.map(f=>'<div class="hn-teacher-feature"><span aria-hidden="true">✓</span>'+safe(f)+'</div>').join('')+'</div>'+
-      '<p class="hn-teacher-notice" role="status">Belum disambungkan kepada rekod guru dan murid sebenar. Fungsi ini akan diaktifkan apabila backend yang dilindungi disediakan.</p>');
+      '<p class="hn-teacher-notice" role="status">Fungsi ini sedang disediakan dan belum boleh digunakan.</p>');
   }
 
   // Replace only the existing teacher navigation, not any student/admin menus.
@@ -133,7 +131,7 @@
     student:'<h2>Borang Pendaftaran Murid</h2><p>Pratonton sahaja. Maklumat ini tidak dihantar atau disimpan.</p>'+
       '<label>Nama murid<input type="text" placeholder="Nama penuh" disabled></label>'+
       '<label>Kelas<select disabled><option>Pilih kelas berdaftar</option></select></label>'+
-      '<p><strong>ID murid:</strong> Akan dijana oleh backend selepas pengesahan.</p>'+
+      '<p><strong>ID murid:</strong> Dijana selepas pendaftaran berjaya.</p>'+
       '<p><strong>Kata laluan sementara:</strong> Dijana secara selamat dan ditunjukkan sekali sahaja selepas pendaftaran yang berjaya.</p>',
     class:'<h2>Borang Tambah Kelas</h2><p>Pratonton sahaja. Maklumat ini tidak dihantar atau disimpan.</p>'+
       '<label>Nama kelas<input type="text" placeholder="Contoh: 5 Bestari" disabled></label>'+

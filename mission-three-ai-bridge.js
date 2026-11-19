@@ -46,8 +46,8 @@
     overlay.setAttribute('aria-label','Misi 3 — Taman Bahasa: Rahsia Empat Kelopak Warisan');
     overlay.innerHTML = `<header class="hn-m3-top">
       <div class="hn-m3-heading"><strong>🌺 Misi 3: Taman Bahasa</strong>
-      <small>Rahsia Empat Kelopak Warisan · Permainan asal Google AI Studio</small></div>
-      <span id="hn-m3-status" role="status">Status latihan disimpan pada peranti dan ringkasan cuba diselaraskan ke Neon untuk Guru.</span>
+      <small>Rahsia Empat Kelopak Warisan</small></div>
+      <span id="hn-m3-status" role="status">Kemajuan latihan direkodkan untuk pemantauan Guru.</span>
       <button type="button" id="hn-m3-close">✕ Kembali ke Dashboard</button>
       </header>
       <iframe id="hn-m3-frame" title="Permainan Taman Bahasa dan empat Kelopak Warisan" src="/misi3/" allow="microphone"></iframe>`;

@@ -8,7 +8,7 @@ test('Dashboard Guru begins with no fabricated student or class data', () => {
   const html = source('index.html');
   assert.match(html, /Jumlah murid<\/span><strong>0<\/strong><em>Belum ada murid berdaftar/);
   assert.match(html, /id="teacher-rows"><tr><td colspan="4">Belum ada karya murid/);
-  assert.match(html, /Belum ada rekod kemajuan/);
+  assert.match(html, /Kemajuan murid akan dipaparkan di sini/);
   assert.doesNotMatch(html, /<strong>72%<\/strong>|<strong>30<\/strong>|5 Amanah · Demo/);
   assert.doesNotMatch(html, /\bMurid [ABC]\b/);
   assert.doesNotMatch(source('app.js'), /const examples\s*=\s*\{/);

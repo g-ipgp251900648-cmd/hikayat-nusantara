@@ -74,7 +74,7 @@
     try {
       const availability=await request('/api/auth/status');
       if(!availability.ok || !availability.data.configured){
-        message('Sistem akaun belum diaktifkan. Pangkalan data dan akaun pentadbir perlu disediakan terlebih dahulu.');
+        message('Perkhidmatan log masuk tidak tersedia. Sila hubungi pentadbir sistem.');
         return;
       }
       submit.disabled=false;

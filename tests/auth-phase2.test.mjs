@@ -63,6 +63,23 @@ test('frontend protects dashboards and maintains per-user local practice storage
   assert.match(src('student-activities.js'),/Import rekod latihan saya/);
 });
 
+test('every pupil dashboard greets only the authenticated account name',()=>{
+  const html=src('index.html');
+  const student=src('student-activities.js');
+  const css=src('styles.css');
+  for(const id of ['hn-student-top-name','hn-student-welcome',
+      'hn-student-welcome-summary','hn-student-avatar','hn-student-attempt-summary']){
+    assert.match(html,new RegExp('id="'+id+'"'));
+  }
+  assert.match(student,/const pupilName=String\(account\.name\|\|''\)/);
+  assert.match(student,/welcome\.textContent='Selamat Datang, '\+pupilName\+'!'/);
+  assert.match(student,/welcomeSummary\.textContent=pupilName\+'!'/);
+  assert.match(student,/topName\.textContent=pupilName/);
+  assert.doesNotMatch(student,/welcome\.innerHTML|topName\.innerHTML/);
+  assert.match(css,/\.hn-student-welcome/);
+  assert.match(student,/hn-student-attempt-summary/);
+});
+
 test('only three login portals while GKMP and Ketua Panitia share Admin',()=>{
   const login=src('login.html');
   const client=src('auth-client.js');
@@ -75,7 +92,7 @@ test('only three login portals while GKMP and Ketua Panitia share Admin',()=>{
   assert.match(client,/dashboardRole=role=>adminLike\(role\)\?'admin':role/);
   assert.match(client,/dashboardRole\(result\.data\.user\?\.role\)!==chosen/);
   assert.equal((html.match(/class="portal-card /g)||[]).length,3);
-  assert.match(html,/3 dashboard utama/);
+  assert.match(html,/3 ruang pengguna/);
 });
 
 test('class management supports confirmed deletion with roster preservation',()=>{
@@ -121,7 +138,7 @@ test('pupil practice synchronizes to Neon for teacher and all Admin dashboards',
   const client=src('student-activities.js'),api=src('auth/api.js'),ui=src('account-ui.js');
   assert.match(client,/\/api\/student\/progress\/.*i\+1/);
   assert.match(client,/kind:'practice-v1'/);
-  assert.match(client,/Menyemak rekod kemajuan dalam Neon/);
+  assert.match(client,/Memuatkan kemajuan anda/);
   assert.match(client,/Tidak/);
   assert.match(api,/\/api\/admin\/progress/);
   assert.match(api,/\/api\/teacher\/progress/);
@@ -129,7 +146,7 @@ test('pupil practice synchronizes to Neon for teacher and all Admin dashboards',
   assert.match(api,/canAdmin\(user\.role\)/);
   assert.match(ui,/renderMissionProgress/);
   assert.match(ui,/renderAdminProgressReport/);
-  assert.match(ui,/bukan penilaian PBD/i);
+  assert.match(ui,/bukan markah pentaksiran rasmi/i);
   assert.doesNotMatch(client,/body:JSON\.stringify\(\{revision:cloud\.revisions\[i\],checkpoint:state\}\)/);
 });
 
