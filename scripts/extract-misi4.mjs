@@ -30,6 +30,19 @@ export async function extractMisiFourSource(){
       files++;
       // Diagnostic only, enabled explicitly in CI to inspect the original
       // recorder-to-submit interface before adding any automatic transfer.
+      if(process.env.HN_INSPECT_MISI4==='1'&&name==='src/components/RecordingStudioModal.tsx'){
+        const l=tar.subarray(start,end).toString('utf8').split('\n');
+        const spans=[[145,218],[448,515],[555,865],[975,1120]];
+        for(const [a,b] of spans)for(let n=a;n<=b&&n<=l.length;n++){
+          console.log('[M4 DETAIL] '+name+':'+n+' '+l[n-1].slice(0,360));
+        }
+      }
+      if(process.env.HN_INSPECT_MISI4==='1'&&name==='src/App.tsx'){
+        const l=tar.subarray(start,end).toString('utf8').split('\n');
+        for(let n=1;n<=l.length;n++)if(/RecordingStudioModal|onSubmit|onComplete|HIKAYAT_MISI4_STATUS|submit.*Video|submission/.test(l[n-1])){
+          console.log('[M4 APP] '+name+':'+n+' '+l.slice(Math.max(0,n-3),Math.min(l.length,n+3)).join(' // ').slice(0,850));
+        }
+      }
       if(process.env.HN_INSPECT_MISI4==='1'&&/\.(tsx?|jsx?)$/.test(name)){
         const lines=tar.subarray(start,end).toString('utf8').split('\n');
         let shown=0;
