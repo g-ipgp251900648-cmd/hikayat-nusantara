@@ -34,7 +34,7 @@ test('Only authenticated teachers can publish feedback; pupils only get publishe
   assert.match(api,/SELECT id FROM hn_misi4_videos WHERE id=\$1 AND student_id=\$2 AND organization_id=\$3/);
   assert.match(api,/status IN \('published','revision_requested'\)/);
   assert.match(student,/api\/student\/learning/);
-  assert.match(student,/Misi '+i/);
+  assert.match(student,/for\(let i=1;i<=4;i\+\+\)/);
   assert.doesNotMatch(student,/Hantar Karya Bertulis/);
   assert.match(teacher,/Terbitkan kepada Murid/);
   assert.match(teacher,/videoId:videoSelect\.value/);
