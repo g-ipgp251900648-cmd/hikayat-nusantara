@@ -339,7 +339,7 @@
     const root=$('#admin-kepimpinan');
     if(!root)return;
     if(!result.ok){
-      root.textContent='Rekod kepimpinan tidak dapat dibaca. Pastikan migrasi Neon sudah dijalankan.';
+      root.textContent='Maklumat kepimpinan belum dapat dipaparkan. Sila cuba lagi atau hubungi pentadbir sistem.';
       return;
     }
     root.replaceChildren();
