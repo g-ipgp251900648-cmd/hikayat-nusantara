@@ -63,12 +63,18 @@ CREATE TABLE IF NOT EXISTS hn_mission_progress (
 CREATE TABLE IF NOT EXISTS hn_audit (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   organization_id uuid NOT NULL REFERENCES hn_organizations(id),
-  actor_id uuid NOT NULL REFERENCES hn_users(id),
+  actor_id uuid REFERENCES hn_users(id) ON DELETE SET NULL,
   action varchar(80) NOT NULL,
   resource_type varchar(40) NOT NULL,
   resource_id varchar(64),
   outcome varchar(20) NOT NULL DEFAULT 'success',
   created_at timestamptz NOT NULL DEFAULT now()
 );
+-- Keep historical audit entries when a departed account is permanently deleted.
+-- Its actor reference becomes NULL; the audit event itself is preserved.
+ALTER TABLE hn_audit ALTER COLUMN actor_id DROP NOT NULL;
+ALTER TABLE hn_audit DROP CONSTRAINT IF EXISTS hn_audit_actor_id_fkey;
+ALTER TABLE hn_audit ADD CONSTRAINT hn_audit_actor_id_fkey
+  FOREIGN KEY (actor_id) REFERENCES hn_users(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS hn_audit_org_time ON hn_audit(organization_id,created_at DESC);
 COMMIT;
