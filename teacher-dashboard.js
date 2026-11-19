@@ -40,7 +40,7 @@
     return node;
   };
 
-  const notice = '<div class="hn-teacher-notice" role="status">Sistem pengurusan akaun sebenar belum disambungkan. Tiada akaun murid sebenar boleh diwujudkan di sini buat masa ini. Penyimpanan rasmi memerlukan log masuk guru dan pangkalan data yang selamat.</div>';
+  const notice = '<div class="hn-teacher-notice" role="status">Akaun, kelas dan ringkasan kemajuan latihan disambungkan ke Neon. Penghantaran karya dan pentaksiran PBD rasmi memerlukan fungsi berasingan yang belum diaktifkan.</div>';
   const studentPage = wrapper('guru-pengurusan-murid','PENGURUSAN AKAUN','Pengurusan Murid',
     'Daftar murid, tempatkan dalam kelas serta urus ID dan kata laluan sementara melalui backend yang disahkan.',
     notice+
