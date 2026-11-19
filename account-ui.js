@@ -381,7 +381,7 @@
     }
     return students;
   }
-  function downloadCredentialsCsv(rows){
+  function downloadCredentialsCsv(rows,filename='Kelayakan_Log_Masuk_Murid_5_Dinamik.csv'){
     const wrap=value=>{
       const str=String(value??'');
       const safeValue=/^[=+\-@\t\r]/.test(str)?"'"+str:str;
@@ -392,7 +392,7 @@
     const csv='\uFEFF'+table.map(r=>r.map(wrap).join(',')).join('\r\n');
     const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
     const link=document.createElement('a');link.href=url;
-    link.download='Kelayakan_Log_Masuk_Murid_5_Dinamik.csv';
+    link.download=filename;
     document.body.append(link);link.click();link.remove();
     setTimeout(()=>URL.revokeObjectURL(url),15000);
   }
@@ -489,74 +489,153 @@
 
   function openCredentialRecovery(){
     if(!myClasses.length){alert('Sila cipta kelas dahulu.');return;}
-    const box=document.createElement('dialog');box.className='hn-teacher-dialog';
-    box.style.maxWidth='min(94vw,690px)';
-    const heading=document.createElement('h2');heading.textContent='Jana Semula Kata Laluan Sementara Murid';
+    const box=document.createElement('dialog');
+    box.className='hn-teacher-dialog';
+    box.style.maxWidth='min(94vw,760px)';
+    box.setAttribute('aria-label','Jana Semula Kata Laluan Murid');
+    const title=document.createElement('h2');title.textContent='Jana Semula Kata Laluan Murid';
     const intro=document.createElement('p');
-    intro.textContent='Untuk fail kata laluan yang hilang. Hanya murid aktif yang MASIH perlu menukar kata laluan pertama akan menerima kata laluan baharu. Kata laluan murid yang telah ditukar sendiri tidak disentuh.';
-    const classLabel=document.createElement('label');classLabel.textContent='Pilih Kelas';
-    const select=document.createElement('select');
-    select.style.cssText='display:block;width:100%;padding:10px;margin:8px 0 12px';
-    for(const c of myClasses)select.add(new Option(c.name+' · '+c.school_year,c.id));
-    const preferred=myClasses.find(c=>c.name.trim().toLocaleLowerCase('ms-MY')==='5 dinamik');
-    if(preferred)select.value=preferred.id;
-    classLabel.append(select);
-    const confirmLabel=document.createElement('label');
-    confirmLabel.textContent='Taip nama kelas dengan tepat untuk mengesahkan';
-    const confirmInput=document.createElement('input');
-    confirmInput.type='text';confirmInput.maxLength=100;
-    confirmInput.style.cssText='display:block;width:100%;padding:10px;margin:8px 0 12px';
-    confirmLabel.append(confirmInput);
-    const message=document.createElement('p');message.setAttribute('role','status');
-    message.textContent='Tindakan ini membatalkan kata laluan sementara yang dikeluarkan sebelum ini untuk murid yang belum menukarnya.';
-    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+    intro.textContent='Pilih satu kelas atau seorang murid yang terlupa kata laluan. Kata laluan baharu dijana secara rawak, dan murid perlu menukarnya ketika log masuk semula.';
+    const field=(caption,element)=>{
+      const label=document.createElement('label');label.textContent=caption;
+      element.style.cssText='display:block;width:100%;padding:10px;margin:8px 0 12px';
+      label.append(element);return label;
+    };
+    const modeSelect=document.createElement('select');
+    modeSelect.add(new Option('Satu Kelas — Semua Murid Aktif','class'));
+    modeSelect.add(new Option('Murid Tertentu — Seorang Sahaja','student'));
+    const modeField=field('Pilihan Penjanaan Kata Laluan',modeSelect);
+    const classSelect=document.createElement('select');
+    for(const cls of myClasses){
+      classSelect.add(new Option(cls.name+' · '+cls.school_year,cls.id));
+    }
+    const initial=myClasses.find(c=>c.name.trim().toLocaleLowerCase('ms-MY')==='5 dinamik');
+    if(initial)classSelect.value=initial.id;
+    const classField=field('Pilih Kelas',classSelect);
+    const pupilSelect=document.createElement('select');
+    const pupilField=field('Pilih Murid yang Terlupa Kata Laluan',pupilSelect);
+    const classInput=document.createElement('input');classInput.type='text';classInput.maxLength=100;
+    const classConfirm=field('Pengesahan: Taip Nama Kelas yang Tepat',classInput);
+    const pupilInput=document.createElement('input');pupilInput.type='text';pupilInput.maxLength=32;
+    const pupilConfirm=field('Pengesahan: Taip ID Murid yang Tepat',pupilInput);
+    const warning=document.createElement('p');
+    warning.style.cssText='background:#fff6e5;border:1px solid #edcc93;border-radius:8px;padding:12px;font-size:13px';
+    const status=document.createElement('p');status.setAttribute('role','status');
+    status.textContent='Memuatkan senarai murid...';
+    const credential=document.createElement('pre');
+    credential.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;background:#eff4eb;padding:14px;border-radius:8px';
+    credential.hidden=true;
+    const actions=document.createElement('div');actions.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
     const generate=makeButton('Jana Kata Laluan Baharu',async()=>{
-      const cls=myClasses.find(c=>c.id===select.value);
+      const cls=myClasses.find(c=>c.id===classSelect.value);
+      const mode=modeSelect.value;
       if(!cls)return;
-      if(confirmInput.value!==cls.name){
-        message.textContent='Nama pengesahan tidak sepadan dengan kelas '+cls.name+'.';
-        return;
-      }
-      if(!confirm('Jana semula kata laluan untuk murid yang belum menukar kata laluan di '+cls.name+
-        '? Kata laluan sementara lama mereka tidak lagi sah.'))return;
-      generate.disabled=true;select.disabled=true;confirmInput.disabled=true;
-      message.textContent='Menjana kata laluan sementara baharu...';
-      try{
-        const response=await adminPost('/api/teacher/students/reissue-temporary',{
-          classId:cls.id,confirmationName:confirmInput.value
-        });
-        if(!response.ok){
-          message.textContent='Gagal: '+String(response.data?.error||'Sila cuba lagi.');
-          generate.disabled=false;select.disabled=false;confirmInput.disabled=false;
+      let payload={classId:cls.id,mode,confirmationName:cls.name};
+      if(mode==='class'){
+        if(classInput.value!==cls.name){
+          status.textContent='Nama kelas tidak tepat. Taip '+cls.name+' untuk mengesahkan.';
           return;
         }
-        const credentials=response.data.credentials||[];
-        message.textContent='Berjaya. '+response.data.reissued+' kata laluan sementara baharu telah dijana. '+
-          response.data.unaffected+' murid yang sudah menukar kata laluan atau tidak aktif tidak diubah. '+
-          'Simpan fail di tempat persendirian sebelum menutup tetingkap.';
-        generate.hidden=true;
-        if(credentials.length){
-          download.hidden=false;
-          download.addEventListener('click',()=>downloadCredentialsCsv(credentials),{once:false});
+        if(!confirm('PERHATIAN: Semua murid aktif dalam '+cls.name+
+          ' akan kehilangan kata laluan semasa dan sesi log masuk mereka. '+
+          'Teruskan penjanaan semula untuk keseluruhan kelas?'))return;
+      }else{
+        const target=pupils.find(x=>x.id===pupilSelect.value&&x.class_id===cls.id&&x.active);
+        if(!target){status.textContent='Sila pilih seorang murid aktif dalam kelas tersebut.';return;}
+        if(pupilInput.value.toUpperCase().trim()!==target.login_id){
+          status.textContent='ID pengesahan tidak sepadan. Taip ID '+target.login_id+'.';
+          return;
         }
-        box.addEventListener('close',()=>{
-          if(credentials.length)credentials.splice(0,credentials.length);
-        },{once:true});
+        payload={...payload,studentId:target.id,confirmationLoginId:target.login_id};
+        if(!confirm('Tetapkan semula kata laluan '+target.display_name+
+          ' ('+target.login_id+')? Kata laluan lama dan sesi log masuknya akan terbatal.'))return;
+      }
+      generate.disabled=true;modeSelect.disabled=true;classSelect.disabled=true;
+      pupilSelect.disabled=true;classInput.disabled=true;pupilInput.disabled=true;
+      status.textContent='Sedang menjana kata laluan dan membatalkan sesi lama...';
+      try {
+        const response=await adminPost('/api/teacher/students/reissue-temporary',payload);
+        if(!response.ok){
+          status.textContent='Tidak berjaya: '+({
+            CLASS_NOT_FOUND:'Kelas tidak ditemui atau bukan kelas anda.',
+            STUDENT_NOT_IN_CLASS:'Murid bukan dalam kelas yang dipilih.',
+            STUDENT_INACTIVE:'Akaun murid tidak aktif. Hubungi Admin.',
+            STUDENT_ID_CONFIRMATION_REQUIRED:'ID murid tidak sepadan.',
+            CLASS_TOO_LARGE_FOR_REISSUE:'Kelas melebihi 50 murid. Pilih seorang murid sahaja.'
+          }[response.data?.error]||String(response.data?.error||'Sila cuba semula.'));
+          generate.disabled=false;modeSelect.disabled=false;classSelect.disabled=false;
+          pupilSelect.disabled=false;classInput.disabled=false;pupilInput.disabled=false;
+          return;
+        }
+        const records=response.data.credentials||[];
+        issued=records;
+        status.textContent='Berjaya! '+response.data.reissued+' kata laluan baharu telah dijana. '+
+          'Kata laluan lama terbatal. Murid perlu menukar kata laluan pada log masuk seterusnya. '+
+          'Simpan maklumat baharu sekarang; ia tidak dapat dilihat semula.';
+        generate.hidden=true;download.hidden=records.length===0;
+        if(mode==='student'&&records.length===1){
+          credential.hidden=false;
+          credential.textContent='Nama: '+records[0].name+
+            '\nID: '+records[0].loginId+
+            '\nKata Laluan Sementara Baharu: '+records[0].temporaryPassword;
+        }
       }catch{
-        message.textContent='Masalah sambungan. Semak semula akaun di Dashboard Guru sebelum mencuba lagi.';
-        generate.disabled=false;select.disabled=false;confirmInput.disabled=false;
+        status.textContent='Masalah sambungan. Semak status akaun dahulu sebelum mencuba lagi.';
+        generate.disabled=false;modeSelect.disabled=false;classSelect.disabled=false;
+        pupilSelect.disabled=false;classInput.disabled=false;pupilInput.disabled=false;
       }
     });
-    const download=makeButton('Muat Turun Senarai Kata Laluan',()=>{});
+    const download=makeButton('Muat Turun ID & Kata Laluan Baharu',()=>{
+      if(!issued.length)return;
+      const cls=myClasses.find(c=>c.id===classSelect.value);
+      const safe=(cls?.name||'Kelas').replace(/[^a-zA-Z0-9-]/g,'_');
+      downloadCredentialsCsv(issued,'Kata_Laluan_Baharu_'+safe+'_'+modeSelect.value+'.csv');
+    });
     download.hidden=true;
     const close=makeButton('Tutup',()=>{
-      if(!download.hidden&&!confirm('Adakah fail kata laluan baharu sudah dimuat turun dan disimpan dengan selamat?'))return;
+      if(issued.length&&!confirm('Sudah simpan kata laluan baharu secara selamat? Maklumat ini tidak boleh dibuka semula.'))return;
       box.close();
     });
     actions.append(generate,download,close);
-    box.append(heading,intro,classLabel,confirmLabel,message,actions);
-    box.addEventListener('close',()=>box.remove(),{once:true});
-    document.body.append(box);box.showModal();
+    box.append(title,intro,modeField,classField,pupilField,classConfirm,pupilConfirm,
+      warning,status,credential,actions);
+    document.body.append(box);
+    let pupils=[],issued=[];
+    const updatePupils=()=>{
+      pupilSelect.replaceChildren(new Option('-- Pilih murid aktif --',''));
+      for(const p of pupils.filter(p=>p.class_id===classSelect.value&&p.active)){
+        pupilSelect.add(new Option(p.display_name+' ('+p.login_id+')',p.id));
+      }
+      pupilInput.value='';
+      classInput.value='';
+    };
+    const updateMode=()=>{
+      const individual=modeSelect.value==='student';
+      pupilField.hidden=!individual;pupilConfirm.hidden=!individual;
+      classConfirm.hidden=individual;
+      warning.textContent=individual
+        ? 'Murid tertentu: HANYA murid yang dipilih akan mendapat kata laluan baharu, termasuk murid yang sudah pernah menukar kata laluan. Sesi lamanya dibatalkan.'
+        : 'Satu kelas: SEMUA murid aktif dalam kelas akan mendapat kata laluan baharu. Kata laluan yang pernah dipilih sendiri juga terbatal. Rekod pembelajaran tidak berubah.';
+      updatePupils();
+    };
+    modeSelect.addEventListener('change',updateMode);
+    classSelect.addEventListener('change',updatePupils);
+    updateMode();
+    box.addEventListener('close',()=>{
+      for(const item of issued)item.temporaryPassword='';
+      issued.length=0;pupils.length=0;
+      credential.textContent='';box.remove();
+    },{once:true});
+    box.showModal();
+    request('/api/teacher/students').then(result=>{
+      if(!box.open)return;
+      if(!result.ok){status.textContent='Gagal memuatkan senarai murid. Sila tutup dan cuba semula.';return;}
+      pupils=result.data.students||[];
+      updatePupils();
+      status.textContent='Pilih jenis penjanaan di atas. Pastikan identiti murid sebelum menetapkan semula kata laluan.';
+    }).catch(()=>{
+      if(box.open)status.textContent='Senarai murid tidak dapat dimuatkan. Sila cuba semula.';
+    });
   }
 
   function connectTeacher(){
