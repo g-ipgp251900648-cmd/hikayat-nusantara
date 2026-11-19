@@ -1,4 +1,4 @@
-/** Hikayat Nusantara: empat aktiviti interaktif Dashboard Murid (rekod latihan disimpan setempat pada pelayar). */
+/** Hikayat Nusantara: misi pembelajaran dengan simpanan peranti dan ringkasan kemajuan berpusat. */
 (async function studentActivities(){
   "use strict";
   const dashboard=document.getElementById("murid-view");
@@ -7,7 +7,7 @@
   if(!account||account.role!=="murid"||account.mustChangePassword)return;
   // A different greeting is rendered for every authenticated pupil. The
   // account name comes only from the server session; never from URL or storage.
-  const pupilName=String(account.name||'').replace(/\\s+/g,' ').trim().slice(0,100)||'Pengembara Muda';
+  const pupilName=String(account.name||'').replace(/\s+/g,' ').trim().slice(0,100)||'Pengembara Muda';
   const welcome=document.getElementById('hn-student-welcome');
   if(welcome)welcome.textContent='Selamat Datang, '+pupilName+'!';
   const welcomeSummary=document.getElementById('hn-student-welcome-summary');
