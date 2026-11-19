@@ -202,6 +202,170 @@
   }
 
   const missionNames=['Jejak Naskhah Pusaka','Balai Olah Hikayat','Warisan Bahasa','Pentas Warisan'];
+
+  // Status rules are guidance prompts, NOT official assessment:
+  // unfinished after >=2 attempts, or latest score below 60%.
+  const effectiveCompletion=r=>r?.recordType==='latihan'&&r.completed===true;
+  function latestMissionFor(studentId,missionId,records,classId){
+    return records.filter(r=>r.studentId===studentId&&r.missionId===missionId&&
+      (!classId||r.classId===classId)).sort((a,b)=>new Date(b.updatedAt)-new Date(a.updatedAt))[0];
+  }
+  function guidanceFor(record){
+    if(!record||effectiveCompletion(record))return null;
+    const count=Number(record.attemptCount)||0;
+    const score=record.lastScore, total=record.lastTotal;
+    if(typeof score==='number'&&typeof total==='number'&&total>0&&score/total<0.6)
+      return 'Markah latihan terakhir di bawah 60%';
+    if(count>=2)return 'Belum selesai selepas '+count+' percubaan';
+    return null;
+  }
+  function element(tag,cls,text){
+    const node=document.createElement(tag);
+    if(cls)node.className=cls;
+    if(text!==undefined)node.textContent=String(text);
+    return node;
+  }
+  function addGuidancePanels(root,people,records){
+    const active=[...new Map(people.filter(p=>p.active).map(p=>[p.id,p])).values()];
+    const needs=[],unfinished=[],notStarted=[];
+    for(const person of active){
+      const pending=[],reasons=[],unstarted=[];
+      for(let i=1;i<=4;i++){
+        const record=latestMissionFor(person.id,i,records);
+        if(effectiveCompletion(record))continue;
+        pending.push('Misi '+i);
+        if(!record||record.recordType!=='latihan'||!record.attemptCount)
+          unstarted.push('Misi '+i);
+        const reason=guidanceFor(record);
+        if(reason)reasons.push('Misi '+i+': '+reason);
+      }
+      if(pending.length)unfinished.push({person,detail:pending.join(', ')});
+      if(unstarted.length)notStarted.push({person,detail:unstarted.join(', ')});
+      if(reasons.length)needs.push({person,detail:reasons.join('; ')});
+    }
+    const intro=element('p','hn-admin-intro',
+      'Petunjuk bimbingan: murid belum menyiapkan misi selepas sekurang-kurangnya 2 percubaan, atau markah terakhir di bawah 60%. Ini cadangan susulan, bukan tahap penguasaan PBD.');
+    root.append(intro);
+    const container=element('div','hn-monitor-alerts');
+    const groups=[
+      ['Murid Perlu Bimbingan',needs,'Tiada murid memenuhi petunjuk bimbingan.'],
+      ['Murid Belum Menyiapkan Semua Misi',unfinished,'Semua murid aktif telah menyiapkan latihan empat misi.'],
+      ['Murid Belum Mula',notStarted,'Tiada misi belum dimulakan dalam rekod semasa.']
+    ];
+    for(const [heading,entries,empty] of groups){
+      const section=element('section','hn-monitor-list');
+      const headingNode=element('h3','',heading+' ('+entries.length+')');section.append(headingNode);
+      if(!entries.length){section.append(element('p','hn-monitor-empty',empty));}
+      else{
+        const list=element('ul','');
+        for(const {person,detail} of entries){
+          const item=element('li','');
+          item.append(element('strong','',person.display_name+' ('+person.login_id+')'));
+          item.append(element('span','',detail));
+          list.append(item);
+        }
+        section.append(list);
+      }
+      container.append(section);
+    }
+    root.append(container);
+  }
+  function percentBar(title,count,total){
+    const bar=element('div','hn-report-bar');
+    const head=element('div','hn-report-bar-header');
+    head.append(element('span','',title));
+    head.append(element('strong','',count+' / '+total+' · '+(total?Math.round(count/total*100):0)+'%'));
+    const track=element('div','hn-report-track');
+    track.setAttribute('role','progressbar');
+    track.setAttribute('aria-label',title);
+    track.setAttribute('aria-valuemin','0');
+    track.setAttribute('aria-valuemax','100');
+    track.setAttribute('aria-valuenow',String(total?Math.round(count/total*100):0));
+    const fill=element('span','hn-report-fill');fill.style.width=(total?Math.round(count/total*100):0)+'%';
+    track.append(fill);bar.append(head,track);return bar;
+  }
+  function renderAdminClassCharts(root,classes,roster,records){
+    if(!root)return;
+    const chartRoot=element('section','hn-class-analytics');
+    root.append(chartRoot);
+    chartRoot.append(element('h2','','Graf Rumusan Kemajuan Setiap Kelas'));
+    chartRoot.append(element('p','hn-admin-intro',
+      'Graf menunjukkan jumlah latihan misi yang diselesaikan berbanding 4 misi bagi setiap murid aktif. Peratus ini bukan markah PBD.'));
+    if(!classes.length){chartRoot.append(element('p','','Belum ada kelas berdaftar.'));return;}
+    const panel=element('div','hn-graph-grid');
+    for(const cls of classes){
+      const ids=new Set(roster.filter(r=>r.class_id===cls.id).map(r=>r.student_id));
+      const members=ids.size;
+      const completed=records.filter(r=>r.classId===cls.id&&ids.has(r.studentId)&&effectiveCompletion(r));
+      const count=new Set(completed.map(r=>r.studentId+'-'+r.missionId)).size;
+      const card=element('section','hn-graph-card');
+      card.append(element('h3','',cls.name+' · '+cls.school_year));
+      card.append(element('p','hn-graph-note',members+' murid aktif · '+count+' daripada '+(members*4)+' latihan selesai'));
+      card.append(percentBar('Keseluruhan kelas',count,members*4));
+      for(let i=1;i<=4;i++){
+        const missionDone=new Set(completed.filter(r=>r.missionId===i).map(r=>r.studentId)).size;
+        card.append(percentBar('Misi '+i,missionDone,members));
+      }
+      card.append(element('p','hn-graph-conclusion',
+        members===0?'Kesimpulan: kelas ini belum mempunyai murid aktif.':
+        'Kesimpulan: '+(members*4-count)+' latihan masih belum selesai dalam kelas ini.'));
+      panel.append(card);
+    }
+    chartRoot.append(panel);
+  }
+  function renderAdminIndividualCharts(root,people,classes,roster,records){
+    const title=element('h2','','Graf Kemajuan Individu Murid');
+    const explain=element('p','hn-admin-intro',
+      'Pilih kelas dan murid untuk melihat empat misi, bilangan percubaan dan markah latihan terakhir. Rekod yang belum diselaraskan akan kelihatan sebagai belum ada rekod.');
+    root.append(title,explain);
+    const controls=element('div','hn-graph-filters');
+    const classLabel=element('label','','Kelas');
+    const classSelect=document.createElement('select');
+    for(const c of classes)classSelect.add(new Option(c.name+' · '+c.school_year,c.id));
+    classLabel.append(classSelect);
+    const studentLabel=element('label','','Murid');
+    const studentSelect=document.createElement('select');studentLabel.append(studentSelect);
+    controls.append(classLabel,studentLabel);root.append(controls);
+    const panel=element('section','hn-graph-card');
+    root.append(panel);
+    const activePeople=new Map(people.filter(p=>p.active).map(p=>[p.id,p]));
+    const updateStudents=()=>{
+      studentSelect.replaceChildren();
+      const ids=[...new Set(roster.filter(r=>r.class_id===classSelect.value).map(r=>r.student_id))];
+      const eligible=ids.map(id=>activePeople.get(id)).filter(Boolean)
+        .sort((a,b)=>a.display_name.localeCompare(b.display_name,'ms'));
+      for(const p of eligible)studentSelect.add(new Option(p.display_name+' ('+p.login_id+')',p.id));
+      updateGraph();
+    };
+    const updateGraph=()=>{
+      panel.replaceChildren();
+      const id=studentSelect.value;
+      if(!id){panel.append(element('p','', 'Tiada murid aktif dalam kelas yang dipilih.'));return;}
+      const student=activePeople.get(id);
+      if(!student)return;
+      panel.append(element('h3','',student.display_name));
+      let done=0,attempts=0;
+      for(let i=1;i<=4;i++){
+        const record=latestMissionFor(id,i,records,classSelect.value);
+        const completed=effectiveCompletion(record);
+        done+=completed?1:0;
+        attempts+=Number(record?.attemptCount)||0;
+        panel.append(percentBar('Misi '+i+' · '+missionNames[i-1],completed?1:0,1));
+        const score=typeof record?.lastScore==='number'&&typeof record?.lastTotal==='number'
+          ?record.lastScore+' / '+record.lastTotal:'Belum ada markah';
+        panel.append(element('p','hn-graph-note',
+          (completed?'Latihan selesai':record?'Belum selesai':'Belum mula')+
+          ' · '+(record?.attemptCount||0)+' percubaan · '+score));
+      }
+      panel.append(element('p','hn-graph-conclusion',
+        'Kesimpulan: '+done+' daripada 4 misi selesai · '+attempts+' jumlah percubaan. '+
+        (done===4?'Latihan empat misi selesai.':'Baki '+(4-done)+' misi belum selesai.')));
+    };
+    classSelect.addEventListener('change',updateStudents);
+    studentSelect.addEventListener('change',updateGraph);
+    updateStudents();
+  }
+
   function renderMissionProgress(root,people,records,{admin=false}={}){
     if(!root)return;
     root.replaceChildren();
@@ -215,9 +379,11 @@
     const description=document.createElement('p');description.className='hn-admin-intro';
     description.textContent='Lihat kemajuan latihan setiap murid. Status selesai bukan markah pentaksiran rasmi. Misi 4 menunjukkan latihan persembahan, bukan penghantaran video.';
     root.append(description);
+    const activeIds=new Set(people.filter(x=>x.active).map(x=>x.id));
     const countByMission=[0,0,0,0];
     for(let i=1;i<=4;i++){
-      const completed=new Set(records.filter(x=>x.missionId===i&&x.completed).map(x=>x.studentId));
+      const completed=new Set(records.filter(x=>x.missionId===i&&
+        effectiveCompletion(x)&&activeIds.has(x.studentId)).map(x=>x.studentId));
       countByMission[i-1]=completed.size;
     }
     const stats=document.createElement('div');stats.className='stats-grid four';
@@ -225,12 +391,13 @@
       const card=document.createElement('div');card.className='stat';
       const label=document.createElement('span');label.textContent='Misi '+(i+1);
       const number=document.createElement('strong');
-      number.textContent=countByMission[i]+' / '+people.length;
+      number.textContent=countByMission[i]+' / '+activeIds.size;
       const sub=document.createElement('em');
       sub.textContent=i===3?'Pelan latihan siap':'Latihan selesai';
       card.append(label,number,sub);stats.append(card);
     }
     root.append(stats);
+    addGuidancePanels(root,people,records);
     const table=document.createElement('div');table.className='table-wrap';
     table.innerHTML='<table><thead><tr><th>Murid</th><th>ID</th><th>Kelas</th><th>Misi</th><th>Kemajuan</th><th>Percubaan</th><th>Markah Terakhir</th><th>Dikemas Kini</th></tr></thead><tbody></tbody></table>';
     const tbody=table.querySelector('tbody');
@@ -265,16 +432,19 @@
     }
     root.append(table);
   }
-  function renderAdminProgressReport(studentResult,progressResult){
+  function renderAdminProgressReport(studentResult,progressResult,classResult,rosterResult){
     const monitor=$('#admin-misi'),report=$('#admin-laporan');
     if(!monitor)return;
-    if(!studentResult.ok||!progressResult.ok){
+    if(!studentResult.ok||!progressResult.ok||!classResult.ok||!rosterResult.ok){
       monitor.replaceChildren(document.createTextNode('Kemajuan belum dapat dipaparkan. Sila cuba muat semula.'));
       return;
     }
     const people=studentResult.data.students;
     const rows=progressResult.data.progress;
+    const classes=classResult.data.classes;
+    const roster=rosterResult.data.roster;
     renderMissionProgress(monitor,people,rows,{admin:true});
+    renderAdminClassCharts($('#admin-kelas'),classes,roster,rows);
     if(report){
       report.replaceChildren();
       const heading=document.createElement('h2');heading.textContent='Analitik Kemajuan Pembelajaran';
@@ -294,21 +464,22 @@
         card.append(title,number);stats.append(card);
       }
       report.append(stats);
+      renderAdminIndividualCharts(report,people,classes,roster,rows);
     }
     const chip=$('#admin-view .system-status-chip');
     if(chip)chip.textContent='REKOD TERKINI';
   }
 
   async function loadAdmin(){
-    const [summary,teachers,leaders,students,classes,progress]=await Promise.all([request('/api/admin/overview'),request('/api/admin/teachers'),request('/api/admin/leaders'),request('/api/admin/students'),request('/api/admin/classes'),request('/api/admin/progress')]);
+    const [summary,teachers,leaders,students,classes,progress,roster]=await Promise.all([request('/api/admin/overview'),request('/api/admin/teachers'),request('/api/admin/leaders'),request('/api/admin/students'),request('/api/admin/classes'),request('/api/admin/progress'),request('/api/admin/roster')]);
     if(summary.ok) {
       const values=[summary.data.stats.students,summary.data.stats.teachers,summary.data.stats.classes,progress.ok?new Set(progress.data.progress.map(p=>p.studentId+'-'+p.missionId)).size:'—'];
       $('#admin-ringkasan')?.querySelectorAll('.stats-grid.four .stat strong').forEach((el,i)=>{el.textContent=String(values[i]??'—');});
     }
     const root=$('#admin-guru');
-    renderAdminProgressReport(students,progress);
     renderAdminStudents(students);
     renderAdminClasses(classes,teachers);
+    renderAdminProgressReport(students,progress,classes,roster);
     renderLeaders(leaders);
     if(!root||!teachers.ok)return;
     // Replace inherited placeholder only after a verified administrator session.
@@ -755,11 +926,25 @@
       });
     });
   }
+  function renderRoleIdentity(user){
+    const type=user?.role==='guru'?'guru':adminRoles.includes(user?.role)?'admin':null;
+    if(!type)return;
+    const name=String(user.name||'').replace(/\s+/g,' ').trim().slice(0,100)||
+      (type==='guru'?'Guru':'Pentadbir');
+    const label=$('#hn-'+type+'-top-name');
+    if(label){label.textContent=name;label.title=name;}
+    const greeting=$('#hn-'+type+'-greeting');
+    if(greeting)greeting.textContent=name+'!';
+    const avatar=$('#hn-'+type+'-avatar');
+    if(avatar)avatar.textContent=name.split(' ').filter(Boolean).slice(0,2)
+      .map(x=>x[0]?.toLocaleUpperCase('ms-MY')||'').join('')||'P';
+  }
   async function init(){
     if(location.hash!=='#admin'&&location.hash!=='#guru')return;
     try {
       const u=await window.hnGetSession();
       if(u?.mustChangePassword)return;
+      renderRoleIdentity(u);
       if(adminRoles.includes(u?.role)&&!adminReady){adminReady=true;await loadAdmin();}
       if(u?.role==='guru'){
         if(!teacherReady){teacherReady=true;connectTeacher();}

@@ -80,6 +80,43 @@ test('every pupil dashboard greets only the authenticated account name',()=>{
   assert.match(student,/hn-student-attempt-summary/);
 });
 
+test('teacher and admin dashboards greet the authenticated name without HTML injection',()=>{
+  const html=src('index.html');
+  const ui=src('account-ui.js');
+  const css=src('styles.css');
+  for(const type of ['guru','admin']){
+    for(const suffix of ['top-name','greeting','avatar']){
+      assert.match(html,new RegExp('id="hn-'+type+'-'+suffix+'"'));
+    }
+  }
+  assert.match(ui,/function renderRoleIdentity\(user\)/);
+  assert.match(ui,/renderRoleIdentity\(u\)/);
+  assert.match(ui,/greeting\.textContent=name\+'!'/);
+  assert.match(ui,/label\.textContent=name/);
+  assert.doesNotMatch(ui,/greeting\.innerHTML=name|label\.innerHTML=name/);
+  assert.match(css,/\.hn-role-account-name/);
+});
+test('guide lists and teacher/admin charts are based on real saved progress',()=>{
+  const api=src('auth/api.js'),ui=src('account-ui.js'),html=src('index.html');
+  assert.match(api,/\/api\/admin\/roster/);
+  assert.match(api,/WHERE c\.organization_id=\$1 AND u\.organization_id=\$1/);
+  assert.match(api,/u\.active=true/);
+  assert.match(ui,/function guidanceFor\(record\)/);
+  assert.match(ui,/count>=2/);
+  assert.match(ui,/score\/total<0\.6/);
+  assert.match(ui,/Murid Perlu Bimbingan/);
+  assert.match(ui,/Murid Belum Menyiapkan Semua Misi/);
+  assert.match(ui,/Murid Belum Mula/);
+  assert.match(ui,/renderAdminClassCharts/);
+  assert.match(ui,/renderAdminIndividualCharts/);
+  assert.match(ui,/class_id===cls\.id/);
+  assert.match(ui,/return records\.filter/);
+  assert.match(ui,/role','progressbar'|role','progressbar/); // accessible progress bars
+  assert.match(html,/id="admin-kelas"/);
+  assert.match(src('admin-dashboard.js'),/'admin-laporan'/);
+  assert.doesNotMatch(ui,/Math\.random\(\).*completed/);
+});
+
 test('only three login portals while GKMP and Ketua Panitia share Admin',()=>{
   const login=src('login.html');
   const client=src('auth-client.js');

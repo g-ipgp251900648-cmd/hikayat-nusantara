@@ -265,6 +265,15 @@ export async function handleApi(request,response,pathname) {
       );
       json(response,200,{ok:true,students:r.rows});return true;
     }
+    // Exact pupil-to-class membership for organization-scoped completion
+    // graphs; no credentials, contact information or raw answers are returned.
+    if(pathname==='/api/admin/roster'&&method==='GET'&&canAdmin(user.role)){
+      const r=await db.query(
+        "SELECT cm.student_id AS student_id,cm.class_id AS class_id FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=cm.student_id WHERE c.organization_id=$1 AND u.organization_id=$1 AND u.role='murid' AND u.active=true ORDER BY cm.class_id,cm.student_id LIMIT 3000",
+        [user.organization_id]
+      );
+      json(response,200,{ok:true,roster:r.rows});return true;
+    }
     if(pathname==='/api/admin/classes'&&method==='GET'&&canAdmin(user.role)){
       const r=await db.query(
         "SELECT c.id,c.name,c.school_year,c.teacher_id,u.display_name AS teacher_name,count(cm.student_id)::int AS students FROM hn_classes c JOIN hn_users u ON u.id=c.teacher_id LEFT JOIN hn_class_members cm ON cm.class_id=c.id WHERE c.organization_id=$1 GROUP BY c.id,u.display_name ORDER BY c.created_at DESC LIMIT 400",

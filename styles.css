@@ -584,3 +584,54 @@ body.hn-m3-open{overflow:hidden!important}
 #hn-m3-close{flex:none;border:1px solid #d4b77c;border-radius:10px;padding:10px 13px;background:#f8eace;color:#184330;cursor:pointer;font-size:12px;font-weight:800}
 #hn-m3-frame{width:100%;flex:1;min-height:0;border:0;background:#142b20}
 @media(max-width:720px){.hn-m3-top{padding:6px 9px;gap:6px;min-height:60px}.hn-m3-heading strong{font-size:12px}.hn-m3-heading small{font-size:9px}#hn-m3-status{display:none}#hn-m3-close{font-size:10px;padding:9px}}
+
+
+/* Teacher/Admin identity and private progress analytics. */
+#guru-view .hn-role-account-name,
+#admin-view .hn-role-account-name{
+  display:block;max-width:230px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-weight:700;font-size:12px;color:#254c39;
+}
+#hn-guru-greeting,#hn-admin-greeting{overflow-wrap:anywhere}
+.hn-monitor-alerts{
+  display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:18px 0 23px;
+}
+.hn-monitor-list{
+  min-width:0;padding:16px 18px;background:#fffdf6;border:1px solid #e5dcbf;
+  border-radius:14px;box-shadow:0 5px 14px #33553b0d;
+}
+.hn-monitor-list h3{font-size:16px;color:#244b38;margin:0 0 11px;line-height:1.35}
+.hn-monitor-list ul{padding:0 0 0 15px;margin:0;max-height:310px;overflow:auto}
+.hn-monitor-list li{margin:0 0 11px;line-height:1.45;font-size:12px;overflow-wrap:anywhere}
+.hn-monitor-list li strong{display:block;color:#284d3e}
+.hn-monitor-list li span{display:block;color:#61725c;margin-top:2px}
+.hn-monitor-empty{color:#667b68;font-size:12px;margin:0}
+.hn-class-analytics{padding-top:20px;margin-top:28px;border-top:1px solid #e3dfce}
+.hn-class-analytics h2,.hn-graph-card h3{color:#244d3b;overflow-wrap:anywhere}
+.hn-graph-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:16px}
+.hn-graph-card{
+  padding:19px 20px;background:#fffdf7;border:1px solid #e5dcc6;border-radius:15px;
+  box-shadow:0 6px 16px #32503612;min-width:0;
+}
+.hn-graph-card h3{font-size:17px;margin:0 0 9px}
+.hn-graph-card p.hn-graph-note{font-size:12px;color:#677763;margin:5px 0 12px;line-height:1.5}
+.hn-report-bar{margin:12px 0;min-width:0}
+.hn-report-bar-header{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;font-size:12px;color:#395745}
+.hn-report-bar-header span{flex:1;min-width:0}
+.hn-report-bar-header strong{white-space:nowrap;color:#20543d;font-weight:700}
+.hn-report-track{height:11px;background:#e4e9d8;border-radius:20px;overflow:hidden;margin-top:6px}
+.hn-report-fill{display:block;height:100%;border-radius:20px;background:linear-gradient(90deg,#76a882,#2d7552);transition:width .3s}
+.hn-graph-conclusion{font-size:12px;color:#4f604a;line-height:1.6;padding-top:11px;margin:14px 0 0;border-top:1px solid #e5e1d2}
+.hn-graph-filters{display:flex;flex-wrap:wrap;align-items:end;gap:12px;margin:15px 0}
+.hn-graph-filters label{display:flex;flex:1 1 220px;flex-direction:column;gap:5px;font-weight:700;font-size:12px;color:#365542}
+.hn-graph-filters select{width:100%;padding:10px;border:1px solid #ccd5bf;border-radius:8px;background:#fff;max-width:100%}
+#admin-laporan>.hn-graph-card{max-width:900px}
+@media(max-width:900px){
+  .hn-monitor-alerts{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  #guru-view .hn-role-account-name,#admin-view .hn-role-account-name{max-width:105px;font-size:11px}
+  .hn-graph-card,.hn-monitor-list{padding:13px}
+  .hn-report-bar-header{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){.hn-report-fill{transition:none}}
