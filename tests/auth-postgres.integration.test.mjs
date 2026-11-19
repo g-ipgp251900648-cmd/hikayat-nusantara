@@ -138,7 +138,8 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const a=await signin(teacherA.teacher.login_id,teacherA.temporaryPassword);
     const b=await signin(teacherB.teacher.login_id,teacherB.temporaryPassword);
     assert.equal((await api('/api/teacher/classes',{cookie:a.cookie})).status,403);
-    await updatePassword(a.cookie,teacherA.temporaryPassword,makePassword());
+    const teacherAPassword=makePassword();
+    await updatePassword(a.cookie,teacherA.temporaryPassword,teacherAPassword);
     await updatePassword(b.cookie,teacherB.temporaryPassword,makePassword());
     assert.equal((await api('/api/admin/teachers',{cookie:a.cookie})).status,404);
 
@@ -694,6 +695,87 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     for(const action of ['confirm_pbd','save_pbd_draft','save_teacher_feedback',
       'submit_portfolio_text','save_teacher_intervention'])
       assert.ok(audits.rows.some(x=>x.action===action),action);
+
+    // Personal Teacher settings are private, revisioned, and use actual classes.
+    const initialSettings=await api('/api/teacher/settings',{cookie:a.cookie});
+    assert.equal(initialSettings.status,200,JSON.stringify(initialSettings.data));
+    assert.equal(initialSettings.data.profile.name,'Guru Amanah');
+    assert.equal(initialSettings.data.preferences.revision,0);
+    assert.equal(initialSettings.data.preferences.default_class_id,null);
+    assert.ok(initialSettings.data.sessions.some(x=>x.current===true));
+    assert.ok(initialSettings.data.sessions.every(x=>!Object.hasOwn(x,'token_hash')));
+    assert.equal((await api('/api/teacher/settings',{cookie:testStudent.cookie})).status,404);
+    assert.equal((await api('/api/teacher/settings',{cookie:admin.cookie})).status,404);
+    const wrongNamePassword=await api('/api/teacher/settings/profile',{
+      method:'POST',cookie:a.cookie,body:{name:'Guru Baharu',currentPassword:'wrong-password'}
+    });
+    assert.equal(wrongNamePassword.status,401);
+    const renamedTeacher=await api('/api/teacher/settings/profile',{
+      method:'POST',cookie:a.cookie,
+      body:{name:'Guru Amanah Baharu',currentPassword:teacherAPassword}
+    });
+    assert.equal(renamedTeacher.status,200,JSON.stringify(renamedTeacher.data));
+    assert.equal((await api('/api/auth/session',{cookie:a.cookie})).data.user.name,'Guru Amanah Baharu');
+
+    const foreignSettingsClass=await api('/api/teacher/classes',{
+      method:'POST',cookie:unassignedTeacher.cookie,
+      body:{name:'5 Kelas Guru Lain',schoolYear:2026}
+    });
+    assert.equal(foreignSettingsClass.status,201);
+    const illegalClassPrefs=await api('/api/teacher/settings/preferences',{
+      method:'POST',cookie:a.cookie,
+      body:{defaultClassId:foreignSettingsClass.data.class.id,compactTables:true,
+        reduceMotion:true,highContrast:true,expectedRevision:0}
+    });
+    assert.equal(illegalClassPrefs.status,404);
+    const invalidPrefs=await api('/api/teacher/settings/preferences',{
+      method:'POST',cookie:a.cookie,
+      body:{defaultClassId:classA.data.class.id,compactTables:'true',
+        reduceMotion:true,highContrast:true,expectedRevision:0}
+    });
+    assert.equal(invalidPrefs.status,400);
+    const savedPrefs=await api('/api/teacher/settings/preferences',{
+      method:'POST',cookie:a.cookie,
+      body:{defaultClassId:classA.data.class.id,compactTables:true,
+        reduceMotion:true,highContrast:false,expectedRevision:0}
+    });
+    assert.equal(savedPrefs.status,200,JSON.stringify(savedPrefs.data));
+    assert.equal(savedPrefs.data.preferences.revision,1);
+    assert.equal(savedPrefs.data.preferences.default_class_id,classA.data.class.id);
+    assert.equal(savedPrefs.data.preferences.compact_tables,true);
+    assert.equal(savedPrefs.data.preferences.reduce_motion,true);
+    const retryPrefs=await api('/api/teacher/settings/preferences',{
+      method:'POST',cookie:a.cookie,
+      body:{defaultClassId:null,compactTables:false,
+        reduceMotion:false,highContrast:false,expectedRevision:0}
+    });
+    assert.equal(retryPrefs.status,409);
+    assert.equal((await api('/api/teacher/settings',{cookie:a.cookie}))
+      .data.preferences.default_class_id,classA.data.class.id);
+    assert.equal((await api('/api/teacher/settings',{cookie:unassignedTeacher.cookie}))
+      .data.preferences.default_class_id,null);
+    const secondaryTeacherSession=await signin(teacherA.teacher.login_id,teacherAPassword);
+    const twoSessions=await api('/api/teacher/settings',{cookie:a.cookie});
+    assert.ok(twoSessions.data.sessions.length>=2);
+    assert.equal(twoSessions.data.sessions.filter(x=>x.current).length,1);
+    const missingSignoutConfirmation=await api('/api/teacher/settings/sessions/logout-others',{
+      method:'POST',cookie:a.cookie,body:{confirmation:'WRONG'}
+    });
+    assert.equal(missingSignoutConfirmation.status,400);
+    const revokeOtherSessions=await api('/api/teacher/settings/sessions/logout-others',{
+      method:'POST',cookie:a.cookie,body:{confirmation:teacherA.teacher.login_id}
+    });
+    assert.equal(revokeOtherSessions.status,200);
+    assert.ok(revokeOtherSessions.data.revoked>=1);
+    assert.equal((await api('/api/auth/session',{cookie:secondaryTeacherSession.cookie}))
+      .data.authenticated,false);
+    assert.equal((await api('/api/auth/session',{cookie:a.cookie})).data.authenticated,true);
+    const teacherSettingsAudit=await pool.query(
+      "SELECT action FROM hn_audit WHERE action IN ('update_own_teacher_profile','update_own_teacher_settings','logout_other_teacher_sessions')"
+    );
+    for(const action of ['update_own_teacher_profile','update_own_teacher_settings','logout_other_teacher_sessions']){
+      assert.ok(teacherSettingsAudit.rows.some(x=>x.action===action),action);
+    }
     // A separate school/organization admin cannot see School A teachers.
     const otherOrg=(await pool.query(
       'INSERT INTO hn_organizations(name) VALUES($1) RETURNING id',['Sekolah Ujian B']
