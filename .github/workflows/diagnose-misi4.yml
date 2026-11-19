@@ -28,13 +28,13 @@ jobs:
                 const s=await readFile(file,'utf8');
                 if(file.endsWith('SubmissionHallModal.tsx')) {
                   console.log('COMPONENT_BEGIN',file);
-                  console.log(s.slice(0,13500));
+                  console.log(s.slice(12500,17000));
                   console.log('COMPONENT_END');
                 }else if(/backendReady|storageHealth|onSubmitToTeacher|handleRealSubmit/.test(s)){
                   console.log('RELATED',file);
                   for(const needle of ['backendReady','storageHealth','onSubmitToTeacher','handleRealSubmit']){
-                    const pos=s.indexOf(needle);
-                    if(pos>=0)console.log('MATCH',needle,s.slice(Math.max(0,pos-950),pos+1350));
+                    let pos=0,count=0;
+                    while((pos=s.indexOf(needle,pos))>=0&&count++<14){console.log('MATCH',needle,s.slice(Math.max(0,pos-420),pos+750));pos+=needle.length;}
                   }
                 }
               }
