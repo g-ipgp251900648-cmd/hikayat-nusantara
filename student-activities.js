@@ -204,7 +204,12 @@
           }
           restored=true;
         }
-        if(JSON.stringify(summaryFor(i))===JSON.stringify(remote)){
+        const canonical={
+          kind:'practice-v1',completed:remote.completed===true,
+          attemptCount:Number(remote.attemptCount)||0,
+          lastScore:remote.lastScore??null,lastTotal:remote.lastTotal??null
+        };
+        if(JSON.stringify(summaryFor(i))===JSON.stringify(canonical)){
           cloud.signatures[i]=JSON.stringify(summaryFor(i));
         }
       }
@@ -700,7 +705,7 @@
     open(next<0?0:next);
   });
   document.getElementById("quest-reset")?.addEventListener("click",()=>{
-    if(!window.confirm("Padam semua jawapan, draf dan kemajuan latihan yang disimpan pada peranti ini?"))return;
+    if(!window.confirm("Tetapkan semula latihan di peranti dan kemas kini ringkasan kemajuan di Neon? Rekod PBD dan video (jika ada) tidak terlibat."))return;
     Object.assign(state,empty());
     save();feedback="";updateProgress();helper.hidden=true;
     importedFlights.clear();
