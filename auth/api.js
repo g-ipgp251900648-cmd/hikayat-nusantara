@@ -409,16 +409,20 @@ export async function handleApi(request,response,pathname) {
         json(response,201,{ok:true,class:r.rows[0]});return true;
       }
     }
-    // Private, transactional CSV enrollment. Student names are supplied by the
-    // authenticated teacher through the browser; never commit school rosters.
-    // Teacher may reissue one-time credentials ONLY for still-unclaimed pupil
-    // accounts in a class they own. Accounts which already changed passwords
-    // are never reset by this recovery workflow.
+    // Reset credentials for a teacher's own class or a specific pupil.
+    // Explicit modes: 'class' = every active pupil in the class;
+    // 'student' = the selected active pupil, even after choosing a password.
+    // Calls without a mode keep the older, safer unclaimed-only behavior
+    // for clients whose JavaScript is cached before the latest deployment.
     if(pathname==='/api/teacher/students/reissue-temporary'&&
        user.role==='guru'&&method==='POST'){
       const body=await readBody(request);
-      if(!uuid(body.classId)||typeof body.confirmationName!=='string'||
-         body.confirmationName.length>100){
+      const mode=body.mode===undefined?'legacy':body.mode;
+      if(!['legacy','class','student'].includes(mode)||
+         !uuid(body.classId)||typeof body.confirmationName!=='string'||
+         body.confirmationName.length>100||
+         (mode==='student'&&(!uuid(body.studentId)||
+           !validLoginId(body.confirmationLoginId)))){
         reject(response,400,'INVALID_REISSUE_REQUEST');return true;
       }
       const client=await db.connect();
@@ -439,29 +443,50 @@ export async function handleApi(request,response,pathname) {
           "SELECT u.id,u.login_id,u.display_name,u.must_change_password,u.active FROM hn_users u JOIN hn_class_members cm ON cm.student_id=u.id WHERE cm.class_id=$1 AND u.organization_id=$2 AND u.role='murid' ORDER BY u.login_id FOR UPDATE OF u",
           [body.classId,user.organization_id]
         );
-        if(pupils.rows.length>50){
+        if(mode!=='student'&&pupils.rows.length>50){
           await client.query('ROLLBACK');reject(response,409,'CLASS_TOO_LARGE_FOR_REISSUE');return true;
         }
-        unaffected=pupils.rows.filter(p=>!p.must_change_password||!p.active).length;
-        for(const pupil of pupils.rows){
-          if(!pupil.must_change_password||!pupil.active)continue;
+        let targets;
+        if(mode==='student'){
+          const target=pupils.rows.find(p=>p.id===body.studentId);
+          if(!target){
+            await client.query('ROLLBACK');reject(response,404,'STUDENT_NOT_IN_CLASS');return true;
+          }
+          if(target.login_id!==body.confirmationLoginId){
+            await client.query('ROLLBACK');reject(response,400,'STUDENT_ID_CONFIRMATION_REQUIRED');return true;
+          }
+          if(!target.active){
+            await client.query('ROLLBACK');reject(response,409,'STUDENT_INACTIVE');return true;
+          }
+          targets=[target];
+        }else{
+          targets=pupils.rows.filter(p=>p.active&&(mode==='class'||p.must_change_password));
+        }
+        unaffected=pupils.rows.length-targets.length;
+        for(const pupil of targets){
           const password=temporaryPassword();
           const hashed=await hashPassword(password);
+          // Every reset must force a fresh password at the next login.
           await client.query(
-            'UPDATE hn_users SET password_hash=$1,failed_logins=0,locked_until=NULL WHERE id=$2',
+            'UPDATE hn_users SET password_hash=$1,must_change_password=true,failed_logins=0,locked_until=NULL WHERE id=$2',
             [hashed,pupil.id]
           );
+          // Any session previously obtained by the pupil is invalid immediately.
           await client.query('DELETE FROM hn_sessions WHERE user_id=$1',[pupil.id]);
           credentials.push({loginId:pupil.login_id,name:pupil.display_name,temporaryPassword:password});
         }
-        await auditEvent(client,user,'reissue_initial_pupil_passwords','class',body.classId);
+        await auditEvent(client,user,
+          mode==='student'?'reset_pupil_password':
+          mode==='class'?'reset_all_class_pupil_passwords':'reissue_initial_pupil_passwords',
+          mode==='student'?'user':'class',
+          mode==='student'?body.studentId:body.classId);
         await client.query('COMMIT');
       }catch(error){
         credentials=[];
         await client.query('ROLLBACK').catch(()=>{});
         throw error;
       }finally{client.release();}
-      json(response,200,{ok:true,reissued:credentials.length,unaffected,credentials});return true;
+      json(response,200,{ok:true,mode,reissued:credentials.length,unaffected,credentials});return true;
     }
     if(pathname==='/api/teacher/students/bulk'&&user.role==='guru'&&method==='POST'){
       const body=await readBody(request,35000);
