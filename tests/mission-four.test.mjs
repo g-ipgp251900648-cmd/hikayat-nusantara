@@ -12,8 +12,28 @@ test('original Misi 4 route, launcher and camera permission are wired',()=>{
   assert.match(src('server.js'), /\["\/mission-four-ai-bridge\.js",\s*\["mission-four-ai-bridge\.js"/);
   assert.match(src('mission-four-ai-bridge.js'),/event\.source!==iframe\.contentWindow/);
 });
-test('the unauthenticated Render portal cannot pretend teacher uploads succeeded',()=>{
-  assert.match(src('server.js'),/MISI4_BACKEND_NOT_CONFIGURED/);
-  assert.match(src('mission-four-ai-bridge.js'),/receipt not verified/);
-  assert.match(src('mission-four-ai-bridge.js'),/res\.ok|r\.ok/);
+test('Misi 4 accepts a real private recording only after storage and database confirm it',()=>{
+  const api=src('auth/misi4.js'),server=src('server.js');
+  const schema=src('auth/schema.sql'),bridge=src('mission-four-ai-bridge.js');
+  const ui=src('teacher-learning-ui.js'),pupil=src('student-portfolio-ui.js');
+  assert.match(api,/PutObjectCommand/);
+  assert.match(api,/createReadStream\(file.path\)/);
+  assert.match(api,/readMultipart\(req\)/);
+  assert.match(api,/MURID_REQUIRED/);
+  assert.match(api,/CLASS_REQUIRED/);
+  assert.match(api,/STORAGE_NOT_CONFIGURED/);
+  assert.match(api,/submit_misi4_recording/);
+  assert.match(api,/getSignedUrl/);
+  assert.match(api,/expiresIn:120/);
+  assert.match(api,/review_misi4_recording/);
+  assert.match(api,/storage\.client\.send\(new DeleteObjectCommand/);
+  assert.match(schema,/CREATE TABLE IF NOT EXISTS hn_misi4_submissions/);
+  assert.match(src('auth/misi4-video-migration.sql'),/CREATE TABLE IF NOT EXISTS hn_misi4_submissions/);
+  assert.match(src('auth/api.js'),/handleMisi4Api/);
+  assert.match(server,/authorizeMissionRequest/);
+  assert.match(bridge,/receipt not verified/);
+  assert.match(ui,/Tonton Rakaman/);
+  assert.match(ui,/Simpan Semakan dan Maklum Balas Video/);
+  assert.match(pupil,/Rakaman dan Maklum Balas Misi 4/);
+  assert.doesNotMatch(server,/MISI4_BACKEND_NOT_CONFIGURED/);
 });
