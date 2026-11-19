@@ -58,6 +58,7 @@
         verified:true,receipt:result.submission.referenceNo,
         submissionId:result.submission.id
       });
+      window.dispatchEvent(new Event('hikayat:misi4-uploaded'));
       note('✓ Rakaman BERJAYA dihantar kepada Guru. Guru boleh menonton, menilai dan memberikan maklum balas.');
       const receipt=overlay.querySelector('#hn-m4-receipt');
       if(receipt)receipt.textContent='Nombor rujukan: '+result.submission.referenceNo;
