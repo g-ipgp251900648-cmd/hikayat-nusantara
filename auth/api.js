@@ -79,6 +79,17 @@ async function auditEvent(db,user,action,type,id){
 }
 function uuid(value){return typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);}
 function cleanName(value){return typeof value==='string'?value.trim():'';}
+
+const shortText=(value,max)=>typeof value==='string'&&value.length<=max?value.trim():null;
+const validMission=value=>Number.isInteger(value)&&value>=1&&value<=4;
+async function teacherClassForStudent(db,user,studentId){
+  const r=await db.query(
+    "SELECT c.id FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=cm.student_id WHERE cm.student_id=$1 AND c.teacher_id=$2 AND c.organization_id=$3 AND u.organization_id=$3 AND u.role='murid' AND u.active=true ORDER BY c.created_at DESC LIMIT 1",
+    [studentId,user.id,user.organization_id]
+  );
+  return r.rows[0]?.id||null;
+}
+
 function formatMissionProgress(row){
   const raw=row.checkpoint&&typeof row.checkpoint==='object'&&!Array.isArray(row.checkpoint)
     ?row.checkpoint:{};
@@ -603,6 +614,138 @@ export async function handleApi(request,response,pathname) {
         }catch(e){await client.query('ROLLBACK').catch(()=>{});throw e;}finally{client.release();}
         json(response,201,{ok:true,student:created,temporaryPassword:password});return true;
       }
+    }
+
+    // Teacher-facing PBD, feedback and portfolio always honor current class
+    // membership and school boundaries. No game score auto-determines TP.
+    if(pathname==='/api/teacher/learning'&&method==='GET'&&user.role==='guru'){
+      const clause=" WHERE t.organization_id=$1 AND EXISTS (SELECT 1 FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=cm.student_id WHERE cm.student_id=t.student_id AND c.teacher_id=$2 AND c.organization_id=$1 AND u.organization_id=$1 AND u.role='murid' AND u.active=true)";
+      const [pbd,feedback,portfolio]=await Promise.all([
+        db.query('SELECT t.* FROM hn_pbd_assessments t'+clause+' ORDER BY t.updated_at DESC LIMIT 1200',[user.organization_id,user.id]),
+        db.query('SELECT t.* FROM hn_teacher_feedback t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id]),
+        db.query('SELECT t.* FROM hn_portfolio_entries t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id])
+      ]);
+      json(response,200,{ok:true,assessments:pbd.rows,feedback:feedback.rows,portfolio:portfolio.rows});return true;
+    }
+    if(pathname==='/api/teacher/pbd'&&method==='POST'&&user.role==='guru'){
+      const body=await readBody(request,12000);
+      const studentId=body.studentId,missionId=body.missionId;
+      const expected=body.expectedRevision;
+      const status=body.status;
+      const tp=body.tp===null||body.tp===''?null:body.tp;
+      const evidence=shortText(body.evidence,2500),justification=shortText(body.justification,2500);
+      const scores=body.rubric;
+      const dimensions=['olah','bahasa','santun','persembahan'];
+      const validRubric=scores&&typeof scores==='object'&&!Array.isArray(scores)
+        &&Object.keys(scores).every(k=>dimensions.includes(k))
+        &&Object.values(scores).every(v=>Number.isInteger(v)&&v>=0&&v<=4);
+      if(!uuid(studentId)||!validMission(missionId)||!Number.isInteger(expected)||expected<0||
+        !['draft','confirmed'].includes(status)||(tp!==null&&(!Number.isInteger(tp)||tp<1||tp>6))||
+        evidence===null||justification===null||!validRubric||
+        (status==='confirmed'&&(!tp||evidence.length<12||justification.length<12||
+          !Object.values(scores).some(v=>v>0)))){
+        reject(response,400,'INVALID_PBD_ASSESSMENT');return true;
+      }
+      const client=await db.connect();
+      try {
+        await client.query('BEGIN');
+        const classId=await teacherClassForStudent(client,user,studentId);
+        if(!classId){await client.query('ROLLBACK');reject(response,404,'STUDENT_NOT_IN_CLASS');return true;}
+        const previous=await client.query(
+          'SELECT id,revision FROM hn_pbd_assessments WHERE organization_id=$1 AND student_id=$2 AND mission_id=$3 FOR UPDATE',
+          [user.organization_id,studentId,missionId]
+        );
+        const old=previous.rows[0];
+        if((old?.revision||0)!==expected){
+          await client.query('ROLLBACK');reject(response,409,'PBD_REVISION_CONFLICT');return true;
+        }
+        const params=[user.organization_id,studentId,missionId,classId,user.id,tp,JSON.stringify(scores),evidence,justification,status];
+        const result=old
+          ?await client.query(
+            "UPDATE hn_pbd_assessments SET class_id=$4,teacher_id=$5,tp=$6,rubric=$7::jsonb,evidence=$8,justification=$9,status=$10,revision=revision+1,updated_at=now(),confirmed_at=CASE WHEN $10='confirmed' THEN now() ELSE NULL END WHERE id=$11 RETURNING *",
+            [...params,old.id]
+          )
+          :await client.query(
+            "INSERT INTO hn_pbd_assessments(organization_id,student_id,mission_id,class_id,teacher_id,tp,rubric,evidence,justification,status,confirmed_at) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,CASE WHEN $10='confirmed' THEN now() ELSE NULL END) RETURNING *",
+            params
+          );
+        const saved=result.rows[0];
+        await client.query(
+          'INSERT INTO hn_pbd_assessment_history(organization_id,student_id,mission_id,teacher_id,revision,snapshot) VALUES($1,$2,$3,$4,$5,$6::jsonb)',
+          [user.organization_id,studentId,missionId,user.id,saved.revision,JSON.stringify({
+            tp:saved.tp,rubric:saved.rubric,evidence:saved.evidence,
+            justification:saved.justification,status:saved.status,confirmedAt:saved.confirmed_at
+          })]
+        );
+        await auditEvent(client,user,status==='confirmed'?'confirm_pbd':'save_pbd_draft','pbd',saved.id);
+        await client.query('COMMIT');
+        json(response,200,{ok:true,assessment:saved});return true;
+      }catch(error){
+        await client.query('ROLLBACK').catch(()=>{});
+        if(error?.code==='23505'){reject(response,409,'PBD_REVISION_CONFLICT');return true;}
+        throw error;
+      }finally{client.release();}
+    }
+    if(pathname==='/api/teacher/feedback'&&method==='POST'&&user.role==='guru'){
+      const body=await readBody(request,9000);
+      const strengths=shortText(body.strengths,1500);
+      const improvements=shortText(body.improvements,1500);
+      const nextSteps=shortText(body.nextSteps,1500);
+      if(!uuid(body.studentId)||!validMission(body.missionId)||
+         !['draft','published','revision_requested'].includes(body.status)||
+         strengths===null||improvements===null||nextSteps===null||
+         (strengths.length+improvements.length+nextSteps.length<10)){
+        reject(response,400,'INVALID_FEEDBACK');return true;
+      }
+      const classId=await teacherClassForStudent(db,user,body.studentId);
+      if(!classId){reject(response,404,'STUDENT_NOT_IN_CLASS');return true;}
+      const r=await db.query(
+        'INSERT INTO hn_teacher_feedback(organization_id,student_id,mission_id,teacher_id,strengths,improvements,next_steps,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+        [user.organization_id,body.studentId,body.missionId,user.id,strengths,improvements,nextSteps,body.status]
+      );
+      await auditEvent(db,user,'create_teacher_feedback','feedback',r.rows[0].id);
+      json(response,201,{ok:true,feedback:r.rows[0]});return true;
+    }
+    if(pathname==='/api/teacher/portfolio/review'&&method==='POST'&&user.role==='guru'){
+      const body=await readBody(request);
+      if(!uuid(body.entryId)||!['reviewed','revision_requested'].includes(body.status)){
+        reject(response,400,'INVALID_PORTFOLIO_REVIEW');return true;
+      }
+      const found=await db.query('SELECT student_id FROM hn_portfolio_entries WHERE id=$1 AND organization_id=$2',
+        [body.entryId,user.organization_id]);
+      if(!found.rows.length||!(await teacherClassForStudent(db,user,found.rows[0].student_id))){
+        reject(response,404,'PORTFOLIO_NOT_FOUND');return true;
+      }
+      const r=await db.query('UPDATE hn_portfolio_entries SET status=$1,updated_at=now() WHERE id=$2 AND organization_id=$3 RETURNING id,status',
+        [body.status,body.entryId,user.organization_id]);
+      await auditEvent(db,user,'review_portfolio','portfolio',body.entryId);
+      json(response,200,{ok:true,entry:r.rows[0]});return true;
+    }
+    if(pathname==='/api/student/learning'&&method==='GET'&&user.role==='murid'){
+      const [pbd,feedback,portfolio]=await Promise.all([
+        db.query("SELECT mission_id,tp,status,updated_at,confirmed_at FROM hn_pbd_assessments WHERE organization_id=$1 AND student_id=$2 AND status='confirmed' ORDER BY mission_id",[user.organization_id,user.id]),
+        db.query("SELECT id,mission_id,strengths,improvements,next_steps,status,created_at FROM hn_teacher_feedback WHERE organization_id=$1 AND student_id=$2 AND status IN ('published','revision_requested') ORDER BY created_at DESC LIMIT 100",[user.organization_id,user.id]),
+        db.query('SELECT id,mission_id,title,content,status,created_at,updated_at FROM hn_portfolio_entries WHERE organization_id=$1 AND student_id=$2 ORDER BY created_at DESC LIMIT 100',[user.organization_id,user.id])
+      ]);
+      json(response,200,{ok:true,assessments:pbd.rows,feedback:feedback.rows,portfolio:portfolio.rows});return true;
+    }
+    if(pathname==='/api/student/portfolio'&&method==='POST'&&user.role==='murid'){
+      const body=await readBody(request,8000);
+      const title=shortText(body.title,120),content=shortText(body.content,5000);
+      if(!validMission(body.missionId)||!title||title.length<3||!content||content.length<20){
+        reject(response,400,'INVALID_PORTFOLIO_ENTRY');return true;
+      }
+      const member=await db.query(
+        "SELECT 1 FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id WHERE cm.student_id=$1 AND c.organization_id=$2 LIMIT 1",
+        [user.id,user.organization_id]
+      );
+      if(!member.rows.length){reject(response,403,'CLASS_ENROLLMENT_REQUIRED');return true;}
+      const r=await db.query(
+        'INSERT INTO hn_portfolio_entries(organization_id,student_id,mission_id,title,content) VALUES($1,$2,$3,$4,$5) RETURNING id,mission_id,title,status,created_at',
+        [user.organization_id,user.id,body.missionId,title,content]
+      );
+      await auditEvent(db,user,'submit_portfolio_text','portfolio',r.rows[0].id);
+      json(response,201,{ok:true,entry:r.rows[0]});return true;
     }
     if(pathname==='/api/teacher/overview'&&method==='GET'&&user.role==='guru'){
       const r=await db.query("SELECT (SELECT count(*)::int FROM hn_classes WHERE teacher_id=$1) AS classes,(SELECT count(DISTINCT cm.student_id)::int FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id WHERE c.teacher_id=$1) AS students,(SELECT count(*)::int FROM hn_mission_progress mp JOIN hn_class_members cm ON cm.student_id=mp.student_id JOIN hn_classes c ON c.id=cm.class_id WHERE c.teacher_id=$1) AS recorded_mission_drafts",[user.id]);
