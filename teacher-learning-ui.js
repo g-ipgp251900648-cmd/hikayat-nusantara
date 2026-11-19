@@ -293,11 +293,39 @@
       history.append(card);
     }root.append(history);
   }
+  async function renderMisi4Videos(root,studentId){
+    const panel=el('section','','hn-learning-panel');
+    panel.append(el('h3','Rakaman Video Misi 4'));
+    root.append(panel);
+    try{
+      const result=await api('/api/misi4/teacher');
+      if(!result.ok){empty(panel,'Rakaman belum tersedia. Pastikan storan video dan pangkalan data dikonfigurasi.');return;}
+      const videos=(result.data?.submissions||[]).filter(v=>same(v.student_id,studentId));
+      if(!videos.length){empty(panel,'Belum ada rakaman video yang disahkan untuk murid ini.');return;}
+      for(const item of videos){
+        const card=el('div','','hn-learning-entry');
+        card.append(el('strong',item.display_name+' · '+item.class_name+' · Misi 4'));
+        card.append(el('p','Dihantar pada '+new Date(item.submitted_at).toLocaleString('ms-MY'),'hn-learning-muted'));
+        const watch=button('▶ Tonton Rakaman',async()=>{
+          const response=await api('/api/misi4/watch/'+encodeURIComponent(item.id));
+          if(!response.ok){message(card,'Tidak dapat membuka video.');return;}
+          let video=card.querySelector('video');
+          if(!video){video=document.createElement('video');video.controls=true;video.playsInline=true;
+            video.style.cssText='width:100%;max-width:540px;border-radius:12px;margin-top:10px';
+            card.append(video);}
+          video.src=response.data.url;video.load();
+        },'hn-learning-primary');
+        card.append(watch,el('p','Gunakan menu PBD dan Maklum Balas Guru untuk menilai persembahan ini.','hn-learning-muted'));
+        panel.append(card);
+      }
+    }catch{empty(panel,'Gagal memuatkan rekod video.');}
+  }
   function renderPortfolio(){
     const root=pages.portfolio;
-    intro(root,'Portfolio Digital','Himpunan karya bertulis yang dihantar sendiri oleh Murid. Rakaman video dan audio belum boleh dimuat naik ke portal.');
+    intro(root,'Portfolio Digital','Karya bertulis serta rakaman video Misi 4 yang dihantar oleh Murid.');
     const x=filters(root,'portfolio',{mission:false});
     if(!x.studentId){empty(root,'Tiada murid aktif dalam kelas ini.');return;}
+    void renderMisi4Videos(root,x.studentId);
     const records=current.learning.portfolio.filter(r=>same(r.student_id,x.studentId));
     const count=el('p',records.length+' karya bertulis direkodkan untuk murid ini.','hn-learning-muted');
     root.append(count);
