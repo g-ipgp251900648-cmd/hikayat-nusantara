@@ -6,8 +6,8 @@
   let overlay=null, iframe=null;
   async function sendRecording(file,status){
     if(!file)return;
-    if(!['video/webm','video/mp4'].includes(file.type)||file.size<1024||file.size>2*1024*1024){
-      status.textContent='Gunakan rakaman WebM/MP4 sehingga 2 MB.';return;
+    if(!['video/webm','video/mp4'].includes(file.type)||file.size<1024||file.size>100*1024*1024){
+      status.textContent='Gunakan rakaman WebM/MP4 sehingga 100 MB.';return;
     }
     const putJson=async(url,body)=>{
       const r=await fetch(url,{method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
@@ -26,7 +26,7 @@
       const state=await verified.json();
       if(!verified.ok||!state.submissions?.some(s=>s.id===receipt.id))throw Error('RECEIPT_NOT_VERIFIED');
       window.submitMissionFourAdventure?.({receipt:receipt.referenceNo,submissionId:receipt.id,verified:true});
-      status.textContent='✓ Rakaman berjaya dihantar. Guru boleh melihatnya dalam Portfolio Digital.';
+      status.textContent='✓ Rakaman berjaya dihantar. Guru boleh melihatnya dalam Pusat Semakan Tugasan.';
     }catch(e){
       status.textContent='Penghantaran gagal ('+String(e.message).slice(0,70)+'). Simpan rakaman ke peranti dan cuba lagi.';
     }

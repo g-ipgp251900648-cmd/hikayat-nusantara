@@ -26,7 +26,8 @@
     "@vitejs/plugin-react": "^5.1.0",
     "@tailwindcss/vite": "^4.1.16",
     "tailwindcss": "^4.1.16",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "@aws-sdk/lib-storage": "^3.0.0"
   },
   "devDependencies": {
     "typescript": "^5.9.0",
