@@ -168,12 +168,28 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
       assert.match(r.data.student.login_id,/^HN-M-/);
       return r.data;
     }
+    const emptyRosterBefore=await api('/api/admin/roster',{cookie:admin.cookie});
+    assert.equal(emptyRosterBefore.status,200);
+    assert.deepEqual(emptyRosterBefore.data.roster,[]);
     const pupilA=await registerPupil(a.cookie,classA.data.class.id,'Murid Amanah');
     const pupilB=await registerPupil(b.cookie,classB.data.class.id,'Murid Bestari');
     const listA=await api('/api/teacher/students',{cookie:a.cookie});
     const listB=await api('/api/teacher/students',{cookie:b.cookie});
     assert.deepEqual(listA.data.students.map(x=>x.display_name),['Murid Amanah']);
     assert.deepEqual(listB.data.students.map(x=>x.display_name),['Murid Bestari']);
+    const adminRoster=await api('/api/admin/roster',{cookie:admin.cookie});
+    assert.equal(adminRoster.status,200);
+    assert.deepEqual(adminRoster.data.roster.map(r=>r.student_id).sort(),
+      [pupilA.student.id,pupilB.student.id].sort());
+    assert.ok(adminRoster.data.roster.some(r=>
+      r.student_id===pupilA.student.id&&r.class_id===classA.data.class.id));
+    assert.ok(adminRoster.data.roster.some(r=>
+      r.student_id===pupilB.student.id&&r.class_id===classB.data.class.id));
+    for(const leadership of [gkmpSession,panitiaSession]){
+      assert.equal((await api('/api/admin/roster',{cookie:leadership.cookie})).status,200);
+    }
+    assert.equal((await api('/api/admin/roster',{cookie:a.cookie})).status,404);
+
 
     const studentA=await signin(pupilA.student.login_id,pupilA.temporaryPassword);
     const studentB=await signin(pupilB.student.login_id,pupilB.temporaryPassword);
@@ -587,6 +603,10 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const outsideProgress=await api('/api/admin/progress',{cookie:otherAdmin.cookie});
     assert.equal(outsideProgress.status,200);
     assert.deepEqual(outsideProgress.data.progress,[]);
+    const outsideRoster=await api('/api/admin/roster',{cookie:otherAdmin.cookie});
+    assert.equal(outsideRoster.status,200);
+    assert.deepEqual(outsideRoster.data.roster,[]);
+
     const outsideLeaders=await api('/api/admin/leaders',{cookie:otherAdmin.cookie});
     assert.equal(outsideLeaders.status,200);
     assert.deepEqual(outsideLeaders.data.leaders,[]);
