@@ -18,6 +18,8 @@ export async function migrate() {
   if (!pool) throw Error('DATABASE_URL is missing');
   const schema = await readFile(new URL('schema.sql',import.meta.url),'utf8');
   await pool.query(schema);
+  const videoSchema = await readFile(new URL('misi4-video-migration.sql',import.meta.url),'utf8');
+  await pool.query(videoSchema);
 }
 export async function audit(db,user,action,resourceType,resourceId,outcome='success') {
   await db.query(
