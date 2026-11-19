@@ -1,6 +1,6 @@
 import {randomUUID} from 'node:crypto';
 import {createReadStream,createWriteStream} from 'node:fs';
-import {mkdir,readFile,rm,stat} from 'node:fs/promises';
+import {mkdir,open,rm,stat} from 'node:fs/promises';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {pipeline} from 'node:stream/promises';
@@ -121,10 +121,12 @@ async function readMultipart(req){
       const m=await stat(file.path);file.size=m.size;
       if(m.size<32||m.size>(name==='mediaFile'?MAX_VIDEO:MAX_PDF))
         throw Object.assign(Error('FILE_SIZE_INVALID'),{status:413});
-      const handle=await readFile(file.path,{encoding:null,flag:'r'});
-      // Validate signatures (read first 16 bytes only in later versions; max 60MB here).
-      const valid=name==='mediaFile'?typeMagic(file.mime,handle.subarray(0,16)):
-        handle.subarray(0,5).toString('ascii')==='%PDF-';
+      const handle=await open(file.path,'r');
+      const header=Buffer.alloc(16);
+      try{await handle.read(header,0,16,0);}finally{await handle.close();}
+      // Validate a small file signature without loading a pupil video into RAM.
+      const valid=name==='mediaFile'?typeMagic(file.mime,header):
+        header.subarray(0,5).toString('ascii')==='%PDF-';
       if(!valid)throw Object.assign(Error('FILE_SIGNATURE_INVALID'),{status:400});
     }
     return {directory,fields,files};
@@ -221,11 +223,16 @@ export async function handleMisi4Api(req,res,path,db,user,audit){
       const client=await db.connect();
       try{
         await client.query('BEGIN');
+        // Lock the pupil account so concurrent submissions cannot use the
+        // same version number. Do not lock an aggregate SELECT.
+        const locked=await client.query('SELECT id FROM hn_users WHERE id=$1 AND organization_id=$2 AND active=true FOR UPDATE',
+          [user.id,user.organization_id]);
+        if(!locked.rows.length)throw Error('STUDENT_ACCOUNT_UNAVAILABLE');
         const previous=await client.query(
-          'SELECT count(*)::int AS count FROM hn_misi4_submissions WHERE organization_id=$1 AND student_id=$2 FOR UPDATE',
+          'SELECT coalesce(max(version),0)::int AS version FROM hn_misi4_submissions WHERE organization_id=$1 AND student_id=$2',
           [user.organization_id,user.id]
         );
-        const version=previous.rows[0].count+1;
+        const version=previous.rows[0].version+1;
         const referenceNo='HW-M4-'+new Date().getFullYear()+'-'+randomUUID().slice(0,12).toUpperCase();
         const result=await client.query(
           "INSERT INTO hn_misi4_submissions(organization_id,student_id,class_id,reference_no,version,story_title,mime_type,size_bytes,duration_seconds,storage_key,status,has_supporting_pdf) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,'Telah Dihantar',$11) RETURNING *",
