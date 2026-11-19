@@ -487,11 +487,84 @@
     box.showModal();
   }
 
+  function openCredentialRecovery(){
+    if(!myClasses.length){alert('Sila cipta kelas dahulu.');return;}
+    const box=document.createElement('dialog');box.className='hn-teacher-dialog';
+    box.style.maxWidth='min(94vw,690px)';
+    const heading=document.createElement('h2');heading.textContent='Jana Semula Kata Laluan Sementara Murid';
+    const intro=document.createElement('p');
+    intro.textContent='Untuk fail kata laluan yang hilang. Hanya murid aktif yang MASIH perlu menukar kata laluan pertama akan menerima kata laluan baharu. Kata laluan murid yang telah ditukar sendiri tidak disentuh.';
+    const classLabel=document.createElement('label');classLabel.textContent='Pilih Kelas';
+    const select=document.createElement('select');
+    select.style.cssText='display:block;width:100%;padding:10px;margin:8px 0 12px';
+    for(const c of myClasses)select.add(new Option(c.name+' · '+c.school_year,c.id));
+    const preferred=myClasses.find(c=>c.name.trim().toLocaleLowerCase('ms-MY')==='5 dinamik');
+    if(preferred)select.value=preferred.id;
+    classLabel.append(select);
+    const confirmLabel=document.createElement('label');
+    confirmLabel.textContent='Taip nama kelas dengan tepat untuk mengesahkan';
+    const confirmInput=document.createElement('input');
+    confirmInput.type='text';confirmInput.maxLength=100;
+    confirmInput.style.cssText='display:block;width:100%;padding:10px;margin:8px 0 12px';
+    confirmLabel.append(confirmInput);
+    const message=document.createElement('p');message.setAttribute('role','status');
+    message.textContent='Tindakan ini membatalkan kata laluan sementara yang dikeluarkan sebelum ini untuk murid yang belum menukarnya.';
+    const actions=document.createElement('div');actions.style.cssText='display:flex;gap:8px;flex-wrap:wrap';
+    const generate=makeButton('Jana Kata Laluan Baharu',async()=>{
+      const cls=myClasses.find(c=>c.id===select.value);
+      if(!cls)return;
+      if(confirmInput.value!==cls.name){
+        message.textContent='Nama pengesahan tidak sepadan dengan kelas '+cls.name+'.';
+        return;
+      }
+      if(!confirm('Jana semula kata laluan untuk murid yang belum menukar kata laluan di '+cls.name+
+        '? Kata laluan sementara lama mereka tidak lagi sah.'))return;
+      generate.disabled=true;select.disabled=true;confirmInput.disabled=true;
+      message.textContent='Menjana kata laluan sementara baharu...';
+      try{
+        const response=await adminPost('/api/teacher/students/reissue-temporary',{
+          classId:cls.id,confirmationName:confirmInput.value
+        });
+        if(!response.ok){
+          message.textContent='Gagal: '+String(response.data?.error||'Sila cuba lagi.');
+          generate.disabled=false;select.disabled=false;confirmInput.disabled=false;
+          return;
+        }
+        const credentials=response.data.credentials||[];
+        message.textContent='Berjaya. '+response.data.reissued+' kata laluan sementara baharu telah dijana. '+
+          response.data.unaffected+' murid yang sudah menukar kata laluan atau tidak aktif tidak diubah. '+
+          'Simpan fail di tempat persendirian sebelum menutup tetingkap.';
+        generate.hidden=true;
+        if(credentials.length){
+          download.hidden=false;
+          download.addEventListener('click',()=>downloadCredentialsCsv(credentials),{once:false});
+        }
+        box.addEventListener('close',()=>{
+          if(credentials.length)credentials.splice(0,credentials.length);
+        },{once:true});
+      }catch{
+        message.textContent='Masalah sambungan. Semak semula akaun di Dashboard Guru sebelum mencuba lagi.';
+        generate.disabled=false;select.disabled=false;confirmInput.disabled=false;
+      }
+    });
+    const download=makeButton('Muat Turun Senarai Kata Laluan',()=>{});
+    download.hidden=true;
+    const close=makeButton('Tutup',()=>{
+      if(!download.hidden&&!confirm('Adakah fail kata laluan baharu sudah dimuat turun dan disimpan dengan selamat?'))return;
+      box.close();
+    });
+    actions.append(generate,download,close);
+    box.append(heading,intro,classLabel,confirmLabel,message,actions);
+    box.addEventListener('close',()=>box.remove(),{once:true});
+    document.body.append(box);box.showModal();
+  }
+
   function connectTeacher(){
-    const addClass=$('#hn-add-class'),addStudent=$('#hn-add-student'),bulk=$('#hn-import-students');
+    const addClass=$('#hn-add-class'),addStudent=$('#hn-add-student'),bulk=$('#hn-import-students'),recover=$('#hn-reissue-credentials');
     if(!addClass||!addStudent)return;
     addClass.disabled=false;addStudent.disabled=false;
     if(bulk){bulk.disabled=false;bulk.addEventListener('click',openBulkEnrollment);}
+    if(recover){recover.disabled=false;recover.addEventListener('click',openCredentialRecovery);}
     addClass.addEventListener('click',()=>dialog('Cipta Kelas',[
       {key:'name',label:'Nama Kelas (contoh: 5 Amanah)'},
       {key:'schoolYear',label:'Sesi Akademik',type:'number',value:String(new Date().getFullYear())}
