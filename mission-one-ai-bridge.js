@@ -9,6 +9,7 @@
   let overlay = null;
   let iframe = null;
   let lastSignature = '';
+  let lastGameAttemptCount = 0;
   const sourceName = 'hikayat-misi1-aistudio-original';
   const expectedScrolls = ['rak', 'peti', 'tingkap', 'meja', 'pelita'];
   const options = {
@@ -73,6 +74,10 @@
     if (msg.eventType==='attempt'||msg.eventType==='snapshot'){
       const stats=validStats(msg.payload);
       if(!stats)return;
+      // Quiz state may render and post its snapshot before the click message;
+      // never count the same game attempt twice.
+      if(msg.eventType==='attempt'&&stats.attemptCount<=lastGameAttemptCount)return;
+      lastGameAttemptCount=Math.max(lastGameAttemptCount,stats.attemptCount);
       const transfer=window.syncMissionOneGameAttempts;
       if(typeof transfer!=='function')return;
       const result=transfer(stats,{newAttempt:msg.eventType==='attempt'});
@@ -107,6 +112,8 @@
   }
 
   window.openMissionOneAdventure = function openOriginalAiStudioMissionOne(studentId) {
+    lastGameAttemptCount=0;
+    lastSignature='';
     if(typeof studentId!=='string'||!/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(studentId)){
       console.warn('Misi 1 memerlukan sesi Murid yang disahkan.');
       return;
@@ -160,5 +167,5 @@
   };
   window.closeMissionOneAdventure = close;
   window.addEventListener('pagehide', close);
-  window.addEventListener('hikayat:reset', () => { lastSignature=''; });
+  window.addEventListener('hikayat:reset', () => { lastSignature='';lastGameAttemptCount=0; });
 })();
