@@ -286,11 +286,12 @@
   }
   function renderAdminClassCharts(root,classes,roster,records){
     if(!root)return;
-    root.replaceChildren();
-    root.append(element('h2','','Graf Rumusan Kemajuan Setiap Kelas'));
-    root.append(element('p','hn-admin-intro',
+    const chartRoot=element('section','hn-class-analytics');
+    root.append(chartRoot);
+    chartRoot.append(element('h2','','Graf Rumusan Kemajuan Setiap Kelas'));
+    chartRoot.append(element('p','hn-admin-intro',
       'Graf menunjukkan jumlah latihan misi yang diselesaikan berbanding 4 misi bagi setiap murid aktif. Peratus ini bukan markah PBD.'));
-    if(!classes.length){root.append(element('p','','Belum ada kelas berdaftar.'));return;}
+    if(!classes.length){chartRoot.append(element('p','','Belum ada kelas berdaftar.'));return;}
     const panel=element('div','hn-graph-grid');
     for(const cls of classes){
       const ids=new Set(roster.filter(r=>r.class_id===cls.id).map(r=>r.student_id));
@@ -310,7 +311,7 @@
         'Kesimpulan: '+(members*4-count)+' latihan masih belum selesai dalam kelas ini.'));
       panel.append(card);
     }
-    root.append(panel);
+    chartRoot.append(panel);
   }
   function renderAdminIndividualCharts(root,people,classes,roster,records){
     const title=element('h2','','Graf Kemajuan Individu Murid');
@@ -474,9 +475,9 @@
       $('#admin-ringkasan')?.querySelectorAll('.stats-grid.four .stat strong').forEach((el,i)=>{el.textContent=String(values[i]??'—');});
     }
     const root=$('#admin-guru');
-    renderAdminProgressReport(students,progress,classes,roster);
     renderAdminStudents(students);
     renderAdminClasses(classes,teachers);
+    renderAdminProgressReport(students,progress,classes,roster);
     renderLeaders(leaders);
     if(!root||!teachers.ok)return;
     // Replace inherited placeholder only after a verified administrator session.
@@ -923,11 +924,25 @@
       });
     });
   }
+  function renderRoleIdentity(user){
+    const type=user?.role==='guru'?'guru':adminRoles.includes(user?.role)?'admin':null;
+    if(!type)return;
+    const name=String(user.name||'').replace(/\s+/g,' ').trim().slice(0,100)||
+      (type==='guru'?'Guru':'Pentadbir');
+    const label=$('#hn-'+type+'-top-name');
+    if(label){label.textContent=name;label.title=name;}
+    const greeting=$('#hn-'+type+'-greeting');
+    if(greeting)greeting.textContent=name+'!';
+    const avatar=$('#hn-'+type+'-avatar');
+    if(avatar)avatar.textContent=name.split(' ').filter(Boolean).slice(0,2)
+      .map(x=>x[0]?.toLocaleUpperCase('ms-MY')||'').join('')||'P';
+  }
   async function init(){
     if(location.hash!=='#admin'&&location.hash!=='#guru')return;
     try {
       const u=await window.hnGetSession();
       if(u?.mustChangePassword)return;
+      renderRoleIdentity(u);
       if(adminRoles.includes(u?.role)&&!adminReady){adminReady=true;await loadAdmin();}
       if(u?.role==='guru'){
         if(!teacherReady){teacherReady=true;connectTeacher();}
