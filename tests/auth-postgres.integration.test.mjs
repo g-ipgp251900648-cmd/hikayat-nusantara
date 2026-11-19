@@ -11,11 +11,12 @@ const base='http://127.0.0.1:'+port;
 const origin=base;
 const makePassword=()=> 'Secure-Test-'+randomBytes(14).toString('hex');
 
-async function api(path,{method='GET',body,cookie}={}) {
+async function api(path,{method='GET',body,cookie,clientIp}={}) {
   const headers={};
   if(method!=='GET')headers.Origin=origin;
   if(body!==undefined)headers['Content-Type']='application/json';
   if(cookie)headers.Cookie=cookie;
+  if(clientIp)headers['X-Forwarded-For']=clientIp;
   const response=await fetch(base+path,{
     method,headers,redirect:'manual',
     ...(body!==undefined?{body:JSON.stringify(body)}:{})
@@ -24,8 +25,12 @@ async function api(path,{method='GET',body,cookie}={}) {
   const issued=response.headers.get('set-cookie')?.split(';')[0]||null;
   return {status:response.status,data,cookie:issued};
 }
+let testSignInCounter=0;
 async function signin(id,password) {
-  const res=await api('/api/auth/login',{method:'POST',body:{id,password}});
+  // CI makes many independent sign-ins in one test. Use synthetic client IPs
+  // to exercise account permissions without exhausting the production IP limiter.
+  const clientIp='192.0.2.'+(++testSignInCounter);
+  const res=await api('/api/auth/login',{method:'POST',body:{id,password},clientIp});
   assert.equal(res.status,200,JSON.stringify(res.data));
   assert.match(res.cookie||'',/^hn_session=/);
   return res;
