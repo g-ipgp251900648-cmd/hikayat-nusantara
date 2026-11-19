@@ -642,6 +642,21 @@
     save();updateProgress();
     return {ok:true,completed:true,alreadyCompleted:false};
   };
+  // Only the authenticated private upload endpoint returns a verified
+  // receipt. A game-local postMessage never marks official submission.
+  window.submitMissionFourAdventure=payload=>{
+    if(!payload||payload.verified!==true||
+       !/^[0-9a-f-]{36}$/i.test(String(payload.submissionId||''))||
+       !/^[0-9a-f]{32}$/i.test(String(payload.receipt||''))){
+      return {ok:false};
+    }
+    if(state.completed[3])return {ok:true,alreadyCompleted:true};
+    state.completed[3]=true;
+    recordAttempt(3,1,1,true);
+    save();updateProgress();
+    window.dispatchEvent(new Event('hikayat:attempt'));
+    return {ok:true,completed:true};
+  };
   function checkReading(){
     const correctSequence=state.sequence.every((value,i)=>value===i);
     const score=state.readingAnswers.reduce((acc,a,i)=>acc+(a===String(comprehension[i].correct)?1:0),0);
