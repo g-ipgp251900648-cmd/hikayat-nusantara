@@ -1,6 +1,5 @@
-/** Same-origin original AI Studio Misi 4; media stays inside its iframe.
- * Portal mode does NOT enable public sample accounts or teacher upload.
- * Only a backend-verified receipt may count toward official completion. */
+/** Misi 4: real pupil recordings go to private object storage after the
+ * pupil explicitly presses Hantar. Only server-verified receipts count. */
 (() => {
   'use strict';
   let overlay=null, iframe=null;
@@ -40,7 +39,7 @@
     overlay.style.cssText='position:fixed;inset:0;z-index:100002;background:#10271f;display:flex;flex-direction:column;color:#fff1d5;font:500 13px Arial,sans-serif';
     const bar=document.createElement('header');
     bar.style.cssText='flex:none;min-height:54px;padding:8px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;background:#17432e;border-bottom:2px solid #d7b570';
-    bar.innerHTML='<div><strong style="font-size:14px">🎭 Misi 4 — Pentas Warisan: Hikayat Berseri</strong><div id="hn-m4-status" role="status" style="font-size:11px;color:#f3ddb5">Benarkan kamera dan mikrofon untuk merakam. Simpan karya pada peranti; penghantaran kepada Guru belum tersedia.</div></div>';
+    bar.innerHTML='<div><strong style="font-size:14px">🎭 Misi 4 — Pentas Warisan: Hikayat Berseri</strong><div id="hn-m4-status" role="status" style="font-size:11px;color:#f3ddb5">Benarkan kamera dan mikrofon. Selepas tekan Hantar, rakaman akan dihantar kepada Guru jika storan aktif; simpan salinan pada peranti.</div></div>';
     const button=document.createElement('button');
     button.type='button';button.textContent='✕ Kembali ke Dashboard';
     button.style.cssText='padding:10px;border-radius:9px;border:1px solid #dfc083;background:#fff1d8;color:#205238;font-weight:bold;cursor:pointer';
