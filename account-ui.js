@@ -379,9 +379,11 @@
     const description=document.createElement('p');description.className='hn-admin-intro';
     description.textContent='Lihat kemajuan latihan setiap murid. Status selesai bukan markah pentaksiran rasmi. Misi 4 menunjukkan latihan persembahan, bukan penghantaran video.';
     root.append(description);
+    const activeIds=new Set(people.filter(x=>x.active).map(x=>x.id));
     const countByMission=[0,0,0,0];
     for(let i=1;i<=4;i++){
-      const completed=new Set(records.filter(x=>x.missionId===i&&x.completed).map(x=>x.studentId));
+      const completed=new Set(records.filter(x=>x.missionId===i&&
+        effectiveCompletion(x)&&activeIds.has(x.studentId)).map(x=>x.studentId));
       countByMission[i-1]=completed.size;
     }
     const stats=document.createElement('div');stats.className='stats-grid four';
@@ -389,7 +391,7 @@
       const card=document.createElement('div');card.className='stat';
       const label=document.createElement('span');label.textContent='Misi '+(i+1);
       const number=document.createElement('strong');
-      number.textContent=countByMission[i]+' / '+people.length;
+      number.textContent=countByMission[i]+' / '+activeIds.size;
       const sub=document.createElement('em');
       sub.textContent=i===3?'Pelan latihan siap':'Latihan selesai';
       card.append(label,number,sub);stats.append(card);
