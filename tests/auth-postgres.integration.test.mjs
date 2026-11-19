@@ -783,6 +783,32 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.equal(storageHealth.status,200);
     assert.equal(storageHealth.data.storage.configured,false);
     assert.equal(storageHealth.data.storage.driver,'object-storage');
+    const storyPlan=await api('/api/misi4/story-plan',{
+      method:'PUT',cookie:testStudent.cookie,body:{
+        tajuk:'Hikayat Pengembara Santun',
+        permulaan:'Pada suatu masa, seorang pengembara datang ke kampung.',
+        perkembangan:'Penduduk kampung saling membantu demi keamanan.',
+        pengakhiran:'Pengembara akhirnya pulang dengan penuh kesyukuran.',
+        ungkapanIndah:['bagai aur dengan tebing'],sumberKarya:'manual'
+      }
+    });
+    assert.equal(storyPlan.status,200,JSON.stringify(storyPlan.data));
+    assert.equal(storyPlan.data.state.storyPlan.tajuk,'Hikayat Pengembara Santun');
+    const rehearsal=await api('/api/misi4/rehearsal',{
+      method:'PUT',cookie:testStudent.cookie,body:{
+        completed:true,selectedTone:'Bersemangat',
+        practicedActs:['permulaan','perkembangan','pengakhiran'],notes:'Latihan lancar'
+      }
+    });
+    assert.equal(rehearsal.status,200,JSON.stringify(rehearsal.data));
+    assert.equal(rehearsal.data.state.rehearsal.completed,true);
+    assert.equal((await api('/api/misi4/story-plan',{
+      method:'PUT',cookie:a.cookie,body:{tajuk:'Cubaan Guru'}
+    })).status,403);
+    const otherPupilState=await api('/api/misi4/state',{cookie:outsideStudent.cookie});
+    assert.equal(otherPupilState.status,200);
+    assert.equal(otherPupilState.data.state.storyPlan,null);
+    assert.equal(otherPupilState.data.state.rehearsal,null);
     const gameSession=await api('/api/misi4/session',{cookie:testStudent.cookie});
     assert.equal(gameSession.status,200);
     assert.equal(gameSession.data.user.id,testPupil.id);
@@ -792,6 +818,8 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const pupilVideoState=await api('/api/misi4/state',{cookie:testStudent.cookie});
     assert.equal(pupilVideoState.status,200);
     assert.deepEqual(pupilVideoState.data.submissions,[]);
+    assert.equal(pupilVideoState.data.state.storyPlan.tajuk,'Hikayat Pengembara Santun');
+    assert.equal(pupilVideoState.data.state.rehearsal.completed,true);
     const teacherVideoInbox=await api('/api/teacher/misi4/submissions',{cookie:a.cookie});
     assert.equal(teacherVideoInbox.status,200);
     assert.deepEqual(teacherVideoInbox.data.submissions,[]);
