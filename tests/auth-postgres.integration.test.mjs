@@ -332,6 +332,58 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.equal(preservedCheckpoint.rows[0].checkpoint.draft,'Karya murid kekal');
     assert.equal((await api('/api/auth/session',{cookie:studentB.cookie})).data.authenticated,true);
 
+    // Secure CSV-style bulk enrollment uses short IDs and unique temporary
+    // passwords without committing any real pupils' data to the repository.
+    const bulkRoster=[
+      {loginId:'5D-01',name:'Murid Contoh Satu'},
+      {loginId:'5D-02',name:'Murid Contoh Dua'},
+      {loginId:'5D-03',name:'Murid Contoh Tiga'}
+    ];
+    const blockedBulk=await api('/api/teacher/students/bulk',{
+      method:'POST',cookie:b.cookie,
+      body:{classId:classA.data.class.id,students:bulkRoster}
+    });
+    assert.equal(blockedBulk.status,401);
+    const wrongClassBulk=await api('/api/teacher/students/bulk',{
+      method:'POST',cookie:admin.cookie,
+      body:{classId:classA.data.class.id,students:bulkRoster}
+    });
+    assert.equal(wrongClassBulk.status,404);
+    const duplicateBulk=await api('/api/teacher/students/bulk',{
+      method:'POST',cookie:a.cookie,
+      body:{classId:classA.data.class.id,students:[bulkRoster[0],bulkRoster[0]]}
+    });
+    assert.equal(duplicateBulk.status,400);
+    const imported=await api('/api/teacher/students/bulk',{
+      method:'POST',cookie:a.cookie,
+      body:{classId:classA.data.class.id,students:bulkRoster}
+    });
+    assert.equal(imported.status,201,JSON.stringify(imported.data));
+    assert.equal(imported.data.created,3);
+    assert.deepEqual(imported.data.credentials.map(x=>x.loginId),['5D-01','5D-02','5D-03']);
+    assert.equal(new Set(imported.data.credentials.map(x=>x.temporaryPassword)).size,3);
+    for(const row of imported.data.credentials)assert.ok(row.temporaryPassword.length>=12);
+    const sample=imported.data.credentials[0];
+    const bulkStudent=await signin(sample.loginId,sample.temporaryPassword);
+    assert.equal(bulkStudent.data.user.mustChangePassword,true);
+    assert.equal((await api('/api/student/progress',{cookie:bulkStudent.cookie})).status,403);
+    const noPlainPassword=await pool.query('SELECT password_hash FROM hn_users WHERE login_id=$1',['5D-01']);
+    assert.ok(!noPlainPassword.rows[0].password_hash.includes(sample.temporaryPassword));
+    const importedList=await api('/api/teacher/students',{cookie:a.cookie});
+    assert.ok(importedList.data.students.some(x=>x.login_id==='5D-01'));
+    assert.ok(importedList.data.students.every(x=>!Object.hasOwn(x,'temporaryPassword')));
+    const retryImport=await api('/api/teacher/students/bulk',{
+      method:'POST',cookie:a.cookie,
+      body:{classId:classA.data.class.id,students:bulkRoster}
+    });
+    assert.equal(retryImport.status,409);
+    assert.equal(retryImport.data.error,'LOGIN_ID_CONFLICT');
+    const preservedBulk=await pool.query(
+      'SELECT count(*)::int AS count FROM hn_users WHERE login_id IN ($1,$2,$3)',
+      ['5D-01','5D-02','5D-03']
+    );
+    assert.equal(preservedBulk.rows[0].count,3);
+
     // A separate school/organization admin cannot see School A teachers.
     const otherOrg=(await pool.query(
       'INSERT INTO hn_organizations(name) VALUES($1) RETURNING id',['Sekolah Ujian B']

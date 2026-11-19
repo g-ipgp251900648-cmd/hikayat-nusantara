@@ -409,6 +409,64 @@ export async function handleApi(request,response,pathname) {
         json(response,201,{ok:true,class:r.rows[0]});return true;
       }
     }
+    // Private, transactional CSV enrollment. Student names are supplied by the
+    // authenticated teacher through the browser; never commit school rosters.
+    if(pathname==='/api/teacher/students/bulk'&&user.role==='guru'&&method==='POST'){
+      const body=await readBody(request,35000);
+      const classId=body.classId;
+      const students=body.students;
+      if(!uuid(classId)||!Array.isArray(students)||students.length<1||students.length>50){
+        reject(response,400,'INVALID_BULK_ROSTER');return true;
+      }
+      const normalized=students.map(row=>({
+        name:cleanName(row?.name),
+        loginId:typeof row?.loginId==='string'?row.loginId.trim().toUpperCase():''
+      }));
+      if(normalized.some(row=>!validName(row.name)||!validLoginId(row.loginId))||
+         new Set(normalized.map(row=>row.loginId)).size!==normalized.length){
+        reject(response,400,'INVALID_BULK_ROSTER');return true;
+      }
+      const client=await db.connect();
+      let credentials=[];
+      try {
+        await client.query('BEGIN');
+        const ownClass=await client.query(
+          'SELECT id FROM hn_classes WHERE id=$1 AND organization_id=$2 AND teacher_id=$3 FOR UPDATE',
+          [classId,user.organization_id,user.id]
+        );
+        if(!ownClass.rows.length){
+          await client.query('ROLLBACK');reject(response,404,'CLASS_NOT_FOUND');return true;
+        }
+        const ids=normalized.map(row=>row.loginId);
+        const used=await client.query('SELECT 1 FROM hn_users WHERE login_id=ANY($1::text[]) LIMIT 1',[ids]);
+        if(used.rows.length){
+          await client.query('ROLLBACK');reject(response,409,'LOGIN_ID_CONFLICT');return true;
+        }
+        for(const row of normalized){
+          // Every pupil gets a different temporary password and must rotate it
+          // at first login. No passwords are persisted in plain text.
+          const password=temporaryPassword();
+          const hashed=await hashPassword(password);
+          const created=await client.query(
+            "INSERT INTO hn_users(organization_id,login_id,display_name,password_hash,role,must_change_password) VALUES($1,$2,$3,$4,'murid',true) RETURNING id",
+            [user.organization_id,row.loginId,row.name,hashed]
+          );
+          await client.query(
+            'INSERT INTO hn_class_members(class_id,student_id) VALUES($1,$2)',
+            [classId,created.rows[0].id]
+          );
+          credentials.push({name:row.name,loginId:row.loginId,temporaryPassword:password});
+        }
+        await auditEvent(client,user,'bulk_register_students','class',classId);
+        await client.query('COMMIT');
+      }catch(error){
+        await client.query('ROLLBACK').catch(()=>{});
+        credentials=[];
+        if(error?.code==='23505'){reject(response,409,'LOGIN_ID_CONFLICT');return true;}
+        throw error;
+      }finally{client.release();}
+      json(response,201,{ok:true,created:credentials.length,credentials});return true;
+    }
     if(pathname==='/api/teacher/students'&&user.role==='guru'){
       if(method==='GET'){
         const r=await db.query("SELECT DISTINCT u.id,u.login_id,u.display_name,u.active,c.name AS class_name,c.id AS class_id FROM hn_users u JOIN hn_class_members cm ON cm.student_id=u.id JOIN hn_classes c ON c.id=cm.class_id WHERE c.teacher_id=$1 AND c.organization_id=$2 ORDER BY u.display_name LIMIT 400",[user.id,user.organization_id]);
