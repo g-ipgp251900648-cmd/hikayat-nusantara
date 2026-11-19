@@ -336,6 +336,66 @@ export async function handleApi(request,response,pathname) {
       }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
       finally{client.release();}
     }
+    // A class can be deleted only by its teacher or the school's Admin team.
+    // A populated class must have its roster transferred first, preserving
+    // pupil accounts and mission progress.
+    if(pathname==='/api/classes/delete'&&method==='POST'&&
+       (canAdmin(user.role)||user.role==='guru')){
+      const body=await readBody(request);
+      const classId=body.classId;
+      const destinationClassId=body.destinationClassId;
+      if(!uuid(classId)||typeof body.confirmationName!=='string'||
+         body.confirmationName.length>100||
+         (destinationClassId!==undefined&&!uuid(destinationClassId))){
+        reject(response,400,'INVALID_CLASS_DELETE_REQUEST');return true;
+      }
+      const client=await db.connect();
+      try {
+        await client.query('BEGIN');
+        const source=await client.query(
+          "SELECT id,name,teacher_id FROM hn_classes WHERE id=$1 AND organization_id=$2 FOR UPDATE",
+          [classId,user.organization_id]
+        );
+        const cls=source.rows[0];
+        if(!cls||(user.role==='guru'&&cls.teacher_id!==user.id)){
+          await client.query('ROLLBACK');reject(response,404,'CLASS_NOT_FOUND');return true;
+        }
+        if(body.confirmationName!==cls.name){
+          await client.query('ROLLBACK');reject(response,400,'CLASS_NAME_CONFIRMATION_REQUIRED');return true;
+        }
+        const count=await client.query(
+          'SELECT count(*)::int AS total FROM hn_class_members WHERE class_id=$1',[classId]
+        );
+        const members=count.rows[0].total;
+        if(members>0){
+          if(!destinationClassId||destinationClassId===classId){
+            await client.query('ROLLBACK');reject(response,409,'CLASS_HAS_STUDENTS');return true;
+          }
+          const target=await client.query(
+            "SELECT c.id FROM hn_classes c JOIN hn_users u ON u.id=c.teacher_id WHERE c.id=$1 AND c.organization_id=$2 AND c.id<>$3 AND u.active=true AND ($4::boolean OR c.teacher_id=$5) FOR UPDATE OF c",
+            [destinationClassId,user.organization_id,classId,canAdmin(user.role),user.id]
+          );
+          if(!target.rows.length){
+            await client.query('ROLLBACK');reject(response,404,'DESTINATION_CLASS_NOT_FOUND');return true;
+          }
+          await client.query(
+            'INSERT INTO hn_class_members(class_id,student_id) SELECT $1,student_id FROM hn_class_members WHERE class_id=$2 ON CONFLICT DO NOTHING',
+            [destinationClassId,classId]
+          );
+        }
+        const result=await client.query(
+          'DELETE FROM hn_classes WHERE id=$1 AND organization_id=$2',
+          [classId,user.organization_id]
+        );
+        if(result.rowCount!==1){
+          await client.query('ROLLBACK');reject(response,409,'CLASS_DELETE_CONFLICT');return true;
+        }
+        await auditEvent(client,user,'delete_class','class',classId);
+        await client.query('COMMIT');
+        json(response,200,{ok:true,deleted:true,movedStudents:members});return true;
+      }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
+      finally{client.release();}
+    }
     if(pathname==='/api/teacher/classes'&&user.role==='guru'){
       if(method==='GET'){
         const r=await db.query("SELECT c.id,c.name,c.school_year,count(cm.student_id)::int AS students FROM hn_classes c LEFT JOIN hn_class_members cm ON cm.class_id=c.id WHERE c.organization_id=$1 AND c.teacher_id=$2 GROUP BY c.id ORDER BY c.created_at DESC",[user.organization_id,user.id]);
