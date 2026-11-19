@@ -635,3 +635,98 @@ body.hn-m3-open{overflow:hidden!important}
   .hn-report-bar-header{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.hn-report-fill{transition:none}}
+
+
+/* Pentaksiran PBD, analisis, maklum balas, portfolio dan laporan */
+.hn-learning-intro,.hn-learning-muted{color:#657467;line-height:1.6;font-size:13px}
+.hn-learning-muted{margin:10px 0}
+.hn-learning-message{color:#375d44;background:#eef6e9;padding:12px;border-radius:8px;font-size:13px}
+.hn-learning-filters,.hn-learning-rubric{
+ display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start;margin:15px 0 20px;
+}
+.hn-learning-filters>*{flex:1 1 210px}
+.hn-learning-rubric{margin:8px 0}
+.hn-learning-rubric>*{flex:1 1 170px}
+.hn-learning-field{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:700;color:#3b5947;min-width:0}
+.hn-learning-field input,.hn-learning-field select,.hn-learning-field textarea{
+ width:100%;max-width:100%;padding:11px 12px;background:#fffdf8;
+ border:1px solid #cbd5c4;border-radius:9px;color:#284935;
+ font:inherit;font-weight:400;
+}
+.hn-learning-field textarea{min-height:95px;resize:vertical;line-height:1.5}
+.hn-learning-panel,.hn-learning-form,.hn-learning-print{
+ background:#fffdf6;border:1px solid #e2dccb;border-radius:15px;padding:19px 21px;
+ margin:16px 0;box-shadow:0 4px 15px #31503b10;max-width:100%;
+}
+.hn-learning-form{display:grid;gap:16px}
+.hn-learning-panel h3,.hn-learning-print h2{font-size:17px;color:#315342;margin:0 0 12px}
+.hn-learning-panel p{line-height:1.6;font-size:13px}
+.hn-learning-evidence{white-space:pre-wrap;overflow-wrap:anywhere;max-height:150px;overflow:auto}
+.hn-learning-actions{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.hn-learning-actions button,.hn-learning-panel button,.hn-learning-form button,
+.hn-learning-refresh,.hn-pupil-portfolio button{
+ padding:10px 14px;border-radius:9px;border:1px solid #abc5b2;
+ background:#f8fbf4;color:#22533c;font-size:13px;cursor:pointer;max-width:100%;
+}
+.hn-learning-actions button:hover,.hn-learning-panel button:hover,.hn-learning-form button:hover,
+.hn-pupil-portfolio button:hover{background:#e3f1de}
+.hn-learning-actions button:disabled,.hn-learning-form button:disabled{opacity:.55;cursor:not-allowed}
+button.hn-learning-primary{background:#275b42;color:#fff;border-color:#275b42}
+button.hn-learning-primary:hover{background:#1d4935;color:#fff}
+.hn-learning-graph-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:15px}
+.hn-learning-bar{margin:13px 0}
+.hn-learning-bar-header{display:flex;justify-content:space-between;align-items:center;
+ gap:12px;color:#3e5e49;font-size:12px}
+.hn-learning-bar-header strong{white-space:nowrap;font-variant-numeric:tabular-nums}
+.hn-learning-track{background:#e5eadf;height:10px;border-radius:20px;overflow:hidden;margin-top:6px}
+.hn-learning-fill{display:block;background:linear-gradient(90deg,#84b995,#317554);
+ height:100%;border-radius:20px;transition:width .24s}
+.hn-learning-history .hn-learning-entry,.hn-pupil-portfolio .hn-learning-entry{
+ border-bottom:1px solid #e2dfd2;padding:14px 0
+}
+.hn-learning-entry strong{display:block;color:#2b523e;font-size:13px}
+.hn-learning-entry p{font-size:13px;line-height:1.6;margin:7px 0}
+.hn-learning-work{
+ white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;line-height:1.65;
+ background:#f7f5ec;padding:15px;border-radius:8px;max-height:270px;overflow:auto
+}
+.hn-learning-print .table-wrap{max-height:560px;overflow:auto}
+.hn-learning-print th,.hn-learning-print td{font-size:11px;padding:10px;vertical-align:top}
+.hn-learning-conclusion{margin-top:18px;font-size:13px;line-height:1.6;color:#315342;font-weight:650}
+.hn-pupil-portfolio{margin-top:24px;max-width:900px}
+.hn-pupil-portfolio>h2,.hn-pupil-portfolio-records>h3{font-size:20px;color:#28513e}
+.hn-pupil-work-preview{white-space:pre-wrap;overflow-wrap:anywhere;max-height:170px;overflow:auto}
+.hn-learning-print .table-wrap{width:100%}
+@media(max-width:720px){
+ .hn-learning-panel,.hn-learning-form,.hn-learning-print{padding:13px}
+ .hn-learning-rubric{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+ .hn-learning-graph-grid{grid-template-columns:1fr}
+ .hn-learning-print th,.hn-learning-print td{padding:6px;font-size:10px}
+}
+@media print{
+ body.hn-print-learning-report{background:#fff!important;color:#000}
+ body.hn-print-learning-report .grain,
+ body.hn-print-learning-report #home-view,
+ body.hn-print-learning-report #murid-view,
+ body.hn-print-learning-report #admin-view,
+ body.hn-print-learning-report #guru-view .sidebar,
+ body.hn-print-learning-report #guru-view .dash-top,
+ body.hn-print-learning-report #guru-view .dash-content>section:not(#guru-laporan),
+ body.hn-print-learning-report #guru-laporan>*:not(.hn-learning-print){
+  display:none!important;
+ }
+ body.hn-print-learning-report #guru-view,
+ body.hn-print-learning-report #guru-laporan,
+ body.hn-print-learning-report #guru-laporan>.hn-learning-print,
+ body.hn-print-learning-report #guru-view .dash-main,
+ body.hn-print-learning-report #guru-view .dash-content{
+  display:block!important;position:static!important;width:100%!important;max-width:none!important;
+  margin:0!important;padding:0!important;background:#fff!important;
+  box-shadow:none!important;overflow:visible!important;height:auto!important;
+ }
+ body.hn-print-learning-report .hn-learning-print .table-wrap{max-height:none;overflow:visible}
+ body.hn-print-learning-report .hn-learning-print table{width:100%;border-collapse:collapse}
+ body.hn-print-learning-report .hn-learning-print th,
+ body.hn-print-learning-report .hn-learning-print td{border:1px solid #ccc;color:#000}
+ @page{size:A4 landscape;margin:12mm}
+}
