@@ -134,4 +134,16 @@ CREATE TABLE IF NOT EXISTS hn_portfolio_entries (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS hn_portfolio_student ON hn_portfolio_entries(organization_id,student_id,created_at DESC);
+CREATE TABLE IF NOT EXISTS hn_teacher_interventions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  organization_id uuid NOT NULL REFERENCES hn_organizations(id),
+  student_id uuid NOT NULL REFERENCES hn_users(id) ON DELETE CASCADE,
+  mission_id integer NOT NULL CHECK (mission_id BETWEEN 1 AND 4),
+  teacher_id uuid REFERENCES hn_users(id) ON DELETE SET NULL,
+  plan varchar(1500) NOT NULL CHECK (char_length(plan) BETWEEN 10 AND 1500),
+  status varchar(24) NOT NULL DEFAULT 'planned' CHECK (status IN ('planned','in_progress','completed')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hn_interventions_student ON hn_teacher_interventions(organization_id,student_id,created_at DESC);
 COMMIT;
