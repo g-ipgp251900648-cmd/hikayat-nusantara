@@ -53,7 +53,7 @@ export async function handleMisi4Video(req,res,path){
  if(!cfg){reply(res,503,{ok:false,error:'MISI4_BACKEND_NOT_CONFIGURED'});return true;}
  if(!['GET','POST'].includes(req.method)){reply(res,405,{ok:false,error:'METHOD_NOT_ALLOWED'});return true;}
  if(req.method==='POST'&&!sameOrigin(req)){reply(res,403,{ok:false,error:'INVALID_ORIGIN'});return true;}
- const db=database();let user;
+ const db=await database();let user;
  try{user=await findSession(db,req);
   if(!user||user.must_change_password){reply(res,401,{ok:false,error:'LOGIN_REQUIRED'});return true;}
   if(path==='/api/misi4/health'&&req.method==='GET'){reply(res,200,{ok:true,storage:{configured:true}});return true;}
@@ -101,5 +101,5 @@ export async function handleMisi4Video(req,res,path){
   }
   reply(res,404,{ok:false,error:'NOT_FOUND'});return true;
  }catch(err){console.error('Misi4 API:',err.code||err.message);reply(res,err.message==='TOO_LARGE'?413:500,{ok:false,error:'MISI4_OPERATION_FAILED'});return true;}
- finally{await db.end();}
+
 }
