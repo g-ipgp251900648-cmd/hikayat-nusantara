@@ -442,7 +442,7 @@
   }
   function renderMission4(){
     const parts=[["opening","Permulaan","Perkenalkan watak dan tempat cerita bermula."],["middle","Perkembangan","Jelaskan cabaran yang dihadapi dan tindakan watak."],["ending","Pengakhiran","Terangkan penyelesaian dan pengajaran cerita."]];
-    return `${introLayout(missions[3].name,"Rancang persembahan kreatif. Rakaman boleh disimpan ke peranti; penghantaran terus kepada guru belum tersedia.")}
+    return `${introLayout(missions[3].name,"Rancang persembahan kreatif. Rakam video di Studio Misi 4, kemudian gunakan butang Hantar Rakaman kepada Guru.")}
       <div class="student-play-body">
         <section class="student-activity-section"><h3>🎭 Studio Persembahan Hikayat</h3>
         <div class="student-storyboard">${parts.map(([key,title,placeholder],i)=>`<label><span>Babak ${i+1}: ${title}</span><textarea rows="3" maxlength="900" data-performance="${key}" placeholder="${escapeHTML(placeholder)}">${escapeHTML(state.performance[key])}</textarea></label>`).join("")}</div>
@@ -453,7 +453,7 @@
           <label><input type="radio" name="presentation-format" value="video" ${state.performance.format==="video"?"checked":""}> <span>Video bercerita (dirancang)</span></label>
         </div></fieldset>
         <label class="student-practice-check"><input type="checkbox" data-field="practised" ${state.performance.practised?"checked":""}> Saya sudah berlatih dengan nada yang sesuai dan menyemak bahasa santun.</label>
-        <p class="student-upload-note">Tiada fungsi rakaman atau muat naik di sini buat masa ini. Persembahan sebenar perlu dihantar melalui platform yang ditetapkan guru apabila tersedia.</p>
+        <p class="student-upload-note">Buka Studio Misi 4 untuk menggunakan kamera dan mikrofon. Selepas merakam, pilih fail video melalui Hantar Rakaman kepada Guru. Resit hanya dipaparkan setelah penghantaran berjaya.</p>
         </section>
         ${feedbackView()}
         <div class="student-submit-bar"><button type="button" class="student-play-primary" data-action="check-performance">Simpan Pelan Persembahan ↗</button></div>
