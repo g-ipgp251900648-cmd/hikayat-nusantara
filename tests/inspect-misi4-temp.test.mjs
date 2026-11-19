@@ -14,6 +14,16 @@ test('Inspect Misi4 media submission points for safe integration',()=>{
       const txt=bytes.toString('utf8');
       const lines=txt.split('\n');
       const match=lines.map((v,i)=>/submit|hantar|send|MediaRecorder|recording|videoBlob|videoUrl|videoFile|ondataavailable|storage|upload|referenceNo|onSubmit|FormData|camera|getUserMedia|URL\.createObjectURL/i.test(v)?i:-1).filter(i=>i>=0);
+      if(['src/App.tsx','src/components/SubmissionHallModal.tsx','src/game/misi4Logic.ts'].includes(name)){
+        const areas=name==='src/App.tsx'?[[120,222],[370,430],[780,816]]:
+          name==='src/components/SubmissionHallModal.tsx'?[[12,65],[95,210],[235,265]]:
+          [[70,102]];
+        console.log('RELEVANTFILE',name);
+        for(const [first,last] of areas){
+          console.log('RANGE',first,last);
+          console.log(lines.slice(first-1,last).map((v,i)=>(first+i)+': '+v).join('\n'));
+        }
+      }
       if(match.length){
         console.log('INSPECTFILE',name,'lines',lines.length,'matches',match.length);
         for(const i of match.slice(0,45)){
