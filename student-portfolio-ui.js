@@ -13,7 +13,7 @@
   };
   const section=el('section','','hn-pupil-portfolio');
   section.append(el('h2','Hantar Karya Bertulis'));
-  section.append(el('p','Pilih misi dan hantar karya teks anda kepada Guru. Jawapan permainan, jurnal, suara dan video tidak dihantar secara automatik.','hn-learning-muted'));
+  section.append(el('p','Pilih misi dan hantar karya teks kepada Guru. Rakaman Misi 4 pula dihantar melalui butang Hantar dalam permainan selepas disahkan oleh sistem.','hn-learning-muted'));
   const form=el('form','','hn-learning-form');
   const choose=el('select');
   ['Jejak Naskhah Pusaka','Balai Olah Hikayat','Warisan Bahasa','Pentas Warisan'].forEach((name,i)=>{
@@ -46,6 +46,39 @@
       card.append(el('p',(status[item.status]||item.status)+' · '+
         new Date(item.created_at).toLocaleString('ms-MY'),'hn-learning-muted'));
       card.append(el('p',item.content,'hn-pupil-work-preview'));list.append(card);
+    }
+    list.append(el('h3','Rakaman dan Maklum Balas Misi 4'));
+    try{
+      const videoResponse=await api('/api/misi4/state');
+      const videos=videoResponse.ok?(videoResponse.data.submissions||[]):[];
+      if(!videos.length)list.append(el('p','Belum ada rakaman Misi 4 dihantar kepada Guru.','hn-learning-muted'));
+      for(const video of videos.slice(0,20)){
+        const card=el('article','','hn-learning-entry');
+        card.append(el('strong',(video.storyTitle||'Persembahan Hikayat')+' · '+video.referenceNo));
+        card.append(el('p','Status: '+video.status+' · '+new Date(video.submittedAt).toLocaleString('ms-MY'),'hn-learning-muted'));
+        if(video.review?.comment){
+          card.append(el('p','Maklum Balas Guru: '+video.review.comment));
+        }else{
+          card.append(el('p','Rakaman diterima dan masih menunggu semakan Guru.','hn-learning-muted'));
+        }
+        card.append(el('button','▶ Lihat Rakaman Saya'));
+        const watch=card.querySelector('button');
+        watch.type='button';
+        watch.addEventListener('click',async()=>{
+          try{
+            const r=await api('/api/misi4/media/'+encodeURIComponent(video.id));
+            if(!r.ok){watch.textContent='Rakaman tidak dapat dibuka. Cuba semula.';return;}
+            const player=document.createElement('video');
+            player.controls=true;player.playsInline=true;player.preload='none';
+            player.style.cssText='display:block;max-width:100%;width:100%;max-height:320px;margin-top:10px';
+            player.src=r.data.url;player.load();card.append(player);
+            watch.remove();
+          }catch{watch.textContent='Tidak dapat membuka rakaman. Cuba lagi.';}
+        });
+        list.append(card);
+      }
+    }catch{
+      list.append(el('p','Rekod rakaman belum dapat dimuatkan. Cuba lagi.','hn-learning-muted'));
     }
     list.append(el('h3','Maklum Balas Guru'));
     if(!p.feedback?.length)list.append(el('p','Belum ada maklum balas diterbitkan.','hn-learning-muted'));

@@ -475,7 +475,7 @@
       window.openMissionThreeAdventure();return;
     }
     if(index===3&&typeof window.openMissionFourAdventure==="function"){
-      window.openMissionFourAdventure();return;
+      window.openMissionFourAdventure(account.id);return;
     }
     activeMission=index;feedback="";
     renderDialog();

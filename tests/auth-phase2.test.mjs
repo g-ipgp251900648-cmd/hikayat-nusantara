@@ -253,9 +253,10 @@ test('Teacher Settings has live profile/security/preferences/sessions modules',(
   assert.doesNotMatch(api,/token_hash:row\.token_hash/);
 });
 
-test('server supports account API and keeps Misi 4 upload disabled',()=>{
+test('server supports account API and authenticated Misi 4 media delivery',()=>{
   const server=src('server.js');
   assert.match(server,/handleApi\(request, response, pathname\)/);
-  assert.match(server,/MISI4_BACKEND_NOT_CONFIGURED/);
+  assert.doesNotMatch(server,/MISI4_BACKEND_NOT_CONFIGURED/);
+  assert.match(src('auth/api.js'),/handleMisi4Api/);
   assert.match(server,/\/login\.html/);
 });

@@ -9,12 +9,12 @@
   "scripts": {
     "build": "node build.mjs",
     "start": "node server.js",
-    "check": "node --check app.js && node --check teacher-dashboard.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check mission-one-ai-bridge.js && node --check mission-two-ai-bridge.js && node --check mission-three-ai-bridge.js && node --check mission-four-ai-bridge.js && node --check scripts/extract-misi4.mjs && node --check student-learning-center.js && node --check scripts/extract-misi3.mjs && node --check build.mjs && node --check server.js && node --check auth/api.js && node --check auth/credentials.js && node --check auth/db.js && node --check scripts/bootstrap-admin.mjs && node --check scripts/migrate.mjs && node --check auth-client.js && node --check account-ui.js && node --check teacher-settings-ui.js && node --check teacher-learning-ui.js && node --check student-portfolio-ui.js",
+    "check": "node --check app.js && node --check teacher-dashboard.js && node --check world3d.js && node --check student-map3d.js && node --check student-activities.js && node --check mission-one-ai-bridge.js && node --check mission-two-ai-bridge.js && node --check mission-three-ai-bridge.js && node --check mission-four-ai-bridge.js && node --check scripts/extract-misi4.mjs && node --check student-learning-center.js && node --check scripts/extract-misi3.mjs && node --check build.mjs && node --check server.js && node --check auth/api.js && node --check auth/credentials.js && node --check auth/db.js && node --check scripts/bootstrap-admin.mjs && node --check scripts/migrate.mjs && node --check auth-client.js && node --check account-ui.js && node --check teacher-settings-ui.js && node --check teacher-learning-ui.js && node --check student-portfolio-ui.js && node --check auth/misi4.js",
     "test": "node --test tests/*.test.mjs",
     "db:migrate": "node scripts/migrate.mjs",
     "auth:bootstrap": "node scripts/bootstrap-admin.mjs"
   },
-  "description": "Hikayat Nusantara: original AI Studio games Misi 1–4 including Pentas Warisan recording studio (teacher delivery disabled until secure backend configured)",
+  "description": "Hikayat Nusantara: portal pembelajaran dan pentaksiran dengan penghantaran media Misi 4 melalui storan persendirian apabila dikonfigurasi",
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
@@ -24,7 +24,10 @@
     "@vitejs/plugin-react": "^5.1.0",
     "@tailwindcss/vite": "^4.1.16",
     "tailwindcss": "^4.1.16",
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "busboy": "^1.6.0",
+    "@aws-sdk/client-s3": "^3.900.0",
+    "@aws-sdk/s3-request-presigner": "^3.900.0"
   },
   "devDependencies": {
     "typescript": "^5.9.0",
