@@ -423,6 +423,97 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.ok(reissueHistory.rows[0].count>=1);
 
 
+
+    // Student-specific recovery works AFTER a pupil has set a personal password.
+    const singleUser=(await pool.query(
+      "SELECT id,must_change_password FROM hn_users WHERE login_id='5D-01'"
+    )).rows[0];
+    assert.equal(singleUser.must_change_password,false);
+    const invalidSelection=await api('/api/teacher/students/reissue-temporary',{
+      method:'POST',cookie:a.cookie,body:{
+        classId:classA.data.class.id,mode:'student',
+        studentId:pupilA.student.id,confirmationName:'5 Amanah',
+        confirmationLoginId:pupilA.student.login_id
+      }
+    });
+    assert.equal(invalidSelection.status,404);
+    assert.equal(invalidSelection.data.error,'STUDENT_NOT_IN_CLASS');
+    const incorrectStudentId=await api('/api/teacher/students/reissue-temporary',{
+      method:'POST',cookie:a.cookie,body:{
+        classId:classA.data.class.id,mode:'student',
+        studentId:singleUser.id,confirmationName:'5 Amanah',
+        confirmationLoginId:'5D-99'
+      }
+    });
+    assert.equal(incorrectStudentId.status,400);
+    const inactiveStudent=await api('/api/admin/users/status',{
+      method:'POST',cookie:admin.cookie,body:{
+        userId:(await pool.query("SELECT id FROM hn_users WHERE login_id='5D-03'")).rows[0].id,
+        active:false
+      }
+    });
+    assert.equal(inactiveStudent.status,200);
+    const student03=(await pool.query("SELECT id FROM hn_users WHERE login_id='5D-03'")).rows[0];
+    const deniedInactive=await api('/api/teacher/students/reissue-temporary',{
+      method:'POST',cookie:a.cookie,body:{
+        classId:classA.data.class.id,mode:'student',
+        studentId:student03.id,confirmationName:'5 Amanah',
+        confirmationLoginId:'5D-03'
+      }
+    });
+    assert.equal(deniedInactive.status,409);
+    assert.equal(deniedInactive.data.error,'STUDENT_INACTIVE');
+    await api('/api/admin/users/status',{
+      method:'POST',cookie:admin.cookie,body:{userId:student03.id,active:true}
+    });
+    const oneStudentReset=await api('/api/teacher/students/reissue-temporary',{
+      method:'POST',cookie:a.cookie,body:{
+        classId:classA.data.class.id,mode:'student',
+        studentId:singleUser.id,confirmationName:'5 Amanah',
+        confirmationLoginId:'5D-01'
+      }
+    });
+    assert.equal(oneStudentReset.status,200,JSON.stringify(oneStudentReset.data));
+    assert.equal(oneStudentReset.data.mode,'student');
+    assert.equal(oneStudentReset.data.reissued,1);
+    assert.equal(oneStudentReset.data.credentials[0].loginId,'5D-01');
+    assert.equal((await api('/api/auth/session',{cookie:bulkStudent.cookie})).data.authenticated,false);
+    assert.equal((await api('/api/auth/session',{cookie:newPupilSession.cookie})).data.authenticated,true);
+    const firstResetLogin=await signin('5D-01',oneStudentReset.data.credentials[0].temporaryPassword);
+    assert.equal(firstResetLogin.data.user.mustChangePassword,true);
+    assert.equal((await pool.query(
+      "SELECT must_change_password FROM hn_users WHERE login_id='5D-01'"
+    )).rows[0].must_change_password,true);
+
+    // Explicit whole-class reset revokes every ACTIVE pupil's prior password,
+    // even when it was personally chosen; no pupil records or progress are erased.
+    const classReset=await api('/api/teacher/students/reissue-temporary',{
+      method:'POST',cookie:a.cookie,body:{
+        classId:classA.data.class.id,mode:'class',confirmationName:'5 Amanah'
+      }
+    });
+    assert.equal(classReset.status,200,JSON.stringify(classReset.data));
+    assert.equal(classReset.data.mode,'class');
+    assert.equal(classReset.data.reissued,4);
+    assert.equal(new Set(classReset.data.credentials.map(r=>r.temporaryPassword)).size,4);
+    assert.ok(classReset.data.credentials.some(r=>r.loginId===pupilB.student.login_id));
+    assert.equal((await api('/api/auth/session',{cookie:firstResetLogin.cookie})).data.authenticated,false);
+    assert.equal((await api('/api/auth/session',{cookie:newPupilSession.cookie})).data.authenticated,false);
+    assert.equal((await api('/api/auth/session',{cookie:studentB.cookie})).data.authenticated,false);
+    const newClassLogin=await signin('5D-03',
+      classReset.data.credentials.find(r=>r.loginId==='5D-03').temporaryPassword);
+    assert.equal(newClassLogin.data.user.mustChangePassword,true);
+    const intactProgress=await pool.query(
+      'SELECT checkpoint FROM hn_mission_progress WHERE student_id=$1 AND mission_id=2',
+      [pupilB.student.id]
+    );
+    assert.equal(intactProgress.rows[0].checkpoint.draft,'Karya murid kekal');
+    const newAudit=await pool.query(
+      "SELECT action FROM hn_audit WHERE action IN ('reset_pupil_password','reset_all_class_pupil_passwords')"
+    );
+    assert.ok(newAudit.rows.some(r=>r.action==='reset_pupil_password'));
+    assert.ok(newAudit.rows.some(r=>r.action==='reset_all_class_pupil_passwords'));
+
     // A separate school/organization admin cannot see School A teachers.
     const otherOrg=(await pool.query(
       'INSERT INTO hn_organizations(name) VALUES($1) RETURNING id',['Sekolah Ujian B']
