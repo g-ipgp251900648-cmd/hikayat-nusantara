@@ -205,16 +205,16 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.equal(protectedTeacher.status,404);
     const suspendedByGkmp=await api('/api/admin/users/status',{
       method:'POST',cookie:gkmpSession.cookie,
-      body:{userId:addedByGkmp.teacher.id,active:false}
+      body:{userId:addedByGkmp.data.teacher.id,active:false}
     });
     assert.equal(suspendedByGkmp.status,200);
     const deniedLogin=await api('/api/auth/login',{
-      method:'POST',body:{id:addedByGkmp.teacher.login_id,password:addedByGkmp.temporaryPassword}
+      method:'POST',body:{id:addedByGkmp.data.teacher.login_id,password:addedByGkmp.data.temporaryPassword}
     });
     assert.equal(deniedLogin.status,401);
     const reactivatedByPanitia=await api('/api/admin/users/status',{
       method:'POST',cookie:panitiaSession.cookie,
-      body:{userId:addedByGkmp.teacher.id,active:true}
+      body:{userId:addedByGkmp.data.teacher.id,active:true}
     });
     assert.equal(reactivatedByPanitia.status,200);
 
