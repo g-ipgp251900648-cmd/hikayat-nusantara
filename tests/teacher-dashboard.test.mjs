@@ -30,7 +30,7 @@ test('student and class management are standalone sections and keep old minimali
   assert.match(js,/existingProgress\.id = 'guru-pemantauan'/);
   assert.match(js,/id="hn-add-student" disabled/);
   assert.match(js,/id="hn-add-class" disabled/);
-  assert.match(js,/backend yang disahkan/);
+  assert.match(js,/Daftar murid, susun kelas/);
   assert.match(js,/Kata laluan sementara/);
   assert.doesNotMatch(js,/(?:localStorage|sessionStorage)\.setItem/);
   const css=source('teacher-dashboard.css');
