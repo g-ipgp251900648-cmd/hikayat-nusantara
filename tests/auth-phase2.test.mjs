@@ -78,6 +78,15 @@ test('only three login portals while GKMP and Ketua Panitia share Admin',()=>{
   assert.match(html,/3 dashboard utama/);
 });
 
+test('class management supports confirmed deletion with roster preservation',()=>{
+  const api=src('auth/api.js'),ui=src('account-ui.js');
+  assert.match(api,/\/api\/classes\/delete/);
+  assert.match(api,/CLASS_HAS_STUDENTS/);
+  assert.match(api,/INSERT INTO hn_class_members\(class_id,student_id\) SELECT/);
+  assert.match(ui,/Padam Kelas/);
+  assert.match(ui,/deleteClassWithSafeguards/);
+});
+
 test('server supports account API and keeps Misi 4 upload disabled',()=>{
   const server=src('server.js');
   assert.match(server,/handleApi\(request, response, pathname\)/);
