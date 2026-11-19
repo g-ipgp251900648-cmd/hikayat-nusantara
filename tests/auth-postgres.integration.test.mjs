@@ -198,6 +198,92 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.equal((await fetch(base+'/misi1/')).status,401);
     assert.equal((await fetch(base+'/misi1/',{headers:{Cookie:a.cookie}})).status,401);
 
+    // An Admin, GKMP and Ketua Panitia have equivalent account-management powers.
+    const protectedTeacher=await api('/api/admin/users/status',{
+      method:'POST',cookie:a.cookie,body:{userId:teacherB.teacher.id,active:false}
+    });
+    assert.equal(protectedTeacher.status,404);
+    const suspendedByGkmp=await api('/api/admin/users/status',{
+      method:'POST',cookie:gkmpSession.cookie,
+      body:{userId:addedByGkmp.teacher.id,active:false}
+    });
+    assert.equal(suspendedByGkmp.status,200);
+    const deniedLogin=await api('/api/auth/login',{
+      method:'POST',body:{id:addedByGkmp.teacher.login_id,password:addedByGkmp.temporaryPassword}
+    });
+    assert.equal(deniedLogin.status,401);
+    const reactivatedByPanitia=await api('/api/admin/users/status',{
+      method:'POST',cookie:panitiaSession.cookie,
+      body:{userId:addedByGkmp.teacher.id,active:true}
+    });
+    assert.equal(reactivatedByPanitia.status,200);
+
+    // Teachers with attached classes cannot be permanently deleted before transfer.
+    const suspendB=await api('/api/admin/users/status',{method:'POST',cookie:admin.cookie,
+      body:{userId:teacherB.teacher.id,active:false}});
+    assert.equal(suspendB.status,200);
+    const sessionAfterRevocation=await api('/api/auth/session',{cookie:b.cookie});
+    assert.equal(sessionAfterRevocation.data.authenticated,false);
+    const deletionBeforeTransfer=await api('/api/admin/users/delete',{
+      method:'POST',cookie:admin.cookie,
+      body:{userId:teacherB.teacher.id,confirmationId:teacherB.teacher.login_id}
+    });
+    assert.equal(deletionBeforeTransfer.status,409);
+    assert.equal(deletionBeforeTransfer.data.error,'TRANSFER_TEACHER_CLASSES_FIRST');
+
+    const adminClasses=await api('/api/admin/classes',{cookie:admin.cookie});
+    assert.equal(adminClasses.status,200);
+    assert.ok(adminClasses.data.classes.some(c=>c.id===classB.data.class.id));
+    const transfer=await api('/api/admin/classes/transfer',{
+      method:'POST',cookie:admin.cookie,
+      body:{classId:classB.data.class.id,teacherId:teacherA.teacher.id}
+    });
+    assert.equal(transfer.status,200);
+    const allA=await api('/api/teacher/classes',{cookie:a.cookie});
+    assert.equal(allA.data.classes.length,2);
+    const allStudentsA=await api('/api/teacher/students',{cookie:a.cookie});
+    assert.ok(allStudentsA.data.students.some(p=>p.login_id===pupilB.student.login_id));
+    const deletionAfterTransfer=await api('/api/admin/users/delete',{
+      method:'POST',cookie:admin.cookie,
+      body:{userId:teacherB.teacher.id,confirmationId:teacherB.teacher.login_id}
+    });
+    assert.equal(deletionAfterTransfer.status,200);
+    assert.equal(deletionAfterTransfer.data.deleted,true);
+    assert.equal((await api('/api/admin/teachers',{cookie:admin.cookie})).data.teachers.some(
+      p=>p.id===teacherB.teacher.id),false);
+
+    // Students need deactivation and exact login-ID confirmation to delete;
+    // related checkpoints must be removed without touching other pupils.
+    const studentList=await api('/api/admin/students',{cookie:admin.cookie});
+    assert.equal(studentList.status,200);
+    assert.ok(studentList.data.students.some(p=>p.id===pupilA.student.id&&p.progress_count===1));
+    const activeStudentDelete=await api('/api/admin/users/delete',{
+      method:'POST',cookie:admin.cookie,
+      body:{userId:pupilA.student.id,confirmationId:pupilA.student.login_id}
+    });
+    assert.equal(activeStudentDelete.status,409);
+    const studentSuspended=await api('/api/admin/users/status',{
+      method:'POST',cookie:panitiaSession.cookie,
+      body:{userId:pupilA.student.id,active:false}
+    });
+    assert.equal(studentSuspended.status,200);
+    assert.equal((await api('/api/auth/session',{cookie:studentA.cookie})).data.authenticated,false);
+    const incorrectConfirmation=await api('/api/admin/users/delete',{
+      method:'POST',cookie:admin.cookie,
+      body:{userId:pupilA.student.id,confirmationId:'HN-WRONG-123'}
+    });
+    assert.equal(incorrectConfirmation.status,400);
+    const studentDeleted=await api('/api/admin/users/delete',{
+      method:'POST',cookie:admin.cookie,
+      body:{userId:pupilA.student.id,confirmationId:pupilA.student.login_id}
+    });
+    assert.equal(studentDeleted.status,200);
+    const vanishedProgress=await pool.query('SELECT count(*)::int AS count FROM hn_mission_progress WHERE student_id=$1',[pupilA.student.id]);
+    assert.equal(vanishedProgress.rows[0].count,0);
+    const stillPresent=await api('/api/admin/students',{cookie:admin.cookie});
+    assert.equal(stillPresent.data.students.some(p=>p.id===pupilA.student.id),false);
+    assert.equal(stillPresent.data.students.some(p=>p.id===pupilB.student.id),true);
+
     // A separate school/organization admin cannot see School A teachers.
     const otherOrg=(await pool.query(
       'INSERT INTO hn_organizations(name) VALUES($1) RETURNING id',['Sekolah Ujian B']
@@ -212,6 +298,12 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const fromOtherOrg=await api('/api/admin/teachers',{cookie:otherAdmin.cookie});
     assert.equal(fromOtherOrg.status,200);
     assert.deepEqual(fromOtherOrg.data.teachers,[]);
+    const crossOrgBlock=await api('/api/admin/users/status',{method:'POST',cookie:otherAdmin.cookie,
+      body:{userId:teacherA.teacher.id,active:false}});
+    assert.equal(crossOrgBlock.status,404);
+    const crossOrgDelete=await api('/api/admin/users/delete',{method:'POST',cookie:otherAdmin.cookie,
+      body:{userId:teacherA.teacher.id,confirmationId:teacherA.teacher.login_id}});
+    assert.equal(crossOrgDelete.status,404);
     const outsideLeaders=await api('/api/admin/leaders',{cookie:otherAdmin.cookie});
     assert.equal(outsideLeaders.status,200);
     assert.deepEqual(outsideLeaders.data.leaders,[]);
@@ -222,6 +314,10 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const logs=await pool.query('SELECT action,resource_type FROM hn_audit ORDER BY id');
     assert.ok(logs.rows.some(x=>x.action==='create_teacher'));
     assert.ok(logs.rows.some(x=>x.action==='create_student'));
+    assert.ok(logs.rows.some(x=>x.action==='deactivate_account'));
+    assert.ok(logs.rows.some(x=>x.action==='permanently_delete_guru'));
+    assert.ok(logs.rows.some(x=>x.action==='permanently_delete_murid'));
+    assert.ok(logs.rows.some(x=>x.actor_id===undefined || x.actor_id===null || x.actor_id));
   }finally{
     server.kill('SIGTERM');
     await pool.end();
