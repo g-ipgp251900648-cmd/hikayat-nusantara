@@ -32,7 +32,9 @@ test('passwords are one-way and verified correctly',async()=>{
 test('API has server-side permission checks and never stores plain text passwords',()=>{
   const api=src('auth/api.js');
   assert.match(api,/requireUser\(db,request,response\)/);
-  assert.match(api,/user\.role!=='admin'/);
+  assert.match(api,/canAdmin\(user\.role\)/);
+  assert.match(api,/adminRoles=new Set\(\['admin','gkmp','panitia'\]\)/);
+  assert.match(api,/\/api\/admin\/leaders/);
   assert.match(api,/user\.role==='guru'/);
   assert.match(api,/teacher_id=\$2 AND organization_id=\$3/);
   assert.match(api,/hashPassword\(password\)/);
