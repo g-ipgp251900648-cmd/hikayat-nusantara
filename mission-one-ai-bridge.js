@@ -84,7 +84,7 @@
       if(result?.ok){
         const status=overlay?.querySelector('#hn-ai-status');
         if(status)status.textContent='Percubaan Misi 1 direkodkan: '+result.count+
-          '. Ringkasan akan diselaraskan dengan Neon.';
+          '. Kemajuan akan disimpan untuk Guru.';
       }
       return;
     }
@@ -99,7 +99,7 @@
     if(result?.ok&&result.success){
       lastSignature=data.signature;
       const status=overlay?.querySelector('#hn-ai-status');
-      if(status)status.textContent='✓ Misi 1 selesai. Rekod latihan akan diselaraskan ke Neon.';
+      if(status)status.textContent='✓ Misi 1 selesai. Kemajuan akan disimpan.';
     }
   }
 
