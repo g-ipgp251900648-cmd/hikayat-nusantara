@@ -52,7 +52,7 @@
       padding:'8px 12px',gap:'10px',minHeight:'52px',background:'#154632',
       borderBottom:'2px solid #dcb974',
     });
-    bar.innerHTML = '<div style="min-width:0"><strong style="font-size:14px">🪁 Misi 2 — Wau Sakti: Pencarian Kata Indah</strong><div id="hn-m2-status" role="status" style="font-size:11px;color:#e6d5ab">Permainan asal Google AI Studio · Lima gerbang bahasa dan Balai Olah Hikayat</div></div>';
+    bar.innerHTML = '<div style="min-width:0"><strong style="font-size:14px">🪁 Misi 2 — Wau Sakti: Pencarian Kata Indah</strong><div id="hn-m2-status" role="status" style="font-size:11px;color:#e6d5ab">Lima gerbang bahasa dan Balai Olah Hikayat</div></div>';
     const closeButton = document.createElement('button');
     closeButton.type = 'button';
     closeButton.textContent = '✕ Kembali ke Ruang Murid';
