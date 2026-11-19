@@ -43,4 +43,17 @@ test('Embedded game uses same-origin progress bridge and server-side static asse
   assert.match(app,/notifyHikayatPortal\('attempt'/);
   assert.match(app,/notifyHikayatPortal\('victory'/);
   assert.match(read('student-activities.js'),/const score=positions\+comprehensionScore,success=score===8/);
+  const portal = read('student-activities.js');
+  assert.match(app,/attemptCount: attempts\.length/);
+  assert.match(app,/attempts: attempts\.slice\(-30\)/);
+  assert.match(app,/ORIGINAL_STORAGE_KEY \+ '-student-' \+ pupilProfile/);
+  assert.match(app,/notifyHikayatPortal\('snapshot'/);
+  assert.match(bridge,/msg\.eventType==='attempt'\|\|msg\.eventType==='snapshot'/);
+  assert.match(bridge,/window\.syncMissionOneGameAttempts/);
+  assert.match(bridge,/studentId/);
+  assert.match(portal,/window\.syncMissionOneGameAttempts/);
+  assert.match(portal,/window\.openMissionOneAdventure\(account\.id\)/);
+  assert.doesNotMatch(portal,/recordAttempt\(0,score,8,success\)/);
+  assert.match(bridge,/Terdapat .* rekod percubaan Misi 1 lama/);
+
 });
