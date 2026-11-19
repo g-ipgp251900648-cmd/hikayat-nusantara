@@ -29,7 +29,7 @@
   ];
   const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const note = '<div class="hn-admin-notice" role="status">Pengurusan akaun, pangkalan data, log audit dan storan media belum diaktifkan. Tiada perubahan pengguna atau data murid akan disimpan di sini.</div>';
+  const note = '<div class="hn-admin-notice" role="status">Pengurusan akaun dan rekod kemajuan latihan menggunakan Neon. Storan media, penghantaran video dan pentaksiran PBD rasmi belum diaktifkan.</div>';
   const emptyTable = headings => '<div class="table-wrap"><table><thead><tr>' +
     headings.map(h => '<th>' + escapeHTML(h) + '</th>').join('') +
     '</tr></thead><tbody><tr><td colspan="' + headings.length +
