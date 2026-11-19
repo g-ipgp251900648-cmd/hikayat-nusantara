@@ -72,6 +72,16 @@ try {
   throw error;
 }
 
+// Verify the private Neon video runtime packages during the build, not after Render starts.
+for(const packageName of ['@aws-sdk/client-s3','@aws-sdk/lib-storage']){
+  try{await import(packageName);}
+  catch(error){
+    throw new Error('[Build] Neon video dependency missing: '+packageName+
+      '. Reinstall dependencies in Render Build Command.',{cause:error});
+  }
+}
+console.log('[Build] Neon Object Storage runtime dependencies verified.');
+
 console.log('[Misi 1] Vite executable located:',viteEntry);
 const result=spawnSync(process.execPath,
   [viteEntry,'build','--config','mission-one-ai/vite.config.ts'],
