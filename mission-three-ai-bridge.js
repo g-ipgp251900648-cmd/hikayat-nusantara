@@ -1,7 +1,7 @@
 /**
  * Misi 3 original AI Studio — Taman Bahasa, hosted at /misi3/ as a same-origin iframe.
  * The only authoritative completion is the game's validated victory payload.
- * This integration is localStorage-only; no teacher/backend delivery is implied.
+ * The original game sends validated practice events to the pupil portal; the portal syncs bounded practice summaries to Neon. No teacher grading or media uploads are implied.
  */
 (() => {
   'use strict';
@@ -32,8 +32,8 @@
     if (result?.ok && result.completed) {
       hasRecorded = true;
       if (status) status.textContent = result.alreadyCompleted
-        ? '✓ Misi 3 telah direkodkan pada Dashboard Murid.'
-        : '✓ Misi 3 selesai · 70 XP direkodkan pada Dashboard Murid.';
+        ? '✓ Misi 3 direkodkan sebagai latihan di Dashboard Murid.'
+        : '✓ Misi 3 selesai · 70 XP latihan direkodkan pada Dashboard Murid.';
     } else if (status && result?.message) {
       status.textContent = result.message;
     }
@@ -47,7 +47,7 @@
     overlay.innerHTML = `<header class="hn-m3-top">
       <div class="hn-m3-heading"><strong>🌺 Misi 3: Taman Bahasa</strong>
       <small>Rahsia Empat Kelopak Warisan · Permainan asal Google AI Studio</small></div>
-      <span id="hn-m3-status" role="status">Rekod latihan disimpan pada pelayar; bukan dihantar kepada guru.</span>
+      <span id="hn-m3-status" role="status">Status latihan disimpan pada peranti dan ringkasan cuba diselaraskan ke Neon untuk Guru.</span>
       <button type="button" id="hn-m3-close">✕ Kembali ke Dashboard</button>
       </header>
       <iframe id="hn-m3-frame" title="Permainan Taman Bahasa dan empat Kelopak Warisan" src="/misi3/" allow="microphone"></iframe>`;
