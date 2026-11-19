@@ -54,6 +54,10 @@
     '<div class="table-wrap"><table><thead><tr><th>Nama Kelas</th><th>Tahun</th><th>Sesi</th><th>Jumlah Murid</th><th>Status</th><th>Tindakan</th></tr></thead><tbody id="hn-class-rows"><tr><td colspan="6">Belum ada kelas yang disahkan.</td></tr></tbody></table></div>'
   );
 
+  const reviewPage = wrapper('guru-semakan','SEMAKAN TUGASAN','Pusat Semakan Tugasan',
+    'Semak rakaman bersajak yang telah dihantar oleh murid dalam Misi 4.',
+    '<div id="hn-misi4-review-root" role="region" aria-label="Rakaman video Misi 4"></div>');
+
   const newPages=[
     ['guru-pbd','PENTAKSIRAN','Pentaksiran PBD','Nilai pengubahsuaian cerita dan persembahan murid berdasarkan bukti pembelajaran sebenar.',
       ['Rubrik SP 4.3.2','Catatan pertimbangan profesional guru','Rekod tahap penguasaan']],
@@ -127,54 +131,68 @@
   show('guru-ringkasan',{silent:true});
 
 
-  // Misi 4: only the authenticated teacher's enrolled pupils appear here.
-  const portfolio=document.getElementById('guru-portfolio');
-  if(portfolio){
-    const root=document.createElement('div');
-    root.id='hn-misi4-teacher-videos';
-    root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><p role="status">Memuatkan penghantaran...</p>';
-    portfolio.append(root);
+  // Pusat Semakan Tugasan: video Misi 4 yang dikaitkan dengan kelas guru.
+  const reviewRoot=reviewPage.querySelector('#hn-misi4-review-root');
+  if(reviewRoot){
+    const heading='<h3>🎭 Misi 4 — Semakan Rakaman Bersajak</h3>';
+    let currentVideo=null;
+    const clearVideo=()=>{
+      if(currentVideo){currentVideo.pause();currentVideo.removeAttribute('src');currentVideo.load();currentVideo=null;}
+    };
     const load=async()=>{
-      root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><p role="status">Memuatkan penghantaran...</p>';
+      clearVideo();
+      reviewRoot.innerHTML=heading+'<p role="status">Memuatkan rakaman murid...</p>';
       try{
         const response=await fetch('/api/misi4/teacher',{credentials:'include',cache:'no-store'});
         const data=await response.json();
-        if(!response.ok||!data.ok)throw Error(data.error||'Gagal memuatkan');
-        if(!data.submissions?.length){
-          root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><p>Belum ada rakaman dihantar oleh murid kelas anda.</p>';
+        if(!response.ok||data?.ok!==true||!Array.isArray(data.submissions))throw Error('FETCH_FAILED');
+        const refresh='<button type="button" data-m4-refresh>↻ Muat Semula Senarai</button>';
+        if(!data.submissions.length){
+          reviewRoot.innerHTML=heading+refresh+'<p role="status">Belum ada rakaman Misi 4 daripada murid kelas anda.</p>';
           return;
         }
-        root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><div class="table-wrap"><table><thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh Hantar</th><th>Video</th></tr></thead><tbody>'+
-          data.submissions.map(item=>'<tr><td>'+safe(item.display_name)+'</td><td>'+safe(item.class_name)+'</td><td>'+
-          safe(item.submitted_at?new Date(item.submitted_at).toLocaleString('ms-MY'):'—')+
-          '</td><td><button type="button" data-watch-id="'+safe(item.id)+'">▶ Tonton Video</button></td></tr>').join('')+
-          '</tbody></table></div><p id="hn-m4-watch-status" role="status"></p><div id="hn-m4-watch-player"></div>';
+        const rows=data.submissions.map(item=>{
+          const time=item.submitted_at?new Date(item.submitted_at):null;
+          const date=time&&!Number.isNaN(time.getTime())?time.toLocaleString('ms-MY'):'—';
+          return '<tr><td>'+safe(item.display_name)+'</td><td>'+safe(item.class_name)+'</td>'+
+            '<td>'+safe(date)+'</td><td>Telah Dihantar</td>'+
+            '<td><button type="button" data-m4-watch="'+safe(item.id)+'">▶ Tonton Video</button></td></tr>';
+        }).join('');
+        reviewRoot.innerHTML=heading+refresh+
+          '<div class="table-wrap"><table><thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh Hantar</th>'+
+          '<th>Status</th><th>Tindakan</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+          '<p id="hn-m4-review-status" role="status"></p><div id="hn-m4-review-player"></div>';
       }catch{
-        root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><p role="alert">Rakaman belum dapat dipaparkan. Semak sambungan Google Drive.</p>';
+        reviewRoot.innerHTML=heading+
+          '<p role="alert">Senarai rakaman belum dapat dibuka. Semak sambungan Render dan Google Drive.</p>'+
+          '<button type="button" data-m4-refresh>Cuba Lagi</button>';
       }
     };
-    root.addEventListener('click',event=>{
-      const button=event.target.closest('button[data-watch-id]');
+    reviewRoot.addEventListener('click',event=>{
+      if(event.target.closest('[data-m4-refresh]')){void load();return;}
+      const button=event.target.closest('button[data-m4-watch]');
       if(!button)return;
-      const id=button.dataset.watchId;
-      if(!/^[0-9a-f-]{36}$/i.test(id))return;
-      const player=root.querySelector('#hn-m4-watch-player');
-      const status=root.querySelector('#hn-m4-watch-status');
+      const id=button.dataset.m4Watch;
+      if(!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id))return;
+      const player=reviewRoot.querySelector('#hn-m4-review-player');
+      const status=reviewRoot.querySelector('#hn-m4-review-status');
       if(!player||!status)return;
-      player.replaceChildren();
+      clearVideo();player.replaceChildren();
       const video=document.createElement('video');
       video.controls=true;
-      video.preload='metadata';
-      video.style.cssText='width:100%;max-width:680px;margin-top:12px;border-radius:12px;background:#111';
+      video.preload='none';
+      video.setAttribute('aria-label','Rakaman bersajak murid Misi 4');
+      video.style.cssText='display:block;width:100%;max-width:700px;margin:12px 0;border-radius:10px;background:#14231c';
       video.src='/api/misi4/watch/'+encodeURIComponent(id);
-      video.addEventListener('error',()=>{status.textContent='Video tidak dapat dibuka. Semak sambungan Apps Script.';});
+      video.addEventListener('error',()=>{status.textContent='Rakaman tidak dapat dimainkan. Semak Apps Script dan fail Drive.';});
       status.textContent='Rakaman dipilih. Tekan Play untuk menonton.';
-      player.append(video);
+      player.appendChild(video);currentVideo=video;
     });
-    const originalShow=show;
-    // Load only on demand when the teacher opens the Portfolio page.
     nav.addEventListener('click',event=>{
-      if(event.target.closest('[data-teacher-menu="guru-portfolio"]'))void load();
+      const button=event.target.closest('[data-teacher-menu]');
+      if(!button)return;
+      if(button.dataset.teacherMenu==='guru-semakan')void load();
+      else clearVideo();
     });
   }
 
