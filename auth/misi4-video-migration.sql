@@ -39,3 +39,7 @@ ON hn_misi4_videos (
   student_id,
   submitted_at DESC
 );
+
+-- Link a teacher's Misi 4 feedback to a specific stored video.
+ALTER TABLE hn_teacher_feedback ADD COLUMN IF NOT EXISTS video_id uuid REFERENCES hn_misi4_videos(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS hn_feedback_video ON hn_teacher_feedback(video_id) WHERE video_id IS NOT NULL;
