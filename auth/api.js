@@ -663,11 +663,11 @@ export async function handleApi(request,response,pathname) {
         const params=[user.organization_id,studentId,missionId,classId,user.id,tp,JSON.stringify(scores),evidence,justification,status];
         const result=old
           ?await client.query(
-            "UPDATE hn_pbd_assessments SET class_id=$4,teacher_id=$5,tp=$6,rubric=$7::jsonb,evidence=$8,justification=$9,status=$10,revision=revision+1,updated_at=now(),confirmed_at=CASE WHEN $10='confirmed' THEN now() ELSE NULL END WHERE id=$11 RETURNING *",
+            "UPDATE hn_pbd_assessments SET class_id=$4,teacher_id=$5,tp=$6,rubric=$7::jsonb,evidence=$8,justification=$9,status=$10,revision=revision+1,updated_at=now(),confirmed_at=CASE WHEN $10::varchar='confirmed' THEN now() ELSE NULL END WHERE id=$11 RETURNING *",
             [...params,old.id]
           )
           :await client.query(
-            "INSERT INTO hn_pbd_assessments(organization_id,student_id,mission_id,class_id,teacher_id,tp,rubric,evidence,justification,status,confirmed_at) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,CASE WHEN $10='confirmed' THEN now() ELSE NULL END) RETURNING *",
+            "INSERT INTO hn_pbd_assessments(organization_id,student_id,mission_id,class_id,teacher_id,tp,rubric,evidence,justification,status,confirmed_at) VALUES($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10,CASE WHEN $10::varchar='confirmed' THEN now() ELSE NULL END) RETURNING *",
             params
           );
         const saved=result.rows[0];
