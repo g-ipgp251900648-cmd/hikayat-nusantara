@@ -126,6 +126,58 @@
   });
   show('guru-ringkasan',{silent:true});
 
+
+  // Misi 4: only the authenticated teacher's enrolled pupils appear here.
+  const portfolio=document.getElementById('guru-portfolio');
+  if(portfolio){
+    const root=document.createElement('div');
+    root.id='hn-misi4-teacher-videos';
+    root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><p role="status">Memuatkan penghantaran...</p>';
+    portfolio.append(root);
+    const load=async()=>{
+      root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><p role="status">Memuatkan penghantaran...</p>';
+      try{
+        const response=await fetch('/api/misi4/teacher',{credentials:'include',cache:'no-store'});
+        const data=await response.json();
+        if(!response.ok||!data.ok)throw Error(data.error||'Gagal memuatkan');
+        if(!data.submissions?.length){
+          root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><p>Belum ada rakaman dihantar oleh murid kelas anda.</p>';
+          return;
+        }
+        root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><div class="table-wrap"><table><thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh Hantar</th><th>Video</th></tr></thead><tbody>'+
+          data.submissions.map(item=>'<tr><td>'+safe(item.display_name)+'</td><td>'+safe(item.class_name)+'</td><td>'+
+          safe(item.submitted_at?new Date(item.submitted_at).toLocaleString('ms-MY'):'—')+
+          '</td><td><button type="button" data-watch-id="'+safe(item.id)+'">▶ Tonton Video</button></td></tr>').join('')+
+          '</tbody></table></div><p id="hn-m4-watch-status" role="status"></p><div id="hn-m4-watch-player"></div>';
+      }catch{
+        root.innerHTML='<h3>🎭 Misi 4 — Rakaman Bersajak</h3><p role="alert">Rakaman belum dapat dipaparkan. Semak sambungan Google Drive.</p>';
+      }
+    };
+    root.addEventListener('click',event=>{
+      const button=event.target.closest('button[data-watch-id]');
+      if(!button)return;
+      const id=button.dataset.watchId;
+      if(!/^[0-9a-f-]{36}$/i.test(id))return;
+      const player=root.querySelector('#hn-m4-watch-player');
+      const status=root.querySelector('#hn-m4-watch-status');
+      if(!player||!status)return;
+      player.replaceChildren();
+      const video=document.createElement('video');
+      video.controls=true;
+      video.preload='metadata';
+      video.style.cssText='width:100%;max-width:680px;margin-top:12px;border-radius:12px;background:#111';
+      video.src='/api/misi4/watch/'+encodeURIComponent(id);
+      video.addEventListener('error',()=>{status.textContent='Video tidak dapat dibuka. Semak sambungan Apps Script.';});
+      status.textContent='Rakaman dipilih. Tekan Play untuk menonton.';
+      player.append(video);
+    });
+    const originalShow=show;
+    // Load only on demand when the teacher opens the Portfolio page.
+    nav.addEventListener('click',event=>{
+      if(event.target.closest('[data-teacher-menu="guru-portfolio"]'))void load();
+    });
+  }
+
   const modal=document.createElement('dialog');
   modal.className='hn-teacher-dialog';
   modal.setAttribute('aria-label','Pratonton borang');
