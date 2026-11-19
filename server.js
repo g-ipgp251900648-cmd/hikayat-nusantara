@@ -28,6 +28,8 @@ const PUBLIC_FILES = new Map([
   ["/login.html", ["login.html", "text/html; charset=utf-8"]],
   ["/auth-client.js", ["auth-client.js", "text/javascript; charset=utf-8"]],
   ["/account-ui.js", ["account-ui.js", "text/javascript; charset=utf-8"]],
+  ["/teacher-learning-ui.js", ["teacher-learning-ui.js", "text/javascript; charset=utf-8"]],
+  ["/student-portfolio-ui.js", ["student-portfolio-ui.js", "text/javascript; charset=utf-8"]],
   ["/login.html", ["login.html", "text/html; charset=utf-8"]],
   ["/auth-client.js", ["auth-client.js", "text/javascript; charset=utf-8"]],
 ]);
