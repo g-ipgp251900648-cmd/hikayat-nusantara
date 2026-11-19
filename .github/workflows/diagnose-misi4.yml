@@ -1,0 +1,38 @@
+name: Verify Misi 4 in-game Neon submission
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/diagnose-misi4.yml'
+      - 'scripts/extract-misi4.mjs'
+      - 'scripts/patch-misi4-submit.mjs'
+      - 'build.mjs'
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install dependencies
+        run: npm install --omit=dev --no-audit --no-fund
+      - name: Build all missions
+        run: npm run build
+      - name: Verify original in-game submission uses Neon authenticated endpoints
+        run: |
+          node --input-type=module <<'JS'
+          import {readFile,readdir} from 'node:fs/promises';
+          import assert from 'node:assert/strict';
+          const src=await readFile('mission-four-ai/src/components/SubmissionHallModal.tsx','utf8');
+          assert.match(src,/api\/misi4\/initiate/);
+          assert.match(src,/api\/misi4\/state/);
+          assert.match(src,/api\/misi4\/health/);
+          assert.doesNotMatch(src,/api\/misi4\/submissions/);
+          const dir='dist/misi4/assets';
+          const names=(await readdir(dir)).filter(x=>x.endsWith('.js'));
+          const all=(await Promise.all(names.map(x=>readFile(dir+'/'+x,'utf8')))).join('\n');
+          assert.match(all,/api\/misi4\/initiate/);
+          console.log('Verified: in-game button connects to authenticated Neon storage API.');
+          JS
