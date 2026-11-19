@@ -14,6 +14,7 @@
   const pages = [
     ['admin-ringkasan','Ringkasan Sistem','⌂'],
     ['admin-organisasi','Pengurusan Organisasi','▣'],
+    ['admin-kepimpinan','Kepimpinan Bahasa Melayu','♕'],
     ['admin-guru','Pengurusan Guru','♙'],
     ['admin-kelas','Pengurusan Kelas','▦'],
     ['admin-murid','Pengurusan Murid','♧'],
@@ -45,6 +46,9 @@
     content.appendChild(section);
   };
 
+  make('admin-kepimpinan','KEPIMPINAN BM','Guru Kanan & Ketua Panitia',
+    'Kedua-dua jawatan mempunyai kuasa pengurusan yang sama seperti Admin untuk organisasi ini.',
+    emptyTable(['Jawatan','Nama','ID','Status']));
   make('admin-organisasi','ORGANISASI','Pengurusan Organisasi',
     'Urus organisasi dan sekolah yang berdaftar tanpa membenarkan capaian silang kepada data peribadi.',
     stats(['Sekolah berdaftar','Organisasi aktif','Permohonan menunggu']) +
