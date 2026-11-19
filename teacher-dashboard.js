@@ -156,7 +156,8 @@
           const date=time&&!Number.isNaN(time.getTime())?time.toLocaleString('ms-MY'):'—';
           return '<tr><td>'+safe(item.display_name)+'</td><td>'+safe(item.class_name)+'</td>'+
             '<td>'+safe(date)+'</td><td>Telah Dihantar</td>'+
-            '<td><button type="button" data-m4-watch="'+safe(item.id)+'">▶ Tonton Video</button></td></tr>';
+            '<td><button type="button" data-m4-watch="'+safe(item.id)+'">▶ Tonton Video</button> '+
+            '<button type="button" data-m4-comment="'+safe(item.id)+'" data-m4-student="'+safe(item.student_id)+'">✎ Beri Komen</button></td></tr>';
         }).join('');
         reviewRoot.innerHTML=heading+refresh+
           '<div class="table-wrap"><table><thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh Hantar</th>'+
@@ -164,12 +165,21 @@
           '<p id="hn-m4-review-status" role="status"></p><div id="hn-m4-review-player"></div>';
       }catch{
         reviewRoot.innerHTML=heading+
-          '<p role="alert">Senarai rakaman belum dapat dibuka. Semak sambungan Render dan Google Drive.</p>'+
+          '<p role="alert">Senarai rakaman belum dapat dibuka. Semak sambungan Render dan Neon Storage.</p>'+
           '<button type="button" data-m4-refresh>Cuba Lagi</button>';
       }
     };
     reviewRoot.addEventListener('click',event=>{
       if(event.target.closest('[data-m4-refresh]')){void load();return;}
+      const comment=event.target.closest('button[data-m4-comment]');
+      if(comment){
+        const navButton=nav.querySelector('[data-teacher-menu="guru-maklum-balas"]');
+        navButton?.click();
+        window.dispatchEvent(new CustomEvent('hn:teacher-review-video',{
+          detail:{studentId:comment.dataset.m4Student,videoId:comment.dataset.m4Comment}
+        }));
+        return;
+      }
       const button=event.target.closest('button[data-m4-watch]');
       if(!button)return;
       const id=button.dataset.m4Watch;
@@ -184,7 +194,7 @@
       video.setAttribute('aria-label','Rakaman bersajak murid Misi 4');
       video.style.cssText='display:block;width:100%;max-width:700px;margin:12px 0;border-radius:10px;background:#14231c';
       video.src='/api/misi4/watch/'+encodeURIComponent(id);
-      video.addEventListener('error',()=>{status.textContent='Rakaman tidak dapat dimainkan. Semak Apps Script dan fail Drive.';});
+      video.addEventListener('error',()=>{status.textContent='Rakaman tidak dapat dimainkan. Semak sambungan dan fail Neon Storage.';});
       status.textContent='Rakaman dipilih. Tekan Play untuk menonton.';
       player.appendChild(video);currentVideo=video;
     });

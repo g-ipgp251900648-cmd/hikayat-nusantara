@@ -64,16 +64,16 @@
     const x=stateOf(key),line=el('div','','hn-learning-filters');
     const c=select((current.classes||[]).map(r=>[r.id,r.name+' ('+r.school_year+')']),x.classId);
     line.append(field('Kelas',c));
-    c.addEventListener('change',()=>{x.classId=c.value;x.studentId='';render(key);});
+    c.addEventListener('change',()=>{x.classId=c.value;x.studentId='';x.videoId='';render(key);});
     if(student){
       const people=ownStudents(x.classId);
       const p=select(people.map(r=>[r.id,r.display_name+' · '+r.login_id]),x.studentId);
-      p.addEventListener('change',()=>{x.studentId=p.value;render(key);});
+      p.addEventListener('change',()=>{x.studentId=p.value;x.videoId='';render(key);});
       line.append(field('Murid',p));
     }
     if(mission){
       const m=select(names.map((name,i)=>[i+1,'Misi '+(i+1)+' · '+name]),x.missionId);
-      m.addEventListener('change',()=>{x.missionId=Number(m.value);render(key);});
+      m.addEventListener('change',()=>{x.missionId=Number(m.value);x.videoId='';render(key);});
       line.append(field('Misi',m));
     }
     root.append(line);return x;
@@ -261,6 +261,42 @@
     const improvements=textarea('Aspek Penambahbaikan',1500,previous?.improvements);
     const next=textarea('Cadangan Tindakan Seterusnya',1500,previous?.next_steps);
     form.append(strengths,improvements,next);
+    // Link a published Misi 4 comment to the precise private recording being reviewed.
+    let videoSelect=null;
+    if(x.missionId===4){
+      const recordingPanel=el('section','','hn-learning-panel');
+      recordingPanel.append(el('h3','Rakaman Misi 4 untuk Dinilai'));
+      videoSelect=select([['','Tiada rakaman dipilih']],selected.feedback.videoId||previous?.video_id||'');
+      recordingPanel.append(field('Pilih rakaman murid',videoSelect));
+      const watchContainer=el('div','','hn-feedback-watch');
+      const watch=button('▶ Tonton Rakaman Dipilih',()=>{
+        const id=videoSelect.value;
+        watchContainer.replaceChildren();
+        if(!id)return;
+        const video=document.createElement('video');
+        video.controls=true;video.playsInline=true;video.preload='none';
+        video.style.cssText='width:100%;max-width:660px;margin:12px 0;border-radius:12px';
+        video.src='/api/misi4/watch/'+encodeURIComponent(id);
+        video.addEventListener('error',()=>message(recordingPanel,'Rakaman tidak dapat dimainkan. Semak sesi guru atau storan Neon.'));
+        watchContainer.append(video);
+      },'hn-learning-primary');
+      recordingPanel.append(watch,watchContainer);
+      form.append(recordingPanel);
+      void (async()=>{
+        try{
+          const r=await api('/api/misi4/teacher');
+          if(!r.ok)throw Error('NOT_AVAILABLE');
+          const videos=(r.data?.submissions||[]).filter(v=>same(v.student_id,x.studentId));
+          videos.forEach(v=>videoSelect.add(new Option(
+            new Date(v.submitted_at).toLocaleString('ms-MY')+' · '+v.id.slice(0,8),v.id
+          )));
+          const target=selected.feedback.videoId||previous?.video_id||'';
+          if(videos.some(v=>same(v.id,target)))videoSelect.value=target;
+          if(!videos.length)recordingPanel.append(el('p','Belum ada rakaman aktif untuk murid ini. Komen umum Misi 4 masih boleh diterbitkan.','hn-learning-muted'));
+        }catch{recordingPanel.append(el('p','Senarai rakaman tidak dapat dimuatkan. Komen umum masih boleh diterbitkan.','hn-learning-muted'));}
+      })();
+      videoSelect.addEventListener('change',()=>{selected.feedback.videoId=videoSelect.value;});
+    }
     form.append(el('p',previous?'Maklum balas terkini: '+(statuses[previous.status]||previous.status)+
       ' · '+new Date(previous.updated_at).toLocaleString('ms-MY'):'Belum ada ulasan untuk misi ini.','hn-learning-muted'));
     const save=async status=>{
@@ -270,8 +306,8 @@
         strengths:strengths.querySelector('textarea').value,
         improvements:improvements.querySelector('textarea').value,
         nextSteps:next.querySelector('textarea').value,
-        status,...(previous?{feedbackId:previous.id}:{})
-      },root);if(r.ok)await reload('feedback');}
+        status,...(videoSelect?.value?{videoId:videoSelect.value}:{}),...(previous?{feedbackId:previous.id}:{})
+      },root);if(r.ok){selected.feedback.videoId='';await reload('feedback');}}
       catch{message(root,'Sambungan bermasalah. Sila cuba lagi.');}
     };
     const actions=el('div','','hn-learning-actions');
@@ -307,13 +343,11 @@
         card.append(el('strong',item.display_name+' · '+item.class_name+' · Misi 4'));
         card.append(el('p','Dihantar pada '+new Date(item.submitted_at).toLocaleString('ms-MY'),'hn-learning-muted'));
         const watch=button('▶ Tonton Rakaman',async()=>{
-          const response=await api('/api/misi4/watch/'+encodeURIComponent(item.id));
-          if(!response.ok){message(card,'Tidak dapat membuka video.');return;}
           let video=card.querySelector('video');
           if(!video){video=document.createElement('video');video.controls=true;video.playsInline=true;
             video.style.cssText='width:100%;max-width:540px;border-radius:12px;margin-top:10px';
             card.append(video);}
-          video.src=response.data.url;video.load();
+          video.src='/api/misi4/watch/'+encodeURIComponent(item.id);video.load();
         },'hn-learning-primary');
         card.append(watch,el('p','Gunakan menu PBD dan Maklum Balas Guru untuk menilai persembahan ini.','hn-learning-muted'));
         panel.append(card);
@@ -479,6 +513,17 @@
       await loadData();
     }
   }
+  window.addEventListener('hn:teacher-review-video',event=>{
+    const detail=event.detail||{};
+    if(!current||!detail.studentId||!detail.videoId)return;
+    const person=ownStudents().find(p=>same(p.id,detail.studentId));
+    if(!person)return;
+    selected.feedback.classId=person.class_id;
+    selected.feedback.studentId=person.id;
+    selected.feedback.missionId=4;
+    selected.feedback.videoId=detail.videoId;
+    render('feedback');
+  });
   window.addEventListener('hashchange',()=>void init());
   void init();
 })();

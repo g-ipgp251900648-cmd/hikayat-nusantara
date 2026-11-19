@@ -215,7 +215,12 @@ test('teacher five connected learning modules are active, private and evidence-b
   assert.match(ui,/Cetak \/ Simpan PDF/);
   assert.match(ui,/Rancang Intervensi/);
   assert.match(ui,/Maklum Balas Guru/);
-  assert.match(pupil,/Hantar Karya Bertulis/);
+  assert.match(pupil,/Maklum Balas Guru/);
+  assert.doesNotMatch(pupil,/Hantar Karya Bertulis/);
+  assert.match(pupil,/\/api\/student\/learning/);
+  assert.match(pupil,/\/api\/misi4\/watch/);
+  assert.match(ui,/videoId:videoSelect.value/);
+  assert.match(teacher,/data-m4-comment/);
   assert.match(pupil,/window\.hnGetSession/);
   assert.match(ui,/window\.hnGetSession/);
   assert.match(ui,/Object\.values\(pages\)/);
