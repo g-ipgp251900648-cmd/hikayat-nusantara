@@ -578,6 +578,18 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.ok(newAudit.rows.some(r=>r.action==='reset_all_class_pupil_passwords'));
 
 
+    const testPupil=(await pool.query("SELECT id FROM hn_users WHERE login_id='5D-03'")).rows[0];
+    const testStudent=newClassLogin;
+    await updatePassword(testStudent.cookie,
+      classReset.data.credentials.find(x=>x.loginId==='5D-03').temporaryPassword,makePassword());
+    const outsideStudent=await signin('5D-02',
+      classReset.data.credentials.find(x=>x.loginId==='5D-02').temporaryPassword);
+    await updatePassword(outsideStudent.cookie,
+      classReset.data.credentials.find(x=>x.loginId==='5D-02').temporaryPassword,makePassword());
+    const unassignedTeacher=await signin(addedByGkmp.data.teacher.login_id,
+      addedByGkmp.data.temporaryPassword);
+    await updatePassword(unassignedTeacher.cookie,addedByGkmp.data.temporaryPassword,makePassword());
+
     // Five teacher modules: pupil submits their own TEXT evidence, teacher
     // enters TP manually and only publishes feedback when ready.
     const initialLearning=await api('/api/teacher/learning',{cookie:a.cookie});
@@ -586,83 +598,83 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.deepEqual(initialLearning.data.feedback,[]);
     assert.deepEqual(initialLearning.data.portfolio,[]);
     assert.deepEqual(initialLearning.data.interventions,[]);
-    assert.equal((await api('/api/teacher/learning',{cookie:studentA.cookie})).status,404);
+    assert.equal((await api('/api/teacher/learning',{cookie:testStudent.cookie})).status,404);
     assert.equal((await api('/api/student/learning',{cookie:a.cookie})).status,404);
-    const invalidWork=await api('/api/student/portfolio',{method:'POST',cookie:studentA.cookie,
+    const invalidWork=await api('/api/student/portfolio',{method:'POST',cookie:testStudent.cookie,
       body:{missionId:2,title:'Karya',content:'Pendek'}});
     assert.equal(invalidWork.status,400);
-    const textWork=await api('/api/student/portfolio',{method:'POST',cookie:studentA.cookie,
+    const textWork=await api('/api/student/portfolio',{method:'POST',cookie:testStudent.cookie,
       body:{missionId:2,title:'Cerita Hikayat Baharu',content:'Pada suatu petang, anak kampung membantu penghulu dengan bahasa yang santun.'}});
     assert.equal(textWork.status,201,JSON.stringify(textWork.data));
     const workId=textWork.data.entry.id;
-    const ownWork=await api('/api/student/learning',{cookie:studentA.cookie});
+    const ownWork=await api('/api/student/learning',{cookie:testStudent.cookie});
     assert.equal(ownWork.status,200);
     assert.equal(ownWork.data.portfolio[0].id,workId);
     assert.equal(ownWork.data.feedback.length,0);
     assert.equal(ownWork.data.assessments.length,0);
-    assert.equal((await api('/api/student/learning',{cookie:studentB.cookie})).data.portfolio.length,0);
-    assert.equal((await api('/api/teacher/learning',{cookie:b.cookie})).data.portfolio.length,0);
+    assert.equal((await api('/api/student/learning',{cookie:outsideStudent.cookie})).data.portfolio.length,0);
+    assert.equal((await api('/api/teacher/learning',{cookie:unassignedTeacher.cookie})).data.portfolio.length,0);
     const teacherLearning=await api('/api/teacher/learning',{cookie:a.cookie});
-    assert.equal(teacherLearning.data.portfolio[0].student_id,pupilA.student.id);
+    assert.equal(teacherLearning.data.portfolio[0].student_id,testPupil.id);
 
-    const unauthorizedTp=await api('/api/teacher/pbd',{method:'POST',cookie:b.cookie,
-      body:{studentId:pupilA.student.id,missionId:2,expectedRevision:0,tp:3,
+    const unauthorizedTp=await api('/api/teacher/pbd',{method:'POST',cookie:unassignedTeacher.cookie,
+      body:{studentId:testPupil.id,missionId:2,expectedRevision:0,tp:3,
         rubric:{olah:3},evidence:'Cerita ditulis sendiri oleh murid',justification:'Murid menunjukkan perkembangan yang baik',status:'confirmed'}});
     assert.equal(unauthorizedTp.status,404);
     const invalidTp=await api('/api/teacher/pbd',{method:'POST',cookie:a.cookie,
-      body:{studentId:pupilA.student.id,missionId:2,expectedRevision:0,tp:5,
+      body:{studentId:testPupil.id,missionId:2,expectedRevision:0,tp:5,
         rubric:{},evidence:'',justification:'',status:'confirmed'}});
     assert.equal(invalidTp.status,400);
     const draftTp=await api('/api/teacher/pbd',{method:'POST',cookie:a.cookie,
-      body:{studentId:pupilA.student.id,missionId:2,expectedRevision:0,tp:null,
+      body:{studentId:testPupil.id,missionId:2,expectedRevision:0,tp:null,
         rubric:{olah:3,bahasa:2},evidence:'Teks cerpen telah disemak oleh Guru',
         justification:'Memerlukan semakan akhir sebelum TP diberi',status:'draft'}});
     assert.equal(draftTp.status,200,JSON.stringify(draftTp.data));
     assert.equal(draftTp.data.assessment.revision,1);
-    assert.equal((await api('/api/student/learning',{cookie:studentA.cookie})).data.assessments.length,0);
+    assert.equal((await api('/api/student/learning',{cookie:testStudent.cookie})).data.assessments.length,0);
     const confirmedTp=await api('/api/teacher/pbd',{method:'POST',cookie:a.cookie,
-      body:{studentId:pupilA.student.id,missionId:2,expectedRevision:1,tp:4,
+      body:{studentId:testPupil.id,missionId:2,expectedRevision:1,tp:4,
         rubric:{olah:3,bahasa:3,santun:4,persembahan:0},
         evidence:'Karya hikayat murid telah disemak oleh Guru dalam portfolio.',
         justification:'Murid mampu mengolah cerita dengan kesantunan dan bahasa yang sesuai.',
         status:'confirmed'}});
     assert.equal(confirmedTp.status,200,JSON.stringify(confirmedTp.data));
     assert.equal(confirmedTp.data.assessment.revision,2);
-    assert.equal((await api('/api/student/learning',{cookie:studentA.cookie})).data.assessments[0].tp,4);
+    assert.equal((await api('/api/student/learning',{cookie:testStudent.cookie})).data.assessments[0].tp,4);
     const staleTp=await api('/api/teacher/pbd',{method:'POST',cookie:a.cookie,
-      body:{studentId:pupilA.student.id,missionId:2,expectedRevision:1,tp:2,
+      body:{studentId:testPupil.id,missionId:2,expectedRevision:1,tp:2,
         rubric:{olah:1},evidence:'Pertukaran nilai tidak sepatutnya',
         justification:'Ujian konflik semakan pentaksiran',status:'confirmed'}});
     assert.equal(staleTp.status,409);
     const historyTp=await pool.query(
       'SELECT revision FROM hn_pbd_assessment_history WHERE student_id=$1 AND mission_id=2 ORDER BY revision',
-      [pupilA.student.id]);
+      [testPupil.id]);
     assert.deepEqual(historyTp.rows.map(x=>x.revision),[1,2]);
 
-    const inaccessibleFeedback=await api('/api/teacher/feedback',{method:'POST',cookie:b.cookie,
-      body:{studentId:pupilA.student.id,missionId:2,strengths:'Karya yang sangat baik',
+    const inaccessibleFeedback=await api('/api/teacher/feedback',{method:'POST',cookie:unassignedTeacher.cookie,
+      body:{studentId:testPupil.id,missionId:2,strengths:'Karya yang sangat baik',
         improvements:'Susunan ayat boleh ditambah baik',nextSteps:'Baca semula dan sunting',
         status:'published'}});
     assert.equal(inaccessibleFeedback.status,404);
     const draftFb=await api('/api/teacher/feedback',{method:'POST',cookie:a.cookie,
-      body:{studentId:pupilA.student.id,missionId:2,strengths:'Kreatif dan bersopan',
+      body:{studentId:testPupil.id,missionId:2,strengths:'Kreatif dan bersopan',
         improvements:'Boleh tambahkan ungkapan',nextSteps:'Sunting semula cerita',status:'draft'}});
     assert.equal(draftFb.status,200);
-    assert.equal((await api('/api/student/learning',{cookie:studentA.cookie})).data.feedback.length,0);
+    assert.equal((await api('/api/student/learning',{cookie:testStudent.cookie})).data.feedback.length,0);
     const publishFb=await api('/api/teacher/feedback',{method:'POST',cookie:a.cookie,
-      body:{feedbackId:draftFb.data.feedback.id,studentId:pupilA.student.id,missionId:2,
+      body:{feedbackId:draftFb.data.feedback.id,studentId:testPupil.id,missionId:2,
         strengths:'Kreatif dan bersopan',improvements:'Boleh tambahkan ungkapan',
         nextSteps:'Sunting semula cerita',status:'published'}});
     assert.equal(publishFb.status,200);
-    assert.equal((await api('/api/student/learning',{cookie:studentA.cookie})).data.feedback.length,1);
+    assert.equal((await api('/api/student/learning',{cookie:testStudent.cookie})).data.feedback.length,1);
 
     const plan=await api('/api/teacher/interventions',{method:'POST',cookie:a.cookie,
-      body:{studentId:pupilA.student.id,missionId:3,
+      body:{studentId:testPupil.id,missionId:3,
         plan:'Bimbingan individu tentang ungkapan indah pada masa pengajaran seterusnya',
         status:'planned'}});
     assert.equal(plan.status,200);
     const closedPlan=await api('/api/teacher/interventions',{method:'POST',cookie:a.cookie,
-      body:{interventionId:plan.data.intervention.id,studentId:pupilA.student.id,
+      body:{interventionId:plan.data.intervention.id,studentId:testPupil.id,
         missionId:3,plan:'Bimbingan individu sudah disempurnakan semasa latihan ulang kaji',
         status:'completed'}});
     assert.equal(closedPlan.status,200);
@@ -670,11 +682,11 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const review=await api('/api/teacher/portfolio/review',{method:'POST',cookie:a.cookie,
       body:{entryId:workId,status:'reviewed'}});
     assert.equal(review.status,200);
-    assert.equal((await api('/api/student/learning',{cookie:studentA.cookie})).data.portfolio[0].status,'reviewed');
-    const forbiddenReview=await api('/api/teacher/portfolio/review',{method:'POST',cookie:b.cookie,
+    assert.equal((await api('/api/student/learning',{cookie:testStudent.cookie})).data.portfolio[0].status,'reviewed');
+    const forbiddenReview=await api('/api/teacher/portfolio/review',{method:'POST',cookie:unassignedTeacher.cookie,
       body:{entryId:workId,status:'revision_requested'}});
     assert.equal(forbiddenReview.status,404);
-    assert.equal((await api('/api/teacher/learning',{cookie:b.cookie})).data.assessments.length,0);
+    assert.equal((await api('/api/teacher/learning',{cookie:unassignedTeacher.cookie})).data.assessments.length,0);
     assert.equal((await api('/api/teacher/learning',{cookie:admin.cookie})).status,404);
     const audits=await pool.query(
       "SELECT action FROM hn_audit WHERE action IN ('confirm_pbd','save_pbd_draft','save_teacher_feedback','submit_portfolio_text','save_teacher_intervention')"
