@@ -131,7 +131,7 @@
     student:'<h2>Borang Pendaftaran Murid</h2><p>Pratonton sahaja. Maklumat ini tidak dihantar atau disimpan.</p>'+
       '<label>Nama murid<input type="text" placeholder="Nama penuh" disabled></label>'+
       '<label>Kelas<select disabled><option>Pilih kelas berdaftar</option></select></label>'+
-      '<p><strong>ID murid:</strong> Akan dijana oleh backend selepas pengesahan.</p>'+
+      '<p><strong>ID murid:</strong> Dijana selepas pendaftaran berjaya.</p>'+
       '<p><strong>Kata laluan sementara:</strong> Dijana secara selamat dan ditunjukkan sekali sahaja selepas pendaftaran yang berjaya.</p>',
     class:'<h2>Borang Tambah Kelas</h2><p>Pratonton sahaja. Maklumat ini tidak dihantar atau disimpan.</p>'+
       '<label>Nama kelas<input type="text" placeholder="Contoh: 5 Bestari" disabled></label>'+
