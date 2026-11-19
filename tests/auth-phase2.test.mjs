@@ -63,6 +63,21 @@ test('frontend protects dashboards and maintains per-user local practice storage
   assert.match(src('student-activities.js'),/Import rekod latihan saya/);
 });
 
+test('only three login portals while GKMP and Ketua Panitia share Admin',()=>{
+  const login=src('login.html');
+  const client=src('auth-client.js');
+  const html=src('index.html');
+  assert.equal((login.match(/data-role="/g)||[]).length,3);
+  for(const role of ['murid','guru','admin']) assert.match(login,new RegExp('data-role="'+role+'"'));
+  assert.doesNotMatch(login,/data-role="gkmp"|data-role="panitia"/);
+  assert.match(login,/Ketua Panitia BM: pilih/);
+  assert.match(client,/const roles=\['murid','guru','admin'\]/);
+  assert.match(client,/dashboardRole=role=>adminLike\(role\)\?'admin':role/);
+  assert.match(client,/dashboardRole\(result\.data\.user\?\.role\)!==chosen/);
+  assert.equal((html.match(/class="portal-card /g)||[]).length,3);
+  assert.match(html,/3 dashboard utama/);
+});
+
 test('server supports account API and keeps Misi 4 upload disabled',()=>{
   const server=src('server.js');
   assert.match(server,/handleApi\(request, response, pathname\)/);
