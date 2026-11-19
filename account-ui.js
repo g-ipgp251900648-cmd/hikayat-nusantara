@@ -60,16 +60,120 @@
     const b=document.createElement('button');b.type='button';b.textContent=text;b.addEventListener('click',fn);return b;
   }
 
+  const adminPost=(path,data)=>request(path,{
+    method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)
+  });
+  const adminError=r=>({
+    DEACTIVATE_ACCOUNT_FIRST:'Nyahaktifkan akaun terlebih dahulu sebelum pemadaman kekal.',
+    TRANSFER_TEACHER_CLASSES_FIRST:'Guru ini masih mempunyai kelas. Pindahkan semua kelas melalui Pengurusan Kelas terlebih dahulu.',
+    INVALID_DELETE_CONFIRMATION:'ID pengesahan tidak sepadan.',
+    CLASS_NAME_CONFLICT:'Guru penerima sudah mempunyai kelas dengan nama dan tahun yang sama.',
+    CLASS_OR_TEACHER_NOT_FOUND:'Kelas atau Guru penerima tidak ditemui atau tidak aktif.',
+    ACCOUNT_NOT_FOUND:'Akaun tidak ditemui dalam organisasi ini.'
+  }[r.data?.error]||'Operasi gagal. Sila semak sambungan dan cuba lagi.');
+  async function accountStatus(person,nextActive){
+    const verb=nextActive?'aktifkan semula':'nyahaktifkan';
+    if(!confirm('Adakah anda mahu '+verb+' akaun '+person.display_name+' ('+person.login_id+')?'+
+      (nextActive?'':' Semua sesi log masuk pengguna ini akan ditamatkan.')))return;
+    const r=await adminPost('/api/admin/users/status',{userId:person.id,active:nextActive});
+    if(!r.ok){alert(adminError(r));return;}
+    await loadAdmin();
+  }
+  async function deleteAccount(person){
+    if(person.active){alert('Nyahaktifkan akaun ini dahulu.');return;}
+    const isStudent=person.progress_count!==undefined;
+    const warning=isStudent
+      ? '\\nPERHATIAN: Rekod kemajuan misi dan penyertaan kelas murid ini akan dipadam secara kekal.'
+      : '\\nPERHATIAN: Pastikan semua kelas telah dipindahkan kepada Guru lain.';
+    const confirmation=prompt('PADAM KEKAL (tidak boleh dibatalkan): '+person.display_name+
+      warning+'\\n\\nTaip ID pengguna tepat seperti berikut untuk mengesahkan: '+person.login_id);
+    if(confirmation===null)return;
+    if(confirmation!==person.login_id){alert('ID pengesahan tidak sama. Tiada akaun dipadam.');return;}
+    const r=await adminPost('/api/admin/users/delete',{userId:person.id,confirmationId:confirmation});
+    if(!r.ok){alert(adminError(r));return;}
+    alert('Akaun '+person.login_id+' berjaya dipadam secara kekal.');
+    await loadAdmin();
+  }
+  function adminUserActions(row,person){
+    const cell=row.insertCell();
+    cell.style.whiteSpace='nowrap';
+    const stateButton=makeButton(person.active?'Nyahaktifkan':'Aktifkan Semula',
+      ()=>accountStatus(person,!person.active));
+    cell.append(stateButton);
+    if(!person.active){
+      const deleteButton=makeButton('Padam Kekal',()=>deleteAccount(person));
+      deleteButton.style.cssText='margin-left:6px;border-color:#a14b45;color:#8d302a;';
+      cell.append(deleteButton);
+    }
+  }
+  function renderAdminStudents(result){
+    const root=$('#admin-murid');
+    if(!root)return;
+    root.replaceChildren();
+    const heading=document.createElement('h2');heading.textContent='Pengurusan Murid';root.append(heading);
+    const description=document.createElement('p');description.className='hn-admin-intro';
+    description.textContent='Admin boleh menyekat log masuk Murid yang tidak aktif, mengaktifkannya semula, atau memadam akaun secara kekal selepas pengesahan ID. Pemadaman akan menghapuskan rekod kemajuan misi murid.';
+    root.append(description);
+    if(!result.ok){root.append(document.createTextNode('Data murid belum tersedia.'));return;}
+    const table=document.createElement('div');table.className='table-wrap';
+    table.innerHTML='<table><thead><tr><th>Nama Murid</th><th>ID Murid</th><th>Kelas</th><th>Rekod Misi</th><th>Status</th><th>Tindakan</th></tr></thead><tbody></tbody></table>';
+    const tbody=table.querySelector('tbody');
+    if(!result.data.students.length){const row=tbody.insertRow(),cell=row.insertCell();cell.colSpan=6;cell.textContent='Belum ada akaun Murid.';}
+    for(const person of result.data.students){
+      const row=tbody.insertRow();
+      for(const val of [person.display_name,person.login_id,person.class_names,person.progress_count,person.active?'Aktif':'Tidak aktif']){
+        const cell=row.insertCell();cell.textContent=String(val);
+      }
+      adminUserActions(row,person);
+    }
+    root.append(table);
+  }
+  function renderAdminClasses(result,teacherResult){
+    const root=$('#admin-kelas');
+    if(!root)return;
+    root.replaceChildren();
+    const heading=document.createElement('h2');heading.textContent='Pengurusan Kelas & Pemindahan Guru';root.append(heading);
+    const description=document.createElement('p');description.className='hn-admin-intro';
+    description.textContent='Pindahkan kelas kepada Guru aktif sebelum memadam akaun Guru yang berpindah. Semua murid dan rekod kelas dikekalkan.';
+    root.append(description);
+    if(!result.ok||!teacherResult.ok){root.append(document.createTextNode('Data kelas belum tersedia.'));return;}
+    const teachers=teacherResult.data.teachers.filter(p=>p.active);
+    const table=document.createElement('div');table.className='table-wrap';
+    table.innerHTML='<table><thead><tr><th>Kelas</th><th>Tahun</th><th>Guru Semasa</th><th>Bilangan Murid</th><th>Tindakan</th></tr></thead><tbody></tbody></table>';
+    const tbody=table.querySelector('tbody');
+    if(!result.data.classes.length){const row=tbody.insertRow(),cell=row.insertCell();cell.colSpan=5;cell.textContent='Belum ada kelas berdaftar.';}
+    for(const cls of result.data.classes){
+      const row=tbody.insertRow();
+      for(const val of [cls.name,cls.school_year,cls.teacher_name,cls.students]){
+        const cell=row.insertCell();cell.textContent=String(val);
+      }
+      const cell=row.insertCell();
+      const targets=teachers.filter(t=>t.id!==cls.teacher_id);
+      if(!targets.length){cell.textContent='Tiada Guru penerima aktif';continue;}
+      cell.append(makeButton('Pindahkan Kelas',()=>dialog('Pindahkan '+cls.name,[
+        {key:'teacherId',label:'Guru Penerima',options:targets.map(t=>({value:t.id,label:t.display_name+' ('+t.login_id+')'}))}
+      ],async data=>{
+        const r=await adminPost('/api/admin/classes/transfer',{classId:cls.id,teacherId:data.teacherId});
+        if(!r.ok)alert(adminError(r));else loadAdmin();
+        return r;
+      })));
+    }
+    root.append(table);
+  }
+
   async function loadAdmin(){
-    const [summary,teachers,leaders]=await Promise.all([request('/api/admin/overview'),request('/api/admin/teachers'),request('/api/admin/leaders')]);
+    const [summary,teachers,leaders,students,classes]=await Promise.all([request('/api/admin/overview'),request('/api/admin/teachers'),request('/api/admin/leaders'),request('/api/admin/students'),request('/api/admin/classes')]);
     if(summary.ok) {
       const values=[summary.data.stats.students,summary.data.stats.teachers,summary.data.stats.classes,'—'];
       $('#admin-ringkasan')?.querySelectorAll('.stats-grid.four .stat strong').forEach((el,i)=>{el.textContent=String(values[i]??'—');});
     }
     const root=$('#admin-guru');
+    renderAdminStudents(students);
+    renderAdminClasses(classes,teachers);
+    renderLeaders(leaders);
     if(!root||!teachers.ok)return;
     // Replace inherited placeholder only after a verified administrator session.
-    root.innerHTML='<div class="section-line"><div><span class="mini-label">AKAUN GURU</span><h2>Pengurusan Guru</h2></div></div><p class="hn-admin-intro">Admin mencipta akaun Guru dengan ID dan kata laluan sementara yang unik.</p>';
+    root.innerHTML='<div class="section-line"><div><span class="mini-label">AKAUN GURU</span><h2>Pengurusan Guru</h2></div></div><p class="hn-admin-intro">Admin boleh mendaftar Guru, menyahaktifkan akaun ketika berpindah, mengaktifkan semula dan memadam akaun selepas semua kelas dipindahkan.</p>';
     const actions=document.createElement('div');actions.className='hn-admin-actions';
     actions.appendChild(makeButton('+ Tambah Guru',()=>dialog('Tambah Guru',[{key:'name',label:'Nama Guru'}],async data=>{
       const r=await request('/api/admin/teachers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
@@ -78,17 +182,18 @@
     })));
     root.append(actions);
     const table=document.createElement('div');table.className='table-wrap';
-    table.innerHTML='<table><thead><tr><th>Nama Guru</th><th>ID Guru</th><th>Status</th></tr></thead><tbody></tbody></table>';
+    table.innerHTML='<table><thead><tr><th>Nama Guru</th><th>ID Guru</th><th>Status</th><th>Tindakan</th></tr></thead><tbody></tbody></table>';
     const body=table.querySelector('tbody');
-    if(!teachers.data.teachers.length)body.innerHTML='<tr><td colspan="3">Belum ada guru berdaftar.</td></tr>';
+    if(!teachers.data.teachers.length)body.innerHTML='<tr><td colspan="4">Belum ada guru berdaftar.</td></tr>';
     for(const user of teachers.data.teachers){
       const tr=document.createElement('tr');
       for(const val of [user.display_name,user.login_id,user.active?'Aktif':'Digantung']){
         const td=document.createElement('td');td.textContent=String(val);tr.appendChild(td);
-      }body.appendChild(tr);
+      }
+      adminUserActions(tr,user);
+      body.appendChild(tr);
     }
     root.append(table);
-    renderLeaders(leaders);
   }
 
   function renderLeaders(result){
