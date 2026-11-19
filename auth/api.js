@@ -620,12 +620,13 @@ export async function handleApi(request,response,pathname) {
     // membership and school boundaries. No game score auto-determines TP.
     if(pathname==='/api/teacher/learning'&&method==='GET'&&user.role==='guru'){
       const clause=" WHERE t.organization_id=$1 AND EXISTS (SELECT 1 FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=cm.student_id WHERE cm.student_id=t.student_id AND c.teacher_id=$2 AND c.organization_id=$1 AND u.organization_id=$1 AND u.role='murid' AND u.active=true)";
-      const [pbd,feedback,portfolio]=await Promise.all([
+      const [pbd,feedback,portfolio,interventions]=await Promise.all([
         db.query('SELECT t.* FROM hn_pbd_assessments t'+clause+' ORDER BY t.updated_at DESC LIMIT 1200',[user.organization_id,user.id]),
         db.query('SELECT t.* FROM hn_teacher_feedback t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id]),
-        db.query('SELECT t.* FROM hn_portfolio_entries t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id])
+        db.query('SELECT t.* FROM hn_portfolio_entries t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id]),
+        db.query('SELECT t.* FROM hn_teacher_interventions t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id])
       ]);
-      json(response,200,{ok:true,assessments:pbd.rows,feedback:feedback.rows,portfolio:portfolio.rows});return true;
+      json(response,200,{ok:true,assessments:pbd.rows,feedback:feedback.rows,portfolio:portfolio.rows,interventions:interventions.rows});return true;
     }
     if(pathname==='/api/teacher/pbd'&&method==='POST'&&user.role==='guru'){
       const body=await readBody(request,12000);
@@ -699,12 +700,49 @@ export async function handleApi(request,response,pathname) {
       }
       const classId=await teacherClassForStudent(db,user,body.studentId);
       if(!classId){reject(response,404,'STUDENT_NOT_IN_CLASS');return true;}
-      const r=await db.query(
-        'INSERT INTO hn_teacher_feedback(organization_id,student_id,mission_id,teacher_id,strengths,improvements,next_steps,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
-        [user.organization_id,body.studentId,body.missionId,user.id,strengths,improvements,nextSteps,body.status]
-      );
-      await auditEvent(db,user,'create_teacher_feedback','feedback',r.rows[0].id);
-      json(response,201,{ok:true,feedback:r.rows[0]});return true;
+      let r;
+      if(body.feedbackId!==undefined){
+        if(!uuid(body.feedbackId)){reject(response,400,'INVALID_FEEDBACK');return true;}
+        r=await db.query(
+          'UPDATE hn_teacher_feedback SET strengths=$1,improvements=$2,next_steps=$3,status=$4,updated_at=now() WHERE id=$5 AND organization_id=$6 AND student_id=$7 AND mission_id=$8 AND teacher_id=$9 RETURNING *',
+          [strengths,improvements,nextSteps,body.status,body.feedbackId,user.organization_id,body.studentId,body.missionId,user.id]
+        );
+        if(!r.rows.length){reject(response,404,'FEEDBACK_NOT_FOUND');return true;}
+      }else{
+        r=await db.query(
+          'INSERT INTO hn_teacher_feedback(organization_id,student_id,mission_id,teacher_id,strengths,improvements,next_steps,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
+          [user.organization_id,body.studentId,body.missionId,user.id,strengths,improvements,nextSteps,body.status]
+        );
+      }
+      await auditEvent(db,user,'save_teacher_feedback','feedback',r.rows[0].id);
+      json(response,200,{ok:true,feedback:r.rows[0]});return true;
+    }
+
+    if(pathname==='/api/teacher/interventions'&&method==='POST'&&user.role==='guru'){
+      const body=await readBody(request,4500);
+      const plan=shortText(body.plan,1500);
+      if(!uuid(body.studentId)||!validMission(body.missionId)||!plan||plan.length<10||
+         !['planned','in_progress','completed'].includes(body.status)||
+         (body.interventionId!==undefined&&!uuid(body.interventionId))){
+        reject(response,400,'INVALID_INTERVENTION');return true;
+      }
+      const classId=await teacherClassForStudent(db,user,body.studentId);
+      if(!classId){reject(response,404,'STUDENT_NOT_IN_CLASS');return true;}
+      let r;
+      if(body.interventionId){
+        r=await db.query(
+          'UPDATE hn_teacher_interventions SET plan=$1,status=$2,updated_at=now() WHERE id=$3 AND organization_id=$4 AND student_id=$5 AND mission_id=$6 AND teacher_id=$7 RETURNING *',
+          [plan,body.status,body.interventionId,user.organization_id,body.studentId,body.missionId,user.id]
+        );
+        if(!r.rows.length){reject(response,404,'INTERVENTION_NOT_FOUND');return true;}
+      }else{
+        r=await db.query(
+          'INSERT INTO hn_teacher_interventions(organization_id,student_id,mission_id,teacher_id,plan,status) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',
+          [user.organization_id,body.studentId,body.missionId,user.id,plan,body.status]
+        );
+      }
+      await auditEvent(db,user,'save_teacher_intervention','intervention',r.rows[0].id);
+      json(response,200,{ok:true,intervention:r.rows[0]});return true;
     }
     if(pathname==='/api/teacher/portfolio/review'&&method==='POST'&&user.role==='guru'){
       const body=await readBody(request);
