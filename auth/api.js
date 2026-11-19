@@ -443,6 +443,112 @@ export async function handleApi(request,response,pathname) {
       }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
       finally{client.release();}
     }
+    // Teacher settings: only the authenticated teacher can read/update
+    // personal preferences. No passwords or session hashes are returned.
+    if(pathname==='/api/teacher/settings'&&method==='GET'&&user.role==='guru'){
+      const [preferences,sessions]=await Promise.all([
+        db.query('SELECT default_class_id,compact_tables,reduce_motion,high_contrast,revision,updated_at FROM hn_teacher_settings WHERE user_id=$1 AND organization_id=$2',[user.id,user.organization_id]),
+        db.query('SELECT token_hash,created_at,expires_at FROM hn_sessions WHERE user_id=$1 AND expires_at>now() ORDER BY created_at DESC LIMIT 30',[user.id])
+      ]);
+      const p=preferences.rows[0]||{
+        default_class_id:null,compact_tables:false,reduce_motion:false,
+        high_contrast:false,revision:0,updated_at:null
+      };
+      const currentHash=tokenHash(getCookie(request));
+      json(response,200,{ok:true,profile:publicUser(user),preferences:p,
+        sessions:sessions.rows.map(row=>({
+          current:row.token_hash===currentHash,
+          createdAt:row.created_at,expiresAt:row.expires_at
+        }))
+      });return true;
+    }
+    if(pathname==='/api/teacher/settings/profile'&&method==='POST'&&user.role==='guru'){
+      const body=await readBody(request);
+      const name=cleanName(body.name);
+      if(!validName(name)||name.length>100||typeof body.currentPassword!=='string'||
+         body.currentPassword.length>128){
+        reject(response,400,'INVALID_TEACHER_PROFILE');return true;
+      }
+      const result=await db.query(
+        "SELECT password_hash FROM hn_users WHERE id=$1 AND organization_id=$2 AND role='guru' AND active=true",
+        [user.id,user.organization_id]
+      );
+      if(!result.rows.length||!await verifyPassword(body.currentPassword,result.rows[0].password_hash)){
+        reject(response,401,'INVALID_CREDENTIALS');return true;
+      }
+      const changed=await db.query(
+        "UPDATE hn_users SET display_name=$1 WHERE id=$2 AND organization_id=$3 AND role='guru' RETURNING id,display_name",
+        [name,user.id,user.organization_id]
+      );
+      await auditEvent(db,user,'update_own_teacher_profile','user',user.id);
+      json(response,200,{ok:true,profile:{id:changed.rows[0].id,name:changed.rows[0].display_name}});
+      return true;
+    }
+    if(pathname==='/api/teacher/settings/preferences'&&method==='POST'&&user.role==='guru'){
+      const body=await readBody(request);
+      const classId=body.defaultClassId===''||body.defaultClassId===null?null:body.defaultClassId;
+      const expected=body.expectedRevision;
+      if((classId!==null&&!uuid(classId))||
+         !Number.isSafeInteger(expected)||expected<0||
+         typeof body.compactTables!=='boolean'||typeof body.reduceMotion!=='boolean'||
+         typeof body.highContrast!=='boolean'){
+        reject(response,400,'INVALID_TEACHER_PREFERENCES');return true;
+      }
+      const client=await db.connect();
+      try {
+        await client.query('BEGIN');
+        if(classId){
+          const owned=await client.query(
+            'SELECT id FROM hn_classes WHERE id=$1 AND teacher_id=$2 AND organization_id=$3',
+            [classId,user.id,user.organization_id]
+          );
+          if(!owned.rows.length){
+            await client.query('ROLLBACK');reject(response,404,'CLASS_NOT_FOUND');return true;
+          }
+        }
+        const prior=await client.query(
+          'SELECT revision FROM hn_teacher_settings WHERE user_id=$1 AND organization_id=$2 FOR UPDATE',
+          [user.id,user.organization_id]
+        );
+        const old=prior.rows[0]?.revision||0;
+        if(old!==expected){
+          await client.query('ROLLBACK');reject(response,409,'TEACHER_SETTINGS_CONFLICT');return true;
+        }
+        const r=old
+          ?await client.query(
+            'UPDATE hn_teacher_settings SET default_class_id=$1,compact_tables=$2,reduce_motion=$3,high_contrast=$4,revision=revision+1,updated_at=now() WHERE user_id=$5 AND organization_id=$6 RETURNING *',
+            [classId,body.compactTables,body.reduceMotion,body.highContrast,user.id,user.organization_id]
+          )
+          :await client.query(
+            'INSERT INTO hn_teacher_settings(user_id,organization_id,default_class_id,compact_tables,reduce_motion,high_contrast) VALUES($1,$2,$3,$4,$5,$6) RETURNING *',
+            [user.id,user.organization_id,classId,body.compactTables,body.reduceMotion,body.highContrast]
+          );
+        await auditEvent(client,user,'update_own_teacher_settings','teacher_settings',user.id);
+        await client.query('COMMIT');
+        const p=r.rows[0];
+        json(response,200,{ok:true,preferences:{
+          default_class_id:p.default_class_id,compact_tables:p.compact_tables,
+          reduce_motion:p.reduce_motion,high_contrast:p.high_contrast,
+          revision:p.revision,updated_at:p.updated_at
+        }});return true;
+      }catch(error){
+        await client.query('ROLLBACK').catch(()=>{});
+        if(error?.code==='23505'){reject(response,409,'TEACHER_SETTINGS_CONFLICT');return true;}
+        throw error;
+      }finally{client.release();}
+    }
+    if(pathname==='/api/teacher/settings/sessions/logout-others'&&method==='POST'&&user.role==='guru'){
+      const body=await readBody(request);
+      if(body.confirmation!==user.login_id){
+        reject(response,400,'LOGIN_ID_CONFIRMATION_REQUIRED');return true;
+      }
+      const result=await db.query(
+        'DELETE FROM hn_sessions WHERE user_id=$1 AND token_hash<>$2 RETURNING token_hash',
+        [user.id,tokenHash(getCookie(request))]
+      );
+      await auditEvent(db,user,'logout_other_teacher_sessions','session',user.id);
+      json(response,200,{ok:true,revoked:result.rowCount});return true;
+    }
     if(pathname==='/api/teacher/classes'&&user.role==='guru'){
       if(method==='GET'){
         const r=await db.query("SELECT c.id,c.name,c.school_year,count(cm.student_id)::int AS students FROM hn_classes c LEFT JOIN hn_class_members cm ON cm.class_id=c.id WHERE c.organization_id=$1 AND c.teacher_id=$2 GROUP BY c.id ORDER BY c.created_at DESC",[user.organization_id,user.id]);

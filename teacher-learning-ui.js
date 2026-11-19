@@ -52,7 +52,10 @@
   const same=(a,b)=>String(a)===String(b);
   function stateOf(key){
     const x=selected[key],classes=current?.classes||[];
-    if(!classes.some(c=>same(c.id,x.classId)))x.classId=classes[0]?.id||'';
+    if(!classes.some(c=>same(c.id,x.classId))){
+      const preferred=window.hnTeacherSettings?.getDefaultClassId?.();
+      x.classId=classes.find(c=>same(c.id,preferred))?.id||classes[0]?.id||'';
+    }
     const eligible=ownStudents(x.classId);
     if(!eligible.some(p=>same(p.id,x.studentId)))x.studentId=eligible[0]?.id||'';
     return x;
@@ -442,7 +445,11 @@
     if(location.hash!=='#guru')return;
     const user=await window.hnGetSession?.().catch(()=>null);
     if(user?.role!=='guru'||user.mustChangePassword)return;
-    if(!initialized){initialized=true;await loadData();}
+    if(!initialized){
+      initialized=true;
+      await window.hnTeacherSettingsReady?.catch?.(()=>null);
+      await loadData();
+    }
   }
   window.addEventListener('hashchange',()=>void init());
   void init();

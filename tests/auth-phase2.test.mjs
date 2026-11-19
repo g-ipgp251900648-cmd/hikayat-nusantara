@@ -223,6 +223,36 @@ test('teacher five connected learning modules are active, private and evidence-b
   assert.doesNotMatch(pupil,/localStorage\.getItem.*writtenStory/);
 });
 
+test('Teacher Settings has live profile/security/preferences/sessions modules',()=>{
+  const page=src('index.html'),dash=src('teacher-dashboard.js');
+  const ui=src('teacher-settings-ui.js'),api=src('auth/api.js');
+  const schema=src('auth/schema.sql'),migration=src('auth/teacher-settings-migration.sql');
+  const build=src('build.mjs'),server=src('server.js');
+  const css=src('styles.css'),learning=src('teacher-learning-ui.js');
+  assert.match(dash,/id="hn-teacher-settings-root"/);
+  assert.match(page,/src="teacher-settings-ui\.js"/);
+  assert.match(build,/'teacher-settings-ui\.js'/);
+  assert.match(server,/\/teacher-settings-ui\.js/);
+  for(const path of ['/api/teacher/settings','/api/teacher/settings/profile',
+    '/api/teacher/settings/preferences','/api/teacher/settings/sessions/logout-others']){
+    assert.ok(api.includes(path));
+  }
+  assert.match(schema,/CREATE TABLE IF NOT EXISTS hn_teacher_settings/);
+  assert.match(migration,/CREATE TABLE IF NOT EXISTS hn_teacher_settings/);
+  assert.match(ui,/Profil Guru/);
+  assert.match(ui,/Keselamatan Akaun/);
+  assert.match(ui,/Kelas Utama dan Keutamaan Paparan/);
+  assert.match(ui,/Sesi dan Privasi Akaun/);
+  assert.match(ui,/\/api\/auth\/change-password/);
+  assert.match(ui,/applyAppearance/);
+  assert.match(learning,/getDefaultClassId/);
+  assert.match(css,/\.hn-guru-compact/);
+  assert.match(css,/\.hn-guru-reduced-motion/);
+  assert.match(css,/\.hn-guru-contrast/);
+  assert.doesNotMatch(ui,/localStorage|sessionStorage|innerHTML/);
+  assert.doesNotMatch(api,/token_hash:row\.token_hash/);
+});
+
 test('server supports account API and keeps Misi 4 upload disabled',()=>{
   const server=src('server.js');
   assert.match(server,/handleApi\(request, response, pathname\)/);
