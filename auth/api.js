@@ -806,18 +806,30 @@ export async function handleApi(request,response,pathname) {
       }
       const classId=await teacherClassForStudent(db,user,body.studentId);
       if(!classId){reject(response,404,'STUDENT_NOT_IN_CLASS');return true;}
+      // Misi 4 comments can reference only a submitted recording of this exact pupil.
+      const videoId=body.videoId||null;
+      if(videoId!==null){
+        if(body.missionId!==4||!uuid(videoId)){
+          reject(response,400,'INVALID_VIDEO_REFERENCE');return true;
+        }
+        const verified=await db.query(
+          "SELECT id FROM hn_misi4_videos WHERE id=$1 AND student_id=$2 AND organization_id=$3 AND status IN ('submitted','reviewed','revision_requested') AND (object_key IS NOT NULL OR drive_file_id IS NOT NULL)",
+          [videoId,body.studentId,user.organization_id]
+        );
+        if(!verified.rows.length){reject(response,404,'VIDEO_NOT_FOUND');return true;}
+      }
       let r;
       if(body.feedbackId!==undefined){
         if(!uuid(body.feedbackId)){reject(response,400,'INVALID_FEEDBACK');return true;}
         r=await db.query(
-          'UPDATE hn_teacher_feedback SET strengths=$1,improvements=$2,next_steps=$3,status=$4,updated_at=now() WHERE id=$5 AND organization_id=$6 AND student_id=$7 AND mission_id=$8 AND teacher_id=$9 RETURNING *',
-          [strengths,improvements,nextSteps,body.status,body.feedbackId,user.organization_id,body.studentId,body.missionId,user.id]
+          'UPDATE hn_teacher_feedback SET strengths=$1,improvements=$2,next_steps=$3,status=$4,video_id=$10,updated_at=now() WHERE id=$5 AND organization_id=$6 AND student_id=$7 AND mission_id=$8 AND teacher_id=$9 RETURNING *',
+          [strengths,improvements,nextSteps,body.status,body.feedbackId,user.organization_id,body.studentId,body.missionId,user.id,videoId]
         );
         if(!r.rows.length){reject(response,404,'FEEDBACK_NOT_FOUND');return true;}
       }else{
         r=await db.query(
-          'INSERT INTO hn_teacher_feedback(organization_id,student_id,mission_id,teacher_id,strengths,improvements,next_steps,status) VALUES($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *',
-          [user.organization_id,body.studentId,body.missionId,user.id,strengths,improvements,nextSteps,body.status]
+          'INSERT INTO hn_teacher_feedback(organization_id,student_id,mission_id,teacher_id,strengths,improvements,next_steps,status,video_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',
+          [user.organization_id,body.studentId,body.missionId,user.id,strengths,improvements,nextSteps,body.status,videoId]
         );
       }
       await auditEvent(db,user,'save_teacher_feedback','feedback',r.rows[0].id);
@@ -868,7 +880,7 @@ export async function handleApi(request,response,pathname) {
     if(pathname==='/api/student/learning'&&method==='GET'&&user.role==='murid'){
       const [pbd,feedback,portfolio]=await Promise.all([
         db.query("SELECT mission_id,tp,status,updated_at,confirmed_at FROM hn_pbd_assessments WHERE organization_id=$1 AND student_id=$2 AND status='confirmed' ORDER BY mission_id",[user.organization_id,user.id]),
-        db.query("SELECT id,mission_id,strengths,improvements,next_steps,status,created_at FROM hn_teacher_feedback WHERE organization_id=$1 AND student_id=$2 AND status IN ('published','revision_requested') ORDER BY created_at DESC LIMIT 100",[user.organization_id,user.id]),
+        db.query("SELECT id,mission_id,video_id,strengths,improvements,next_steps,status,created_at,updated_at FROM hn_teacher_feedback WHERE organization_id=$1 AND student_id=$2 AND status IN ('published','revision_requested') ORDER BY updated_at DESC LIMIT 100",[user.organization_id,user.id]),
         db.query('SELECT id,mission_id,title,content,status,created_at,updated_at FROM hn_portfolio_entries WHERE organization_id=$1 AND student_id=$2 ORDER BY created_at DESC LIMIT 100',[user.organization_id,user.id])
       ]);
       json(response,200,{ok:true,assessments:pbd.rows,feedback:feedback.rows,portfolio:portfolio.rows});return true;
