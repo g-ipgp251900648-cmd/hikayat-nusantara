@@ -14,7 +14,7 @@
     "db:migrate": "node scripts/migrate.mjs",
     "auth:bootstrap": "node scripts/bootstrap-admin.mjs"
   },
-  "description": "Hikayat Nusantara: original AI Studio games Misi 1–4 including Pentas Warisan recording studio (teacher delivery disabled until secure backend configured)",
+  "description": "Hikayat Nusantara: original AI Studio games Misi 1–4 including Pentas Warisan recording studio (private teacher delivery available after S3-compatible storage is configured)",
   "dependencies": {
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
