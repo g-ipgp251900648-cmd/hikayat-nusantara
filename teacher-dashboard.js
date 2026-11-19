@@ -65,9 +65,12 @@
       ['Cerita yang diubah suai','Petikan cerita yang diperindah','Rakaman persembahan']],
     ['guru-laporan','LAPORAN','Laporan dan Eksport','Hasilkan laporan berdasarkan rekod sebenar, tanpa mengekspot kata laluan atau maklumat sensitif.',
       ['Laporan murid','Laporan kelas','Eksport PDF/CSV']],
-    ['guru-tetapan','TETAPAN','Tetapan Guru','Urus maklumat akaun guru, keselamatan dan kebenaran akses.',
-      ['Profil guru','Tetapan keselamatan','Pengurusan sesi']]
+
   ];
+  wrapper('guru-tetapan','TETAPAN AKAUN','Tetapan Guru',
+    'Urus profil, keselamatan, kelas utama dan cara paparan dashboard.',
+    '<div id="hn-teacher-settings-root" role="region" aria-label="Tetapan Guru">Memuatkan tetapan akaun...</div>');
+
   for (const [id,eyebrow,title,lead,features] of newPages) {
     wrapper(id,eyebrow,title,lead,
       '<div class="hn-teacher-feature-list">'+features.map(f=>'<div class="hn-teacher-feature"><span aria-hidden="true">✓</span>'+safe(f)+'</div>').join('')+'</div>'+
