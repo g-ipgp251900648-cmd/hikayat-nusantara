@@ -1,5 +1,6 @@
 import { database, databaseConfigured, audit } from './db.js';
 import { hashPassword, verifyPassword, validLoginId, validPassword, validName, temporaryPassword, uniqueId, sessionToken, tokenHash } from './credentials.js';
+import { handleMisi4Api } from './misi4.js';
 
 const COOKIE_NAME='hn_session';
 const EIGHT_HOURS=8*60*60;
@@ -122,8 +123,6 @@ export async function authorizeMissionRequest(request) {
 
 export async function handleApi(request,response,pathname) {
   if(!pathname.startsWith('/api/'))return false;
-  // The existing Misi 4 upload endpoints are intentionally disabled until private object storage is ready.
-  if(pathname.startsWith('/api/misi4/'))return false;
   if(!databaseConfigured()) {
     if(pathname==='/api/auth/status'&&request.method==='GET')json(response,200,{configured:false});
     else reject(response,503,'DATABASE_NOT_CONFIGURED');
@@ -153,6 +152,12 @@ export async function handleApi(request,response,pathname) {
   }
   try {
     const method=request.method;
+    if(pathname.startsWith('/api/misi4/')||pathname.startsWith('/api/teacher/misi4/')){
+      // Authenticated video submission/review shares the main server's
+      // same-origin anti-CSRF checks and genuine session database.
+      const session=await findSession(db,request);
+      return await handleMisi4Api(request,response,pathname,db,session,auditEvent);
+    }
     if(pathname==='/api/auth/status'&&method==='GET') {
       await db.query('SELECT 1 FROM hn_users LIMIT 1');
       json(response,200,{configured:true});return true;
