@@ -144,6 +144,12 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const teacherAClasses=await api('/api/teacher/classes',{cookie:a.cookie});
     assert.deepEqual(teacherAClasses.data.classes.map(c=>c.name),['5 Amanah']);
 
+    const unauthorizedClassDeletion=await api('/api/classes/delete',{
+      method:'POST',cookie:a.cookie,
+      body:{classId:classB.data.class.id,confirmationName:'5 Bestari'}
+    });
+    assert.equal(unauthorizedClassDeletion.status,404);
+
     const forbiddenClass=await api('/api/teacher/students',{
       method:'POST',cookie:a.cookie,
       body:{name:'Murid Luar',classId:classB.data.class.id}
@@ -284,6 +290,48 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.equal(stillPresent.data.students.some(p=>p.id===pupilA.student.id),false);
     assert.equal(stillPresent.data.students.some(p=>p.id===pupilB.student.id),true);
 
+    // Deleting classes must never erase pupil accounts, checkpoints or audit history.
+    const emptyOwnedClass=await api('/api/teacher/classes',{method:'POST',cookie:a.cookie,
+      body:{name:'5 Sementara',schoolYear:2026}});
+    assert.equal(emptyOwnedClass.status,201);
+    const missingConfirmation=await api('/api/classes/delete',{method:'POST',cookie:a.cookie,
+      body:{classId:emptyOwnedClass.data.class.id,confirmationName:'Salah'}});
+    assert.equal(missingConfirmation.status,400);
+    const teacherDeletesEmpty=await api('/api/classes/delete',{method:'POST',cookie:a.cookie,
+      body:{classId:emptyOwnedClass.data.class.id,confirmationName:'5 Sementara'}});
+    assert.equal(teacherDeletesEmpty.status,200);
+    assert.equal(teacherDeletesEmpty.data.movedStudents,0);
+
+    const emptyAdminClass=await api('/api/teacher/classes',{method:'POST',cookie:a.cookie,
+      body:{name:'5 Percubaan',schoolYear:2026}});
+    assert.equal(emptyAdminClass.status,201);
+    const leaderDeletesEmpty=await api('/api/classes/delete',{method:'POST',cookie:gkmpSession.cookie,
+      body:{classId:emptyAdminClass.data.class.id,confirmationName:'5 Percubaan'}});
+    assert.equal(leaderDeletesEmpty.status,200);
+
+    const keepProgress=await api('/api/student/progress/2',{method:'PUT',
+      cookie:studentB.cookie,body:{revision:0,checkpoint:{draft:'Karya murid kekal'}}});
+    assert.equal(keepProgress.status,200);
+    const blockedPopulated=await api('/api/classes/delete',{method:'POST',cookie:a.cookie,
+      body:{classId:classB.data.class.id,confirmationName:'5 Bestari'}});
+    assert.equal(blockedPopulated.status,409);
+    assert.equal(blockedPopulated.data.error,'CLASS_HAS_STUDENTS');
+    const rosterMoved=await api('/api/classes/delete',{method:'POST',cookie:panitiaSession.cookie,
+      body:{classId:classB.data.class.id,confirmationName:'5 Bestari',
+        destinationClassId:classA.data.class.id}});
+    assert.equal(rosterMoved.status,200);
+    assert.equal(rosterMoved.data.movedStudents,1);
+    const classDeleted=await pool.query('SELECT count(*)::int AS count FROM hn_classes WHERE id=$1',
+      [classB.data.class.id]);
+    assert.equal(classDeleted.rows[0].count,0);
+    const preservedMember=await pool.query('SELECT count(*)::int AS count FROM hn_class_members WHERE class_id=$1 AND student_id=$2',
+      [classA.data.class.id,pupilB.student.id]);
+    assert.equal(preservedMember.rows[0].count,1);
+    const preservedCheckpoint=await pool.query('SELECT checkpoint FROM hn_mission_progress WHERE student_id=$1 AND mission_id=2',
+      [pupilB.student.id]);
+    assert.equal(preservedCheckpoint.rows[0].checkpoint.draft,'Karya murid kekal');
+    assert.equal((await api('/api/auth/session',{cookie:studentB.cookie})).data.authenticated,true);
+
     // A separate school/organization admin cannot see School A teachers.
     const otherOrg=(await pool.query(
       'INSERT INTO hn_organizations(name) VALUES($1) RETURNING id',['Sekolah Ujian B']
@@ -301,6 +349,9 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const crossOrgBlock=await api('/api/admin/users/status',{method:'POST',cookie:otherAdmin.cookie,
       body:{userId:teacherA.teacher.id,active:false}});
     assert.equal(crossOrgBlock.status,404);
+    const crossOrgClassDelete=await api('/api/classes/delete',{method:'POST',cookie:otherAdmin.cookie,
+      body:{classId:classA.data.class.id,confirmationName:'5 Amanah'}});
+    assert.equal(crossOrgClassDelete.status,404);
     const crossOrgDelete=await api('/api/admin/users/delete',{method:'POST',cookie:otherAdmin.cookie,
       body:{userId:teacherA.teacher.id,confirmationId:teacherA.teacher.login_id}});
     assert.equal(crossOrgDelete.status,404);
@@ -317,6 +368,8 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.ok(logs.rows.some(x=>x.action==='deactivate_account'));
     assert.ok(logs.rows.some(x=>x.action==='permanently_delete_guru'));
     assert.ok(logs.rows.some(x=>x.action==='permanently_delete_murid'));
+    assert.ok(logs.rows.some(x=>x.action==='delete_class'));
+
     assert.ok(logs.rows.some(x=>x.action==='login'&&x.actor_id===null),
       'Historical audit events survive account removal without retaining a user foreign key');
   }finally{

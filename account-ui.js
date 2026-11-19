@@ -69,7 +69,12 @@
     INVALID_DELETE_CONFIRMATION:'ID pengesahan tidak sepadan.',
     CLASS_NAME_CONFLICT:'Guru penerima sudah mempunyai kelas dengan nama dan tahun yang sama.',
     CLASS_OR_TEACHER_NOT_FOUND:'Kelas atau Guru penerima tidak ditemui atau tidak aktif.',
-    ACCOUNT_NOT_FOUND:'Akaun tidak ditemui dalam organisasi ini.'
+    ACCOUNT_NOT_FOUND:'Akaun tidak ditemui dalam organisasi ini.',
+    CLASS_HAS_STUDENTS:'Kelas masih mempunyai murid. Pilih kelas pengganti untuk memindahkan mereka terlebih dahulu.',
+    DESTINATION_CLASS_NOT_FOUND:'Kelas pengganti tidak sah atau Guru penerimanya tidak aktif.',
+    CLASS_NOT_FOUND:'Kelas tidak ditemui atau bukan kelas anda.',
+    CLASS_NAME_CONFIRMATION_REQUIRED:'Nama pengesahan kelas tidak tepat.',
+    CLASS_DELETE_CONFLICT:'Penghapusan kelas tidak berjaya kerana perubahan serentak.'
   }[r.data?.error]||'Operasi gagal. Sila semak sambungan dan cuba lagi.');
   async function accountStatus(person,nextActive){
     const verb=nextActive?'aktifkan semula':'nyahaktifkan';
@@ -106,6 +111,37 @@
       cell.append(deleteButton);
     }
   }
+  function deleteClassWithSafeguards(cls,otherClasses,onSuccess){
+    const members=Number(cls.students)||0;
+    if(members>0&&!otherClasses.length){
+      alert('Kelas '+cls.name+' masih mempunyai '+members+
+        ' murid. Cipta atau pilih kelas pengganti yang aktif dahulu. Akaun murid tidak akan dipadam.');
+      return;
+    }
+    const warning=members>0
+      ? 'Kelas ini mempunyai '+members+' murid. Semua keahlian murid akan dipindahkan ke kelas pengganti sebelum kelas dipadam. Akaun dan kemajuan murid kekal.'
+      : 'Kelas ini kosong. Pemadaman adalah kekal dan tidak boleh dibatalkan.';
+    if(!confirm('Padam Kelas '+cls.name+' ('+cls.school_year+')?\\n\\n'+warning))return;
+    const fields=[];
+    if(members>0){
+      fields.push({key:'destinationClassId',label:'Kelas Pengganti',
+        options:otherClasses.map(c=>({value:c.id,label:c.name+' ('+c.school_year+')'}))});
+    }
+    fields.push({key:'confirmationName',label:'Taip nama kelas tepat untuk mengesahkan: '+cls.name});
+    dialog('Sahkan Padam Kelas',fields,async data=>{
+      if(data.confirmationName!==cls.name){
+        alert('Nama kelas tidak sepadan. Tiada kelas dipadam.');
+        return {ok:false};
+      }
+      const payload={classId:cls.id,confirmationName:data.confirmationName};
+      if(members>0)payload.destinationClassId=data.destinationClassId;
+      const result=await adminPost('/api/classes/delete',payload);
+      if(!result.ok){alert(adminError(result));return result;}
+      await onSuccess();
+      return result;
+    });
+  }
+
   function renderAdminStudents(result){
     const root=$('#admin-murid');
     if(!root)return;
@@ -134,7 +170,7 @@
     root.replaceChildren();
     const heading=document.createElement('h2');heading.textContent='Pengurusan Kelas & Pemindahan Guru';root.append(heading);
     const description=document.createElement('p');description.className='hn-admin-intro';
-    description.textContent='Pindahkan kelas kepada Guru aktif sebelum memadam akaun Guru yang berpindah. Semua murid dan rekod kelas dikekalkan.';
+    description.textContent='Pindahkan kelas kepada Guru aktif sebelum memadam akaun Guru berpindah. Admin juga boleh memadam kelas; kelas berisi murid memerlukan kelas pengganti supaya rekod murid kekal.';
     root.append(description);
     if(!result.ok||!teacherResult.ok){root.append(document.createTextNode('Data kelas belum tersedia.'));return;}
     const teachers=teacherResult.data.teachers.filter(p=>p.active);
@@ -149,14 +185,18 @@
       }
       const cell=row.insertCell();
       const targets=teachers.filter(t=>t.id!==cls.teacher_id);
-      if(!targets.length){cell.textContent='Tiada Guru penerima aktif';continue;}
-      cell.append(makeButton('Pindahkan Kelas',()=>dialog('Pindahkan '+cls.name,[
+      if(!targets.length){const note=document.createElement('span');note.textContent='Tiada Guru penerima aktif. ';cell.append(note);}
+      if(targets.length)cell.append(makeButton('Pindahkan Kelas',()=>dialog('Pindahkan '+cls.name,[
         {key:'teacherId',label:'Guru Penerima',options:targets.map(t=>({value:t.id,label:t.display_name+' ('+t.login_id+')'}))}
       ],async data=>{
         const r=await adminPost('/api/admin/classes/transfer',{classId:cls.id,teacherId:data.teacherId});
         if(!r.ok)alert(adminError(r));else loadAdmin();
         return r;
       })));
+      const eligible=result.data.classes.filter(c=>c.id!==cls.id&&teachers.some(t=>t.id===c.teacher_id));
+      const deleteButton=makeButton('Padam Kelas',()=>deleteClassWithSafeguards(cls,eligible,loadAdmin));
+      deleteButton.style.cssText='margin-left:6px;border-color:#a14b45;color:#8d302a;';
+      cell.append(deleteButton);
     }
     root.append(table);
   }
@@ -245,10 +285,15 @@
       myClasses=classes.data.classes;
       const tbody=$('#hn-class-rows');if(tbody){
         tbody.replaceChildren();
-        if(!myClasses.length){const row=tbody.insertRow();const cell=row.insertCell();cell.colSpan=5;cell.textContent='Belum ada kelas. Klik + Cipta Kelas.';}
+        if(!myClasses.length){const row=tbody.insertRow();const cell=row.insertCell();cell.colSpan=6;cell.textContent='Belum ada kelas. Klik + Cipta Kelas.';}
         myClasses.forEach(item=>{
           const row=tbody.insertRow();
           [item.name,'Tahun 5',item.school_year,item.students,'Aktif'].forEach(value=>{const cell=row.insertCell();cell.textContent=String(value);});
+          const cell=row.insertCell();
+          const targets=myClasses.filter(c=>c.id!==item.id);
+          const deleteButton=makeButton('Padam Kelas',()=>deleteClassWithSafeguards(item,targets,loadTeacher));
+          deleteButton.style.cssText='border-color:#a14b45;color:#8d302a;';
+          cell.append(deleteButton);
         });
       }
       $('#hn-class-count')?.replaceChildren(document.createTextNode(String(myClasses.length)));
