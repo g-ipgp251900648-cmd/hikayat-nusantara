@@ -111,6 +111,7 @@
     }catch{msg.textContent='Sambungan terganggu. Sila cuba lagi.';}
     finally{submit.disabled=false;}
   });
+  window.addEventListener('hikayat:misi4-uploaded',()=>void loadVideoStatus());
   await Promise.all([load(),loadVideoStatus()]);
   root.append(el('button','↻ Muat Semula Portfolio','hn-learning-refresh'))
     .addEventListener('click',()=>void Promise.all([load(),loadVideoStatus()]));
