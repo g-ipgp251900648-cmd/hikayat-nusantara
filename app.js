@@ -1,5 +1,4 @@
-/* Hikayat Nusantara · Paparan portal awam.
-   Belum ada pengesahan akaun atau pangkalan data pusat: jangan gunakan untuk data murid sebenar. */
+/* Hikayat Nusantara — portal pembelajaran dengan kawalan peranan melalui sesi pelayan. */
 "use strict";
 const views={home:document.getElementById("home-view"),murid:document.getElementById("murid-view"),guru:document.getElementById("guru-view"),admin:document.getElementById("admin-view")};
 const dialog=document.getElementById("detail-dialog");
@@ -9,7 +8,7 @@ const missions=[
  {icon:"📜",name:"Jejak Naskhah Pusaka",time:"10 minit",description:"Murid membaca atau mendengar kisah Misteri Pelita Warisan, menyusun lima peristiwa mengikut urutan dan menjawab tiga soalan pemahaman.",outcome:"Urutan peristiwa dan respons pemahaman."},
  {icon:"🪶",name:"Balai Olah Hikayat",time:"15 minit",description:"Murid memilih watak, latar dan peristiwa, kemudian mengubah suai cerita secara separa berpandu menggunakan sekurang-kurangnya dua ungkapan yang indah serta santun.",outcome:"Draf cerita yang telah diubah suai."},
  {icon:"✒️",name:"Warisan Bahasa",time:"10 minit",description:"Murid menyelesaikan empat cabaran bahasa untuk memilih ungkapan, memperindah ayat dan menyemak kesantunan bahasa.",outcome:"Jawapan empat cabaran bahasa."},
- {icon:"🎭",name:"Persembahan Hikayat",time:"15 minit",description:"Murid merancang permulaan, perkembangan dan pengakhiran cerita, kemudian mempersembahkan karya menerusi rakaman suara atau video.",outcome:"Rakaman suara atau video persembahan."}
+ {icon:"🎭",name:"Persembahan Hikayat",time:"15 minit",description:"Murid merancang dan berlatih mempersembahkan cerita dengan nada serta gaya yang sesuai.",outcome:"Pelan latihan persembahan; rakaman boleh disimpan pada peranti."}
 ];
 let routeRequest=0;
 async function route(){
