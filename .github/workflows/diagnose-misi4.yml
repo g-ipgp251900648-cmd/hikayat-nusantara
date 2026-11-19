@@ -26,6 +26,7 @@ jobs:
               if(entry.isDirectory()) await walk(file);
               else if(/\.(?:tsx?|jsx?)$/.test(entry.name)){
                 const s=await readFile(file,'utf8');
+                if(file.endsWith('misi4Logic.ts')) { const pos=s.indexOf('export interface SubmissionRecord'); const other=s.indexOf('export type SubmissionRecord'); console.log('MODEL',s.slice((pos>=0?pos:other)>=0?(pos>=0?pos:other):0,(pos>=0?pos:other)>=0?(pos>=0?pos:other)+2000:3000)); }
                 if(file.endsWith('SubmissionHallModal.tsx')) {
                   console.log('COMPONENT_BEGIN',file);
                   console.log(s.slice(12500,13800));
