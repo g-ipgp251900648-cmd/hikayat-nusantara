@@ -63,7 +63,7 @@ function magic(bytes,mime){
 }
 async function findSubmission(db,user,id,teacher){
   const sql=teacher?
-    "SELECT s.* FROM hn_misi4_submissions s JOIN hn_classes c ON c.id=s.class_id JOIN hn_users u ON u.id=s.student_id WHERE s.id=$1 AND s.organization_id=$2 AND c.organization_id=$2 AND c.teacher_id=$3 AND u.organization_id=$2":
+    "SELECT s.* FROM hn_misi4_submissions s JOIN hn_class_members cm ON cm.student_id=s.student_id JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=s.student_id WHERE s.id=$1 AND s.organization_id=$2 AND c.organization_id=$2 AND c.teacher_id=$3 AND u.organization_id=$2 AND u.active=true":
     "SELECT * FROM hn_misi4_submissions WHERE id=$1 AND organization_id=$2 AND student_id=$3";
   const r=await db.query(sql,[id,user.organization_id,user.id]);
   return r.rows[0]||null;
@@ -127,8 +127,9 @@ export async function handleMisi4Api(db,user,req,res,pathname){
   if(pathname==='/api/misi4/teacher/submissions'&&method==='GET'&&user.role==='guru'){
     const sql="SELECT s.id,s.student_id,s.class_id,s.mime_type,s.size_bytes,s.status,s.created_at,"+
       "p.display_name AS student_name,p.login_id,c.name AS class_name FROM hn_misi4_submissions s "+
-      "JOIN hn_classes c ON c.id=s.class_id JOIN hn_users p ON p.id=s.student_id "+
-      "WHERE s.organization_id=$1 AND c.organization_id=$1 AND c.teacher_id=$2 AND p.organization_id=$1 "+
+      "JOIN hn_class_members cm ON cm.student_id=s.student_id "+
+      "JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users p ON p.id=s.student_id "+
+      "WHERE s.organization_id=$1 AND c.organization_id=$1 AND c.teacher_id=$2 AND p.organization_id=$1 AND p.active=true "+
       "ORDER BY s.created_at DESC LIMIT 200";
     const r=await db.query(sql,[user.organization_id,user.id]);
     result(res,200,{ok:true,submissions:r.rows});return true;
