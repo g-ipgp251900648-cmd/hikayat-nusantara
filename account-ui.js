@@ -201,13 +201,112 @@
     root.append(table);
   }
 
+  const missionNames=['Jejak Naskhah Pusaka','Balai Olah Hikayat','Warisan Bahasa','Pentas Warisan'];
+  function renderMissionProgress(root,people,records,{admin=false}={}){
+    if(!root)return;
+    root.replaceChildren();
+    const heading=document.createElement('div');heading.className='section-line';
+    const label=document.createElement('div');
+    const title=document.createElement('h2');
+    title.textContent=admin?'Pemantauan Misi Seluruh Organisasi':'Kemajuan Empat Misi Murid';
+    label.append(title);heading.append(label);
+    heading.append(makeButton('↻ Muat Semula Rekod',()=>admin?loadAdmin():loadTeacher()));
+    root.append(heading);
+    const description=document.createElement('p');description.className='hn-admin-intro';
+    description.textContent='Data kemajuan latihan disimpan dalam Neon. Selesai bermaksud latihan portal selesai, BUKAN penilaian PBD atau bukti video sudah dihantar. Misi 4 hanya mencatat pelan latihan, bukan rakaman.';
+    root.append(description);
+    const countByMission=[0,0,0,0];
+    for(let i=1;i<=4;i++){
+      const completed=new Set(records.filter(x=>x.missionId===i&&x.completed).map(x=>x.studentId));
+      countByMission[i-1]=completed.size;
+    }
+    const stats=document.createElement('div');stats.className='stats-grid four';
+    for(let i=0;i<4;i++){
+      const card=document.createElement('div');card.className='stat';
+      const label=document.createElement('span');label.textContent='Misi '+(i+1);
+      const number=document.createElement('strong');
+      number.textContent=countByMission[i]+' / '+people.length;
+      const sub=document.createElement('em');
+      sub.textContent=i===3?'Pelan latihan siap':'Latihan selesai';
+      card.append(label,number,sub);stats.append(card);
+    }
+    root.append(stats);
+    const table=document.createElement('div');table.className='table-wrap';
+    table.innerHTML='<table><thead><tr><th>Murid</th><th>ID</th><th>Kelas</th><th>Misi</th><th>Kemajuan</th><th>Percubaan</th><th>Markah Terakhir</th><th>Dikemas Kini</th></tr></thead><tbody></tbody></table>';
+    const tbody=table.querySelector('tbody');
+    if(!people.length){
+      const row=tbody.insertRow();row.insertCell().colSpan=8;
+      row.cells[0].textContent='Belum ada murid berdaftar dalam skop akaun ini.';
+    }
+    const byStudent=new Map();
+    for(const item of records){
+      if(!byStudent.has(item.studentId))byStudent.set(item.studentId,new Map());
+      const map=byStudent.get(item.studentId);
+      const previous=map.get(item.missionId);
+      if(!previous||new Date(item.updatedAt)>new Date(previous.updatedAt))
+        map.set(item.missionId,item);
+    }
+    for(const person of people){
+      for(let mission=1;mission<=4;mission++){
+        const record=byStudent.get(person.id)?.get(mission);
+        const row=tbody.insertRow();
+        const status=!record?'Belum ada rekod':record.recordType!=='latihan'?'Draf lama':
+          record.completed?(mission===4?'Pelan latihan siap':'Latihan selesai'):'Dalam latihan';
+        const className=person.class_name||person.class_names||record?.className||'—';
+        const score=record?.lastScore!==null&&record?.lastTotal!==null&&record?.lastScore!==undefined&&record?.lastTotal!==undefined
+          ?record.lastScore+' / '+record.lastTotal:'—';
+        const values=[
+          person.display_name,person.login_id,className,
+          mission+' · '+missionNames[mission-1],status,record?.attemptCount??0,
+          score,record?.updatedAt?new Date(record.updatedAt).toLocaleString('ms-MY'):'—'
+        ];
+        for(const val of values){const cell=row.insertCell();cell.textContent=String(val);}
+      }
+    }
+    root.append(table);
+  }
+  function renderAdminProgressReport(studentResult,progressResult){
+    const monitor=$('#admin-misi'),report=$('#admin-laporan');
+    if(!monitor)return;
+    if(!studentResult.ok||!progressResult.ok){
+      monitor.replaceChildren(document.createTextNode('Kemajuan belum dapat dimuat daripada Neon. Cuba muat semula halaman.'));
+      return;
+    }
+    const people=studentResult.data.students;
+    const rows=progressResult.data.progress;
+    renderMissionProgress(monitor,people,rows,{admin:true});
+    if(report){
+      report.replaceChildren();
+      const heading=document.createElement('h2');heading.textContent='Analitik Kemajuan Pembelajaran';
+      const text=document.createElement('p');text.className='hn-admin-intro';
+      text.textContent='Ringkasan kemajuan latihan berdasarkan Neon. Tidak termasuk pentaksiran PBD atau video Misi 4 yang belum diserahkan.';
+      report.append(heading,text);
+      const stats=document.createElement('div');stats.className='stats-grid three';
+      const measures=[
+        ['Murid aktif',people.filter(x=>x.active).length],
+        ['Murid dengan rekod',new Set(rows.map(x=>x.studentId)).size],
+        ['Misi latihan direkodkan',new Set(rows.map(x=>x.studentId+'-'+x.missionId)).size]
+      ];
+      for(const [label,value] of measures){
+        const card=document.createElement('div');card.className='stat';
+        const title=document.createElement('span');title.textContent=label;
+        const number=document.createElement('strong');number.textContent=String(value);
+        card.append(title,number);stats.append(card);
+      }
+      report.append(stats);
+    }
+    const chip=$('#admin-view .system-status-chip');
+    if(chip)chip.textContent='DATA NEON DISAMBUNGKAN';
+  }
+
   async function loadAdmin(){
-    const [summary,teachers,leaders,students,classes]=await Promise.all([request('/api/admin/overview'),request('/api/admin/teachers'),request('/api/admin/leaders'),request('/api/admin/students'),request('/api/admin/classes')]);
+    const [summary,teachers,leaders,students,classes,progress]=await Promise.all([request('/api/admin/overview'),request('/api/admin/teachers'),request('/api/admin/leaders'),request('/api/admin/students'),request('/api/admin/classes'),request('/api/admin/progress')]);
     if(summary.ok) {
-      const values=[summary.data.stats.students,summary.data.stats.teachers,summary.data.stats.classes,'—'];
+      const values=[summary.data.stats.students,summary.data.stats.teachers,summary.data.stats.classes,progress.ok?new Set(progress.data.progress.map(p=>p.studentId+'-'+p.missionId)).size:'—'];
       $('#admin-ringkasan')?.querySelectorAll('.stats-grid.four .stat strong').forEach((el,i)=>{el.textContent=String(values[i]??'—');});
     }
     const root=$('#admin-guru');
+    renderAdminProgressReport(students,progress);
     renderAdminStudents(students);
     renderAdminClasses(classes,teachers);
     renderLeaders(leaders);
@@ -321,26 +420,19 @@
     }
     const checkpoint=await request('/api/teacher/progress');
     const progressArea=$('#guru-pemantauan .chart-panel');
-    if(checkpoint.ok&&progressArea){
-      progressArea.replaceChildren();
-      const tip=document.createElement('p');tip.className='tiny-text';
-      tip.textContent='Hanya rekod checkpoint yang disimpan dan disahkan oleh pelayan dipaparkan. Status draf bukan keputusan PBD.';
-      progressArea.appendChild(tip);
-      const table=document.createElement('div');table.className='table-wrap';
-      table.innerHTML='<table><thead><tr><th>Murid</th><th>Kelas</th><th>Misi</th><th>Status</th><th>Kemas Kini</th></tr></thead><tbody></tbody></table>';
-      const body=table.querySelector('tbody');
-      if(!checkpoint.data.progress.length){
-        const row=body.insertRow(),cell=row.insertCell();
-        cell.colSpan=5;cell.textContent='Belum ada checkpoint yang diselaraskan.';
-      }
-      for(const item of checkpoint.data.progress){
-        const row=body.insertRow();
-        for(const value of [item.display_name,item.class_name,'Misi '+item.mission_id,item.state==='draft'?'Draf':item.state==='verified'?'Disahkan':'Dihantar',new Date(item.updated_at).toLocaleString('ms-MY')]){
-          const cell=row.insertCell();cell.textContent=String(value);
+    if(progressArea){
+      if(checkpoint.ok&&students.ok){
+        renderMissionProgress(progressArea,students.data.students,checkpoint.data.progress);
+        const val=$('#guru-ringkasan')?.querySelectorAll('.stats-grid.four .stat strong');
+        if(val?.length>=4){
+          val[0].textContent=String(overview.ok?overview.data.stats.students:students.data.students.length);
+          val[1].textContent=String(new Set(checkpoint.data.progress.map(p=>p.studentId)).size);
+          val[2].textContent=String(new Set(checkpoint.data.progress.filter(p=>p.completed).map(p=>p.studentId+'-'+p.missionId)).size);
+          val[3].textContent=String(myClasses.length);
         }
-      }
-      progressArea.appendChild(table);
+      }else progressArea.textContent='Kemajuan belum dapat dimuat daripada Neon. Cuba muat semula.';
     }
+    if(checkpoint.ok){const chip=$('#guru-view .system-status-chip');if(chip)chip.textContent='DATA NEON DISAMBUNGKAN';}
     notice($('#guru-pengurusan-murid'),'Akaun murid disimpan pada pangkalan data berpusat. Kata laluan sementara hanya dipaparkan selepas akaun berjaya dicipta.');
     notice($('#guru-pengurusan-kelas'),'Kelas yang dicipta akan disimpan dalam organisasi dan akaun guru ini.');
   }

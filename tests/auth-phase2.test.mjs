@@ -117,6 +117,22 @@ test('teacher can reset forgotten pupil passwords for one class or selected pupi
   assert.match(teacher,/hn-reissue-credentials/);
 });
 
+test('pupil practice synchronizes to Neon for teacher and all Admin dashboards',()=>{
+  const client=src('student-activities.js'),api=src('auth/api.js'),ui=src('account-ui.js');
+  assert.match(client,/\/api\/student\/progress\/.*i\+1/);
+  assert.match(client,/kind:'practice-v1'/);
+  assert.match(client,/Menyemak rekod kemajuan dalam Neon/);
+  assert.match(client,/Tidak/);
+  assert.match(api,/\/api\/admin\/progress/);
+  assert.match(api,/\/api\/teacher\/progress/);
+  assert.match(api,/formatMissionProgress/);
+  assert.match(api,/canAdmin\(user\.role\)/);
+  assert.match(ui,/renderMissionProgress/);
+  assert.match(ui,/renderAdminProgressReport/);
+  assert.match(ui,/bukan penilaian PBD/i);
+  assert.doesNotMatch(client,/body:JSON\.stringify\(\{revision:cloud\.revisions\[i\],checkpoint:state\}\)/);
+});
+
 test('server supports account API and keeps Misi 4 upload disabled',()=>{
   const server=src('server.js');
   assert.match(server,/handleApi\(request, response, pathname\)/);

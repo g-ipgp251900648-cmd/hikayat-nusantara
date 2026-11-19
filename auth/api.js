@@ -79,6 +79,26 @@ async function auditEvent(db,user,action,type,id){
 }
 function uuid(value){return typeof value==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);}
 function cleanName(value){return typeof value==='string'?value.trim():'';}
+function formatMissionProgress(row){
+  const raw=row.checkpoint&&typeof row.checkpoint==='object'&&!Array.isArray(row.checkpoint)
+    ?row.checkpoint:{};
+  const isPractice=raw.kind==='practice-v1';
+  const count=Number(raw.attemptCount);
+  const score=Number(raw.lastScore);
+  const total=Number(raw.lastTotal);
+  const attempts=isPractice&&Number.isSafeInteger(count)&&count>=0?Math.min(count,100000):0;
+  const latestScore=isPractice&&Number.isFinite(score)&&Number.isFinite(total)&&total>0
+    &&score>=0&&score<=total?score:null;
+  const latestTotal=latestScore===null?null:total;
+  return {
+    studentId:row.student_id,loginId:row.login_id,name:row.display_name,
+    classId:row.class_id,className:row.class_name,missionId:row.mission_id,
+    state:row.state,completed:isPractice&&raw.completed===true,
+    attemptCount:attempts,lastScore:latestScore,lastTotal:latestTotal,
+    updatedAt:row.updated_at,recordType:isPractice?'latihan':'draf_lama'
+  };
+}
+
 
 export async function authorizeMissionRequest(request) {
   if(!databaseConfigured())return false;
@@ -230,6 +250,13 @@ export async function handleApi(request,response,pathname) {
         await auditEvent(db,user,'create_bm_leader','user',result.rows[0].id);
         json(response,201,{ok:true,leader:result.rows[0],temporaryPassword:password});return true;
       }
+    }
+    if(pathname==='/api/admin/progress'&&method==='GET'&&canAdmin(user.role)){
+      const result=await db.query(
+        "SELECT u.id AS student_id,u.login_id,u.display_name,c.id AS class_id,c.name AS class_name,mp.mission_id,mp.state,mp.checkpoint,mp.updated_at FROM hn_mission_progress mp JOIN hn_users u ON u.id=mp.student_id JOIN hn_class_members cm ON cm.student_id=u.id JOIN hn_classes c ON c.id=cm.class_id WHERE c.organization_id=$1 AND u.organization_id=$1 AND u.role='murid' ORDER BY c.name,u.display_name,mp.mission_id LIMIT 1200",
+        [user.organization_id]
+      );
+      json(response,200,{ok:true,progress:result.rows.map(formatMissionProgress)});return true;
     }
     if(pathname==='/api/admin/students'&&method==='GET'&&canAdmin(user.role)){
       const r=await db.query(
@@ -574,10 +601,10 @@ export async function handleApi(request,response,pathname) {
     }
     if(pathname==='/api/teacher/progress'&&method==='GET'&&user.role==='guru'){
       const progress=await db.query(
-        "SELECT DISTINCT u.login_id,u.display_name,c.name AS class_name,mp.mission_id,mp.state,mp.updated_at FROM hn_mission_progress mp JOIN hn_class_members cm ON cm.student_id=mp.student_id JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=mp.student_id WHERE c.teacher_id=$1 AND c.organization_id=$2 ORDER BY mp.updated_at DESC LIMIT 200",
+        "SELECT u.id AS student_id,u.login_id,u.display_name,c.id AS class_id,c.name AS class_name,mp.mission_id,mp.state,mp.checkpoint,mp.updated_at FROM hn_mission_progress mp JOIN hn_class_members cm ON cm.student_id=mp.student_id JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=mp.student_id WHERE c.teacher_id=$1 AND c.organization_id=$2 AND u.organization_id=$2 ORDER BY c.name,u.display_name,mp.mission_id LIMIT 1200",
         [user.id,user.organization_id]
       );
-      json(response,200,{ok:true,progress:progress.rows});return true;
+      json(response,200,{ok:true,progress:progress.rows.map(formatMissionProgress)});return true;
     }
     if(pathname==='/api/student/progress'&&method==='GET'&&user.role==='murid'){
       const r=await db.query('SELECT mission_id,checkpoint,state,revision,updated_at FROM hn_mission_progress WHERE student_id=$1 ORDER BY mission_id',[user.id]);
