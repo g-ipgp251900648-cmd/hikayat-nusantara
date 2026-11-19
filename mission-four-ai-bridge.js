@@ -31,7 +31,10 @@
       if(status)status.textContent='Penghantaran belum dapat disahkan; simpan fail ke peranti.';
     }
   }
-  window.openMissionFourAdventure=()=>{
+  window.openMissionFourAdventure=(studentId)=>{
+    if(typeof studentId!=='string'||!/^[0-9a-f]{8}-[0-9a-f-]{27,36}$/i.test(studentId)){
+      console.warn('Misi 4 memerlukan sesi Murid yang disahkan.');return;
+    }
     if(overlay)return;
     overlay=document.createElement('section');
     overlay.id='hn-m4-overlay';
@@ -45,7 +48,7 @@
     button.style.cssText='padding:10px;border-radius:9px;border:1px solid #dfc083;background:#fff1d8;color:#205238;font-weight:bold;cursor:pointer';
     button.addEventListener('click',close);bar.append(button);
     iframe=document.createElement('iframe');
-    iframe.src='/misi4/';
+    iframe.src='/misi4/?profile='+encodeURIComponent(studentId);
     iframe.title='Misi 4 Pentas Warisan — Studio Kamera, Mikrofon dan Persembahan';
     iframe.setAttribute('allow','camera; microphone; fullscreen; autoplay');
     iframe.style.cssText='width:100%;flex:1;min-height:0;border:0;background:#122419';
