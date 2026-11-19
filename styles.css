@@ -801,3 +801,48 @@ button.hn-learning-primary:hover{background:#1d4935;color:#fff}
  #guru-tetapan .hn-settings-grid{grid-template-columns:1fr}
  #guru-tetapan .hn-settings-card{padding:15px}
 }
+
+
+/* Private Pentas Warisan submission inbox for authenticated Guru. */
+#guru-semakan .hn-m4-teacher-toolbar{
+  display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0;
+}
+#guru-semakan .hn-m4-teacher-toolbar input,
+#guru-semakan .hn-m4-teacher-toolbar select{
+  border:1px solid #bacab7;border-radius:9px;background:#fffdf7;
+  padding:11px 12px;min-height:40px;color:#294b37;
+  font-size:13px;flex:1 1 220px;max-width:100%;
+}
+#guru-semakan .hn-m4-teacher-summary{
+  padding:7px 0;color:#42624a;font-size:13px;
+}
+#guru-semakan .hn-m4-teacher-records{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,360px),1fr));
+  align-items:start;gap:16px;margin:13px 0;
+}
+#guru-semakan .hn-m4-submission-card{
+  padding:18px 20px;border:1px solid #e4dac0;background:#fffdf6;
+  border-radius:14px;box-shadow:0 7px 17px #36533d12;min-width:0;
+}
+#guru-semakan .hn-m4-submission-card h3{
+  color:#29513c;font-size:16px;overflow-wrap:anywhere;margin:0 0 10px;
+}
+#guru-semakan .hn-m4-teacher-button{
+  padding:10px 12px;border:1px solid #b6c8b6;background:#eef6ea;
+  color:#25533b;font-size:12px;line-height:1.35;border-radius:9px;
+  cursor:pointer;font-weight:650;max-width:100%;
+}
+#guru-semakan .hn-m4-teacher-button:hover{background:#dcecd9}
+#guru-semakan .hn-m4-teacher-player{
+  display:block;width:100%;max-height:360px;aspect-ratio:16/9;
+  object-fit:contain;background:#101d17;border-radius:10px;margin-top:13px;
+}
+#murid-portfolio .hn-pupil-video-status{
+  margin:22px 0;padding:16px 19px;border:1px solid #e3d9bc;
+  border-radius:14px;background:#fffdf5;
+}
+#murid-portfolio .hn-pupil-video-status h3{color:#2d503c;margin:0 0 9px}
+@media(max-width:680px){
+  #guru-semakan .hn-m4-teacher-records{grid-template-columns:1fr}
+  #guru-semakan .hn-m4-submission-card{padding:13px}
+}

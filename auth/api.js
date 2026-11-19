@@ -1,4 +1,5 @@
 import { database, databaseConfigured, audit } from './db.js';
+import {handleMisi4Api} from './misi4-media.js';
 import { hashPassword, verifyPassword, validLoginId, validPassword, validName, temporaryPassword, uniqueId, sessionToken, tokenHash } from './credentials.js';
 
 const COOKIE_NAME='hn_session';
@@ -122,8 +123,6 @@ export async function authorizeMissionRequest(request) {
 
 export async function handleApi(request,response,pathname) {
   if(!pathname.startsWith('/api/'))return false;
-  // The existing Misi 4 upload endpoints are intentionally disabled until private object storage is ready.
-  if(pathname.startsWith('/api/misi4/'))return false;
   if(!databaseConfigured()) {
     if(pathname==='/api/auth/status'&&request.method==='GET')json(response,200,{configured:false});
     else reject(response,503,'DATABASE_NOT_CONFIGURED');
@@ -212,6 +211,7 @@ export async function handleApi(request,response,pathname) {
     }
     const user=await requireUser(db,request,response);
     if(!user)return true;
+    if(pathname.startsWith('/api/misi4/'))return handleMisi4Api(db,user,request,response,pathname);
 
     if(pathname==='/api/admin/overview'&&method==='GET'){
       if(!canAdmin(user.role)){reject(response,403,'FORBIDDEN');return true;}

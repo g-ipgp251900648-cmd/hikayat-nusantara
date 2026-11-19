@@ -33,6 +33,31 @@
   form.append(submit,msg);section.append(form);
   const list=el('section','','hn-pupil-portfolio-records');section.append(list);
   root.append(section);
+  const videoPanel=el('section','','hn-pupil-video-status');
+  videoPanel.append(el('h3','Status Rakaman Misi 4'));
+  const videoList=el('div');videoPanel.append(videoList);
+  root.append(videoPanel);
+  async function loadVideoStatus(){
+    const r=await api('/api/misi4/state');
+    videoList.replaceChildren();
+    if(!r.ok){
+      videoList.append(el('p','Penghantaran video belum tersedia. Sila simpan rakaman pada peranti sehingga Guru mengesahkan sistem boleh menerima video.','hn-learning-muted'));
+      return;
+    }
+    const items=r.data.submissions||[];
+    if(!items.length){
+      videoList.append(el('p','Belum ada rakaman Misi 4 yang berjaya dihantar kepada Guru.','hn-learning-muted'));
+      return;
+    }
+    for(const item of items.slice(0,10)){
+      const label={ 'Telah Dihantar':'Menunggu Semakan Guru',
+        'Disemak Guru':'Telah Disemak Guru',
+        'Perlu Penambahbaikan':'Perlu Penambahbaikan' }[item.status]||item.status;
+      const card=el('p','Rakaman '+new Date(item.createdAt).toLocaleString('ms-MY')+
+        ' · '+label,'hn-learning-muted');
+      videoList.append(card);
+    }
+  }
   async function load(){
     const r=await api('/api/student/learning');
     if(!r.ok){list.replaceChildren(el('p','Rekod PBD dan portfolio tidak dapat dipaparkan. Cuba lagi selepas perkhidmatan dikemas kini.'));return;}
@@ -86,7 +111,7 @@
     }catch{msg.textContent='Sambungan terganggu. Sila cuba lagi.';}
     finally{submit.disabled=false;}
   });
-  await load();
+  await Promise.all([load(),loadVideoStatus()]);
   root.append(el('button','↻ Muat Semula Portfolio','hn-learning-refresh'))
-    .addEventListener('click',()=>void load());
+    .addEventListener('click',()=>void Promise.all([load(),loadVideoStatus()]));
 })();

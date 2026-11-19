@@ -776,6 +776,24 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     for(const action of ['update_own_teacher_profile','update_own_teacher_settings','logout_other_teacher_sessions']){
       assert.ok(teacherSettingsAudit.rows.some(x=>x.action===action),action);
     }
+    // Misi 4 must fail closed when no private storage is configured:
+    // never issue a fake uploaded receipt, even for authenticated pupils.
+    const videoHealth=await api('/api/misi4/health',{cookie:testStudent.cookie});
+    assert.equal(videoHealth.status,200);
+    assert.equal(videoHealth.data.storageConfigured,false);
+    assert.equal(videoHealth.data.maxUploadBytes,40*1024*1024);
+    const noSessionVideo=await api('/api/misi4/state');
+    assert.equal(noSessionVideo.status,401);
+    const videoUnavailable=await api('/api/misi4/submit',{
+      method:'POST',cookie:testStudent.cookie,body:{fake:'video data'}
+    });
+    assert.equal(videoUnavailable.status,503);
+    assert.equal(videoUnavailable.data.error,'VIDEO_STORAGE_NOT_CONFIGURED');
+    assert.equal((await api('/api/misi4/teacher/submissions',{cookie:a.cookie})).status,503);
+    const noFakeVideo=await pool.query(
+      'SELECT count(*)::int AS count FROM hn_misi4_submissions WHERE student_id=$1',[testPupil.id]);
+    assert.equal(noFakeVideo.rows[0].count,0);
+
     // A separate school/organization admin cannot see School A teachers.
     const otherOrg=(await pool.query(
       'INSERT INTO hn_organizations(name) VALUES($1) RETURNING id',['Sekolah Ujian B']

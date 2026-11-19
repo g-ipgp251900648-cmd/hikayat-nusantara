@@ -415,6 +415,20 @@
     ({pbd:renderPbd,analysis:renderAnalysis,feedback:renderFeedback,
       portfolio:renderPortfolio,reports:renderReports})[key]?.();
   }
+  // Opens the existing manual PBD or feedback form from a verified video row.
+  window.hnGoToTeacherMissionFour=async(studentId,kind='pbd')=>{
+    const key=kind==='feedback'?'feedback':'pbd';
+    if(!current)await loadData();
+    const pupil=current?.students?.find(s=>s.id===studentId&&s.active);
+    if(!pupil){alert('Murid tidak lagi berada dalam kelas yang diurus Guru ini.');return;}
+    selected[key].classId=pupil.class_id;
+    selected[key].studentId=pupil.id;
+    selected[key].missionId=4;
+    const menu=document.querySelector('#guru-view [data-teacher-menu="guru-'+
+      (key==='pbd'?'pbd':'maklum-balas')+'"]');
+    if(menu)menu.click();
+    render(key);
+  };
   async function loadData(){
     if(loading)return;loading=true;
     const targets=Object.values(pages).filter(Boolean);
