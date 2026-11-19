@@ -187,6 +187,42 @@ test('pupil practice synchronizes to Neon for teacher and all Admin dashboards',
   assert.doesNotMatch(client,/body:JSON\.stringify\(\{revision:cloud\.revisions\[i\],checkpoint:state\}\)/);
 });
 
+test('teacher five connected learning modules are active, private and evidence-based',()=>{
+  const page=src('index.html'),teacher=src('teacher-dashboard.js'),ui=src('teacher-learning-ui.js');
+  const pupil=src('student-portfolio-ui.js'),api=src('auth/api.js'),schema=src('auth/schema.sql');
+  const build=src('build.mjs'),server=src('server.js'),pkg=src('package.json');
+  for(const id of ['guru-pbd','guru-analisis','guru-maklum-balas','guru-portfolio','guru-laporan']){
+    assert.match(teacher,new RegExp(id));
+  }
+  for(const filename of ['teacher-learning-ui.js','student-portfolio-ui.js']){
+    assert.match(page,new RegExp('src="'+filename.replace('.','\\.')+'"'));
+    assert.ok(build.includes("'"+filename+"'"));
+    assert.ok(server.includes('"/'+filename+'"'));
+    assert.ok(pkg.includes('node --check '+filename));
+  }
+  for(const path of ['/api/teacher/learning','/api/teacher/pbd',
+    '/api/teacher/feedback','/api/teacher/interventions',
+    '/api/teacher/portfolio/review','/api/student/learning','/api/student/portfolio']){
+    assert.ok(api.includes(path));
+  }
+  for(const table of ['hn_pbd_assessments','hn_pbd_assessment_history',
+    'hn_teacher_feedback','hn_portfolio_entries','hn_teacher_interventions']){
+    assert.ok(schema.includes('CREATE TABLE IF NOT EXISTS '+table));
+  }
+  assert.match(ui,/Sahkan Tahap Penguasaan/);
+  assert.match(ui,/pertimbangan profesional/i);
+  assert.match(ui,/Eksport CSV \(Excel\)/);
+  assert.match(ui,/Cetak \/ Simpan PDF/);
+  assert.match(ui,/Rancang Intervensi/);
+  assert.match(ui,/Maklum Balas Guru/);
+  assert.match(pupil,/Hantar Karya Bertulis/);
+  assert.match(pupil,/window\.hnGetSession/);
+  assert.match(ui,/window\.hnGetSession/);
+  assert.match(ui,/Object\.values\(pages\)/);
+  assert.doesNotMatch(ui,/const tp\s*=\s*.*lastScore/);
+  assert.doesNotMatch(pupil,/localStorage\.getItem.*writtenStory/);
+});
+
 test('server supports account API and keeps Misi 4 upload disabled',()=>{
   const server=src('server.js');
   assert.match(server,/handleApi\(request, response, pathname\)/);
