@@ -132,7 +132,7 @@
     evidencePanel.append(el('p','Status latihan: '+(done(p)?'Selesai':p?'Belum selesai':'Belum ada rekod')+
       ' · '+(p?.attemptCount||0)+' percubaan · Markah terakhir: '+
       (p?.lastScore!==null&&p?.lastScore!==undefined?p.lastScore+' / '+p.lastTotal:'Belum ada markah')));
-    if(!recent.length)empty(evidencePanel,'Belum ada karya bertulis dihantar untuk misi ini.');
+    if(!recent.length)empty(evidencePanel,'Tiada evidens tambahan bertulis. Semak kemajuan misi dan rakaman Misi 4 jika berkaitan.');
     else for(const item of recent.slice(0,3)){
       evidencePanel.append(el('strong',item.title));
       const text=el('p',item.content,'hn-learning-evidence');evidencePanel.append(text);
@@ -356,14 +356,14 @@
   }
   function renderPortfolio(){
     const root=pages.portfolio;
-    intro(root,'Portfolio Digital','Karya bertulis serta rakaman video Misi 4 yang dihantar oleh Murid.');
+    intro(root,'Portfolio Digital','Semak rakaman Misi 4 dan rekod portfolio terdahulu. Murid kini menerima maklum balas melalui menu Maklum Balas Guru.');
     const x=filters(root,'portfolio',{mission:false});
     if(!x.studentId){empty(root,'Tiada murid aktif dalam kelas ini.');return;}
     void renderMisi4Videos(root,x.studentId);
     const records=current.learning.portfolio.filter(r=>same(r.student_id,x.studentId));
-    const count=el('p',records.length+' karya bertulis direkodkan untuk murid ini.','hn-learning-muted');
+    const count=el('p',records.length+' rekod portfolio terdahulu bagi murid ini.','hn-learning-muted');
     root.append(count);
-    if(!records.length){empty(root,'Belum ada karya dihantar. Murid boleh membuka Portfolio Pengembara untuk menghantar teks.');return;}
+    if(!records.length){empty(root,'Belum ada rekod portfolio terdahulu. Semak rakaman Misi 4 dan Maklum Balas Guru.');return;}
     for(const item of records){
       const card=el('article','','hn-learning-panel');
       card.append(el('h3',item.title));
@@ -413,7 +413,7 @@
       ['Nama Murid','name'],['ID Murid','id'],['Kelas','cls'],
       ['Misi','mission'],['Status Latihan','status'],['Percubaan','attempts'],
       ['Markah Latihan Terakhir','score'],['TP Disahkan Guru','tp'],
-      ['Maklum Balas Diterbitkan','feedback'],['Karya Bertulis','portfolio'],
+      ['Maklum Balas Diterbitkan','feedback'],['Portfolio Lama','portfolio'],
       ['Intervensi','intervention']
     ];
     return '\uFEFF'+[columns.map(x=>x[0]),...rows.map(r=>columns.map(x=>r[x[1]]))]
