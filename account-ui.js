@@ -344,10 +344,154 @@
     notice($('#guru-pengurusan-murid'),'Akaun murid disimpan pada pangkalan data berpusat. Kata laluan sementara hanya dipaparkan selepas akaun berjaya dicipta.');
     notice($('#guru-pengurusan-kelas'),'Kelas yang dicipta akan disimpan dalam organisasi dan akaun guru ini.');
   }
+  // Teacher-only, private CSV import. Names never enter the public GitHub repo.
+  function readRosterCsv(source){
+    const input=source.replace(/^\uFEFF/,'');
+    const rows=[];let row=[],cell='',quoted=false;
+    for(let i=0;i<input.length;i++){
+      const c=input[i];
+      if(quoted){
+        if(c==='"'&&input[i+1]==='"'){cell+='"';i++;}
+        else if(c==='"'){quoted=false;}
+        else cell+=c;
+      } else if(c==='"'&&cell===''){quoted=true;}
+      else if(c===','){row.push(cell);cell='';}
+      else if(c==='\n'){row.push(cell.replace(/\r$/,''));rows.push(row);row=[];cell='';}
+      else cell+=c;
+    }
+    if(quoted)throw Error('Tanda petik dalam fail CSV tidak lengkap.');
+    if(cell!==''||row.length){row.push(cell.replace(/\r$/,''));rows.push(row);}
+    const lines=rows.filter(x=>x.some(v=>v.trim()));
+    if(!lines.length)throw Error('Fail CSV kosong.');
+    const headers=lines.shift().map(x=>x.trim().toLowerCase());
+    if(headers.length!==2||headers[0]!=='login_id'||headers[1]!=='name'){
+      throw Error('Format CSV salah. Lajur pertama mesti login_id dan lajur kedua name.');
+    }
+    if(lines.length<1||lines.length>50)throw Error('Hanya 1 hingga 50 murid boleh diimport sekali gus.');
+    const students=lines.map((values,i)=>{
+      if(values.length!==2)throw Error('Lajur baris '+(i+2)+' tidak tepat.');
+      const loginId=values[0].trim().toUpperCase(),name=values[1].trim();
+      if(!/^[A-Z0-9-]{5,32}$/.test(loginId)||name.length<2||name.length>100){
+        throw Error('ID atau nama tidak sah pada baris '+(i+2)+'.');
+      }
+      return {loginId,name};
+    });
+    if(new Set(students.map(x=>x.loginId)).size!==students.length){
+      throw Error('Terdapat ID murid yang berulang dalam fail CSV.');
+    }
+    return students;
+  }
+  function downloadCredentialsCsv(rows){
+    const wrap=value=>{
+      const str=String(value??'');
+      const safeValue=/^[=+\-@\t\r]/.test(str)?"'"+str:str;
+      return '"'+safeValue.replace(/"/g,'""')+'"';
+    };
+    const table=[['id_murid','nama_penuh','kata_laluan_sementara'],
+      ...rows.map(r=>[r.loginId,r.name,r.temporaryPassword])];
+    const csv='\uFEFF'+table.map(r=>r.map(wrap).join(',')).join('\r\n');
+    const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+    const link=document.createElement('a');link.href=url;
+    link.download='Kelayakan_Log_Masuk_Murid_5_Dinamik.csv';
+    document.body.append(link);link.click();link.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),15000);
+  }
+  function openBulkEnrollment(){
+    if(!myClasses.length){alert('Sila cipta kelas 5 Dinamik terlebih dahulu.');return;}
+    const box=document.createElement('dialog');box.className='hn-teacher-dialog';
+    box.style.maxWidth='min(94vw,840px)';
+    box.setAttribute('aria-label','Daftar Murid Secara Pukal');
+    const heading=document.createElement('h2');heading.textContent='Daftar Murid Secara Pukal';
+    const info=document.createElement('p');
+    info.textContent='Pilih kelas, muat naik CSV (login_id,name), semak semua nama dan sahkan pendaftaran. Setiap murid menerima kata laluan sementara unik.';
+    const classLabel=document.createElement('label');classLabel.textContent='Kelas';
+    const classSelect=document.createElement('select');
+    for(const c of myClasses){classSelect.add(new Option(c.name+' · '+c.school_year,c.id));}
+    const preferred=myClasses.find(c=>c.name.trim().toLocaleLowerCase('ms-MY')==='5 dinamik');
+    if(preferred)classSelect.value=preferred.id;
+    classSelect.style.cssText='display:block;width:100%;padding:10px;margin:7px 0 12px';
+    classLabel.append(classSelect);
+    const fileLabel=document.createElement('label');fileLabel.textContent='Fail CSV Senarai Murid';
+    const fileInput=document.createElement('input');fileInput.type='file';fileInput.accept='.csv,text/csv';
+    fileInput.style.cssText='display:block;width:100%;margin:7px 0 12px';
+    fileLabel.append(fileInput);
+    const note=document.createElement('p');note.setAttribute('role','status');
+    note.textContent='Pilih fail CSV untuk menyemak senarai sebelum mengimport.';
+    const preview=document.createElement('div');preview.className='table-wrap';
+    preview.style.cssText='max-height:280px;overflow:auto;margin:10px 0';
+    const toolbar=document.createElement('div');toolbar.style.cssText='display:flex;flex-wrap:wrap;gap:8px';
+    const submit=document.createElement('button');submit.type='button';submit.textContent='Daftar Semua Murid';submit.disabled=true;
+    const cancel=document.createElement('button');cancel.type='button';cancel.textContent='Tutup';
+    const save=document.createElement('button');save.type='button';save.textContent='Muat Turun Senarai ID & Kata Laluan';
+    save.hidden=true;
+    toolbar.append(submit,save,cancel);
+    box.append(heading,info,classLabel,fileLabel,note,preview,toolbar);
+    document.body.append(box);
+    let roster=[],created=[];
+    fileInput.addEventListener('change',async()=>{
+      roster=[];submit.disabled=true;preview.replaceChildren();
+      const file=fileInput.files?.[0];
+      if(!file)return;
+      if(file.size>30000){note.textContent='Fail terlalu besar (maksimum 30 KB).';return;}
+      try {
+        roster=readRosterCsv(await file.text());
+        const t=document.createElement('table');
+        t.innerHTML='<thead><tr><th>ID Murid</th><th>Nama Murid</th></tr></thead><tbody></tbody>';
+        const tbody=t.querySelector('tbody');
+        for(const person of roster){
+          const tr=tbody.insertRow();
+          tr.insertCell().textContent=person.loginId;
+          tr.insertCell().textContent=person.name;
+        }
+        preview.append(t);
+        note.textContent='Semakan: '+roster.length+' nama sah. Periksa kelas dan ID sebelum menekan Daftar Semua Murid.';
+        submit.disabled=false;
+      }catch(error){note.textContent=String(error.message||'Fail CSV tidak sah.');}
+    });
+    submit.addEventListener('click',async()=>{
+      if(!roster.length)return;
+      const cls=myClasses.find(c=>c.id===classSelect.value);
+      if(!cls)return;
+      if(!confirm('Daftar '+roster.length+' akaun Murid ke kelas '+cls.name+
+        '? ID akan dikekalkan, kata laluan unik dijana sekali sahaja.'))return;
+      submit.disabled=true;fileInput.disabled=true;classSelect.disabled=true;
+      note.textContent='Sedang mendaftarkan '+roster.length+' murid dengan selamat...';
+      try{
+        const result=await request('/api/teacher/students/bulk',{
+          method:'POST',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({classId:cls.id,students:roster})
+        });
+        if(!result.ok){
+          note.textContent=result.data?.error==='LOGIN_ID_CONFLICT'
+            ? 'ID Murid sudah digunakan dalam sistem. Tiada akaun baharu didaftarkan. Semak ID dalam CSV.'
+            : 'Import gagal: '+String(result.data?.error||'Sila cuba semula.');
+          submit.disabled=false;fileInput.disabled=false;classSelect.disabled=false;
+          return;
+        }
+        created=result.data.credentials;
+        note.textContent='Berjaya! '+result.data.created+' akaun Murid telah didaftarkan dalam '+cls.name+
+          '. MUAT TURUN senarai kata laluan sekarang; ia tidak dapat dibaca semula daripada sistem.';
+        save.hidden=false;fileInput.disabled=true;classSelect.disabled=true;
+        await loadTeacher();
+      }catch{
+        note.textContent='Sambungan gagal; semak senarai murid sebelum cuba lagi untuk mengelakkan ID berulang.';
+        fileInput.disabled=false;classSelect.disabled=false;
+      }
+    });
+    save.addEventListener('click',()=>{if(created.length)downloadCredentialsCsv(created);});
+    cancel.addEventListener('click',()=>{
+      if(created.length&&!confirm('Sudah simpan senarai ID dan kata laluan sementara? Setelah ditutup, kata laluan tidak boleh dipaparkan lagi.'))return;
+      box.close();
+    });
+    box.addEventListener('close',()=>{created=[];roster=[];box.remove();},{once:true});
+    box.showModal();
+  }
+
   function connectTeacher(){
-    const addClass=$('#hn-add-class'),addStudent=$('#hn-add-student');
+    const addClass=$('#hn-add-class'),addStudent=$('#hn-add-student'),bulk=$('#hn-import-students');
     if(!addClass||!addStudent)return;
     addClass.disabled=false;addStudent.disabled=false;
+    if(bulk){bulk.disabled=false;bulk.addEventListener('click',openBulkEnrollment);}
     addClass.addEventListener('click',()=>dialog('Cipta Kelas',[
       {key:'name',label:'Nama Kelas (contoh: 5 Amanah)'},
       {key:'schoolYear',label:'Sesi Akademik',type:'number',value:String(new Date().getFullYear())}
