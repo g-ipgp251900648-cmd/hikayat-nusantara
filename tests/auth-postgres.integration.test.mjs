@@ -795,7 +795,7 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const teacherVideoInbox=await api('/api/teacher/misi4/submissions',{cookie:a.cookie});
     assert.equal(teacherVideoInbox.status,200);
     assert.deepEqual(teacherVideoInbox.data.submissions,[]);
-    assert.deepEqual((await api('/api/teacher/misi4/submissions',{cookie:b.cookie}))
+    assert.deepEqual((await api('/api/teacher/misi4/submissions',{cookie:unassignedTeacher.cookie}))
       .data.submissions,[]);
     assert.equal((await api('/api/teacher/misi4/submissions',{cookie:testStudent.cookie})).status,403);
     const unavailableUpload=await api('/api/misi4/submissions',{method:'POST',cookie:testStudent.cookie,
