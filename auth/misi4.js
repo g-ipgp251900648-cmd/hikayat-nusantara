@@ -202,6 +202,7 @@ export async function handleMisi4Api(req,res,path,db,user,audit){
     try{
       data=await readMultipart(req);
       const {fields,files}=data;
+      if(files.supportingPdf)throw Object.assign(Error('PDF_ATTACHMENT_NOT_YET_SUPPORTED'),{status:400});
       const story=JSON.parse(fields.storyPlan||'null');
       const checklist=JSON.parse(fields.selfChecklist||'null');
       const duration=Number(fields.durationSeconds);
