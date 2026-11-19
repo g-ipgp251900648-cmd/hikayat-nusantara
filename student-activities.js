@@ -100,6 +100,130 @@
     return base;
   }
   const state=load();
+
+  // Only bounded attempt counts / completion are synced; no story drafts,
+  // journal text, audio, video or student-entered personal information is sent.
+  const cloud={
+    ready:false,busy:false,pending:false,revisions:[0,0,0,0],
+    existing:[false,false,false,false],signatures:[null,null,null,null],timer:null
+  };
+  const summaryFor=i=>{
+    const entry=state.attempts[i];
+    const last=entry.history.at(-1);
+    return {
+      kind:'practice-v1',completed:state.completed[i]===true,
+      attemptCount:Math.max(0,Math.min(100000,entry.count)),
+      lastScore:last&&Number.isFinite(last.score)?last.score:null,
+      lastTotal:last&&Number.isFinite(last.total)?last.total:null
+    };
+  };
+  const statusText=text=>{
+    const node=document.getElementById('quest-cloud-status');
+    if(node)node.textContent=text;
+  };
+  function queueCloud(){
+    if(!cloud.ready)return;
+    cloud.pending=true;
+    if(cloud.timer)clearTimeout(cloud.timer);
+    cloud.timer=setTimeout(()=>{cloud.timer=null;void flushCloud();},1000);
+  }
+  async function flushCloud(){
+    if(!cloud.ready||cloud.busy)return;
+    cloud.busy=true;cloud.pending=false;
+    try{
+      for(let i=0;i<4;i++){
+        const summary=summaryFor(i);
+        const signature=JSON.stringify(summary);
+        if(signature===cloud.signatures[i])continue;
+        if(!summary.completed&&summary.attemptCount===0&&!cloud.existing[i])continue;
+        const result=await window.hnApiRequest('/api/student/progress/'+(i+1),{
+          method:'PUT',headers:{'Content-Type':'application/json'},
+          body:JSON.stringify({revision:cloud.revisions[i],checkpoint:summary})
+        });
+        if(!result.ok){
+          if(result.status===409){
+            const refreshed=await window.hnApiRequest('/api/student/progress');
+            if(refreshed.ok){
+              for(const row of refreshed.data.progress||[]){
+                if(row.mission_id>=1&&row.mission_id<=4){
+                  const j=row.mission_id-1;
+                  cloud.revisions[j]=row.revision;
+                  cloud.existing[j]=true;
+                  const remote=row.checkpoint;
+                  if(remote?.kind==='practice-v1'&&
+                     JSON.stringify(remote)===JSON.stringify(summaryFor(j)))
+                    cloud.signatures[j]=JSON.stringify(summaryFor(j));
+                }
+              }
+              statusText('Versi pelayan berubah. Cuba segerakkan semula.');
+              cloud.pending=true;
+            }
+          }else statusText('Kemajuan latihan belum dapat diselaraskan. Simpanan peranti masih ada.');
+          return;
+        }
+        cloud.revisions[i]=result.data.revision;
+        cloud.existing[i]=true;
+        cloud.signatures[i]=signature;
+        if(JSON.stringify(summaryFor(i))!==signature)cloud.pending=true;
+      }
+      statusText('✓ Rekod latihan diselaraskan ke Neon untuk pemantauan Guru dan Admin. Bukan markah PBD.');
+    }catch{
+      statusText('Tiada sambungan. Kemajuan setempat kekal, cuba segerakkan semula apabila talian pulih.');
+    }finally{
+      cloud.busy=false;
+      if(cloud.pending)queueCloud();
+    }
+  }
+  async function initializeCloud(){
+    statusText('Menyemak rekod kemajuan dalam Neon...');
+    try{
+      const result=await window.hnApiRequest('/api/student/progress');
+      if(!result.ok)throw Error('Progress endpoint unavailable');
+      let restored=false;
+      for(const row of result.data.progress||[]){
+        if(!Number.isInteger(row.mission_id)||row.mission_id<1||row.mission_id>4)continue;
+        const i=row.mission_id-1;
+        cloud.revisions[i]=row.revision;
+        cloud.existing[i]=true;
+        const remote=row.checkpoint;
+        if(remote?.kind!=='practice-v1')continue;
+        const oldCount=state.attempts[i].count;
+        const count=Number(remote.attemptCount);
+        if(remote.completed===true&&!state.completed[i]){
+          state.completed[i]=true;restored=true;
+        }
+        if(Number.isSafeInteger(count)&&count>oldCount&&count<=100000){
+          state.attempts[i].count=count;
+          const score=Number(remote.lastScore),total=Number(remote.lastTotal);
+          if(remote.lastScore!==null&&remote.lastTotal!==null&&
+             Number.isFinite(score)&&Number.isFinite(total)&&total>0&&score>=0&&score<=total){
+            state.attempts[i].history=[{
+              number:count,score,total,percent:Math.round(score/total*100),
+              success:remote.completed===true,at:String(row.updated_at||new Date().toISOString())
+            }];
+          }
+          restored=true;
+        }
+        if(JSON.stringify(summaryFor(i))===JSON.stringify(remote)){
+          cloud.signatures[i]=JSON.stringify(summaryFor(i));
+        }
+      }
+      cloud.ready=true;
+      if(restored){
+        try{localStorage.setItem(STORAGE_KEY,JSON.stringify(state));}catch{}
+        updateProgress();
+        window.dispatchEvent(new Event('hikayat:attempt'));
+      }
+      statusText('✓ Sambungan Neon aktif. Kemajuan latihan boleh dipantau Guru dan Admin.');
+      queueCloud();
+    }catch{
+      // Retry on focus or reconnect without blocking offline practice.
+      statusText('Sambungan Neon belum tersedia. Latihan kekal pada peranti sehingga penyelarasan berjaya.');
+    }
+  }
+  window.addEventListener('online',()=>cloud.ready?queueCloud():void initializeCloud());
+  window.addEventListener('focus',()=>cloud.ready?queueCloud():void initializeCloud());
+
   window.getStudentAttemptStats=()=>state.attempts.map(({count,history},i)=>({mission:i+1,completed:state.completed[i],count,history:history.map(x=>({...x}))}));
   let activeMission=-1;
   let feedback="";
@@ -107,6 +231,7 @@
   function save(){
     try{
       localStorage.setItem(STORAGE_KEY,JSON.stringify(state));
+      queueCloud();
       return true;
     }catch(e){
       console.warn("Storan peranti tidak tersedia. Data hanya kekal sepanjang paparan ini.",e);
@@ -141,7 +266,9 @@
       <button type="button" id="quest-continue">▶ Mula Misi 1</button>
       <button type="button" id="quest-reset">↺ Tetapkan semula latihan</button>
     </div>
-    <p class="quest-privacy">Latihan ini hanya disimpan pada pelayar/peranti yang digunakan (jika storan tersedia). Tiada jawapan dihantar kepada guru. Jangan tulis maklumat peribadi.</p>`;
+    <p class="quest-privacy">Jawapan dan draf kekal pada peranti ini. Hanya ringkasan kemajuan latihan diselaraskan ke Neon untuk Guru dan Admin; bukan pentaksiran rasmi. Jangan tulis maklumat peribadi.</p>
+    <p id="quest-cloud-status" class="quest-privacy" role="status">Menyambungkan kemajuan ke Neon...</p>
+    <button type="button" id="quest-sync-now">↻ Segerakkan Kemajuan</button>`;
   const map=document.getElementById("desa-hikayat-map");
   if(map)map.before(hud);
 
@@ -584,5 +711,9 @@
     window.dispatchEvent(new Event("hikayat:reset"));
   });
   helper.querySelector("#quest-helper-close")?.addEventListener("click",()=>helper.hidden=true);
+  document.getElementById('quest-sync-now')?.addEventListener('click',()=>{
+    if(cloud.ready)queueCloud();else void initializeCloud();
+  });
   updateProgress();
+  void initializeCloud();
 })();
