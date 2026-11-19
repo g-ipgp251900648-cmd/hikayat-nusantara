@@ -231,6 +231,111 @@ export async function handleApi(request,response,pathname) {
         json(response,201,{ok:true,leader:result.rows[0],temporaryPassword:password});return true;
       }
     }
+    if(pathname==='/api/admin/students'&&method==='GET'&&canAdmin(user.role)){
+      const r=await db.query(
+        "SELECT u.id,u.login_id,u.display_name,u.active,u.created_at,COALESCE(string_agg(DISTINCT c.name,', ' ORDER BY c.name),'Tiada kelas') AS class_names,(SELECT count(*)::int FROM hn_mission_progress mp WHERE mp.student_id=u.id) AS progress_count FROM hn_users u LEFT JOIN hn_class_members cm ON cm.student_id=u.id LEFT JOIN hn_classes c ON c.id=cm.class_id AND c.organization_id=u.organization_id WHERE u.organization_id=$1 AND u.role='murid' GROUP BY u.id ORDER BY u.created_at DESC LIMIT 400",
+        [user.organization_id]
+      );
+      json(response,200,{ok:true,students:r.rows});return true;
+    }
+    if(pathname==='/api/admin/classes'&&method==='GET'&&canAdmin(user.role)){
+      const r=await db.query(
+        "SELECT c.id,c.name,c.school_year,c.teacher_id,u.display_name AS teacher_name,count(cm.student_id)::int AS students FROM hn_classes c JOIN hn_users u ON u.id=c.teacher_id LEFT JOIN hn_class_members cm ON cm.class_id=c.id WHERE c.organization_id=$1 GROUP BY c.id,u.display_name ORDER BY c.created_at DESC LIMIT 400",
+        [user.organization_id]
+      );
+      json(response,200,{ok:true,classes:r.rows});return true;
+    }
+    if(pathname==='/api/admin/users/status'&&method==='POST'&&canAdmin(user.role)){
+      const body=await readBody(request);
+      if(!uuid(body.userId)||typeof body.active!=='boolean'){
+        reject(response,400,'INVALID_ACCOUNT_STATUS');return true;
+      }
+      const client=await db.connect();
+      try {
+        await client.query('BEGIN');
+        const target=await client.query(
+          "SELECT id,role,active FROM hn_users WHERE id=$1 AND organization_id=$2 AND role IN ('guru','murid') FOR UPDATE",
+          [body.userId,user.organization_id]
+        );
+        if(!target.rows.length){
+          await client.query('ROLLBACK');reject(response,404,'ACCOUNT_NOT_FOUND');return true;
+        }
+        if(target.rows[0].active!==body.active){
+          await client.query('UPDATE hn_users SET active=$1 WHERE id=$2',[body.active,body.userId]);
+          // End all browser sessions immediately when account access is changed.
+          await client.query('DELETE FROM hn_sessions WHERE user_id=$1',[body.userId]);
+          await auditEvent(client,user,body.active?'reactivate_account':'deactivate_account','user',body.userId);
+        }
+        await client.query('COMMIT');
+        json(response,200,{ok:true,active:body.active});return true;
+      }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
+      finally{client.release();}
+    }
+    if(pathname==='/api/admin/users/delete'&&method==='POST'&&canAdmin(user.role)){
+      const body=await readBody(request);
+      if(!uuid(body.userId)||!validLoginId(body.confirmationId)){
+        reject(response,400,'INVALID_DELETE_CONFIRMATION');return true;
+      }
+      const client=await db.connect();
+      try {
+        await client.query('BEGIN');
+        const r=await client.query(
+          "SELECT id,login_id,role,active FROM hn_users WHERE id=$1 AND organization_id=$2 AND role IN ('guru','murid') FOR UPDATE",
+          [body.userId,user.organization_id]
+        );
+        const target=r.rows[0];
+        if(!target){await client.query('ROLLBACK');reject(response,404,'ACCOUNT_NOT_FOUND');return true;}
+        if(target.active){await client.query('ROLLBACK');reject(response,409,'DEACTIVATE_ACCOUNT_FIRST');return true;}
+        if(body.confirmationId!==target.login_id){
+          await client.query('ROLLBACK');reject(response,400,'INVALID_DELETE_CONFIRMATION');return true;
+        }
+        if(target.role==='guru'){
+          const classes=await client.query('SELECT count(*)::int AS count FROM hn_classes WHERE teacher_id=$1',[target.id]);
+          if(classes.rows[0].count>0){
+            await client.query('ROLLBACK');reject(response,409,'TRANSFER_TEACHER_CLASSES_FIRST');return true;
+          }
+        }
+        // Student-linked memberships, drafts and sessions cascade on deletion.
+        // Historical audit entries are retained with NULL actor_id (schema migration).
+        await client.query('DELETE FROM hn_users WHERE id=$1',[target.id]);
+        await auditEvent(client,user,'permanently_delete_'+target.role,'user',target.id);
+        await client.query('COMMIT');
+        json(response,200,{ok:true,deleted:true});return true;
+      }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
+      finally{client.release();}
+    }
+    if(pathname==='/api/admin/classes/transfer'&&method==='POST'&&canAdmin(user.role)){
+      const body=await readBody(request);
+      if(!uuid(body.classId)||!uuid(body.teacherId)){
+        reject(response,400,'INVALID_CLASS_TRANSFER');return true;
+      }
+      const client=await db.connect();
+      try {
+        await client.query('BEGIN');
+        const cls=await client.query('SELECT id,teacher_id FROM hn_classes WHERE id=$1 AND organization_id=$2 FOR UPDATE',
+          [body.classId,user.organization_id]);
+        const teacher=await client.query(
+          "SELECT id FROM hn_users WHERE id=$1 AND organization_id=$2 AND role='guru' AND active=true",
+          [body.teacherId,user.organization_id]
+        );
+        if(!cls.rows.length||!teacher.rows.length){
+          await client.query('ROLLBACK');reject(response,404,'CLASS_OR_TEACHER_NOT_FOUND');return true;
+        }
+        if(cls.rows[0].teacher_id!==body.teacherId){
+          try{await client.query('UPDATE hn_classes SET teacher_id=$1 WHERE id=$2',[body.teacherId,body.classId]);}
+          catch(error){
+            if(error?.code==='23505'){
+              await client.query('ROLLBACK');reject(response,409,'CLASS_NAME_CONFLICT');return true;
+            }
+            throw error;
+          }
+          await auditEvent(client,user,'transfer_class','class',body.classId);
+        }
+        await client.query('COMMIT');
+        json(response,200,{ok:true});return true;
+      }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
+      finally{client.release();}
+    }
     if(pathname==='/api/teacher/classes'&&user.role==='guru'){
       if(method==='GET'){
         const r=await db.query("SELECT c.id,c.name,c.school_year,count(cm.student_id)::int AS students FROM hn_classes c LEFT JOIN hn_class_members cm ON cm.class_id=c.id WHERE c.organization_id=$1 AND c.teacher_id=$2 GROUP BY c.id ORDER BY c.created_at DESC",[user.organization_id,user.id]);
