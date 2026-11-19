@@ -70,7 +70,10 @@ async function storeUpload(req,s3,bucket,key,expected){
     await Promise.all([uploader.done(),transfer]);
     if(received!==expected)throw Error('LENGTH_MISMATCH');
   }catch(error){
-    req.destroy();
+    // Keep the client connection open long enough to return a useful error.
+    req.unpipe(bounded);
+    req.resume();
+    bounded.destroy();
     stream.destroy();
     try{await s3.send(new DeleteObjectCommand({Bucket:bucket,Key:key}));}catch{}
     throw error;
