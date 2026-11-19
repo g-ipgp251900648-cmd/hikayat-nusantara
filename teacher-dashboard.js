@@ -53,7 +53,7 @@
     notice+
     '<div class="hn-teacher-toolbar"><input id="hn-class-search" type="search" aria-label="Cari kelas" placeholder="Cari nama kelas..." disabled><button type="button" id="hn-preview-class">Lihat Borang Kelas</button><button type="button" id="hn-add-class" disabled>+ Cipta Kelas</button></div>'+
     '<div class="stats-grid three"><div class="stat"><span>Jumlah kelas</span><strong id="hn-class-count">—</strong><em>Data sebenar sahaja</em></div><div class="stat"><span>Jumlah keahlian</span><strong id="hn-class-enrolments">—</strong><em>Memerlukan autentikasi</em></div><div class="stat"><span>Sesi akademik</span><strong id="hn-class-year">—</strong><em>Mengikut akaun guru</em></div></div>'+
-    '<div class="table-wrap"><table><thead><tr><th>Nama Kelas</th><th>Tahun</th><th>Sesi</th><th>Jumlah Murid</th><th>Status</th></tr></thead><tbody id="hn-class-rows"><tr><td colspan="5">Belum ada kelas yang disahkan.</td></tr></tbody></table></div>'
+    '<div class="table-wrap"><table><thead><tr><th>Nama Kelas</th><th>Tahun</th><th>Sesi</th><th>Jumlah Murid</th><th>Status</th><th>Tindakan</th></tr></thead><tbody id="hn-class-rows"><tr><td colspan="6">Belum ada kelas yang disahkan.</td></tr></tbody></table></div>'
   );
 
   const newPages=[
