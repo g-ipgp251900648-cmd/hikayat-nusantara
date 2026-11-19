@@ -154,7 +154,7 @@
     overlay = document.createElement('section');
     overlay.id = 'hn-ai-overlay';
     overlay.setAttribute('aria-label','Misi 1 — Misteri Lima Helaian Naskhah');
-    overlay.innerHTML = `<header id="hn-ai-top"><div><strong>🏮 Misi 1: Misteri Lima Helaian Naskhah</strong><br><small>Permainan asal Google AI Studio • Hang Tuah 3D</small></div>
+    overlay.innerHTML = `<header id="hn-ai-top"><div><strong>🏮 Misi 1: Misteri Lima Helaian Naskhah</strong><br><small>Pengembaraan Hang Tuah 3D</small></div>
       <span id="hn-ai-status" role="status">Kemajuan kuiz diselaraskan dengan Dashboard Murid.</span>
       <button id="hn-ai-close" type="button">✕ Kembali ke Dashboard</button></header>
       <iframe id="hn-ai-frame" title="Permainan Misi 1 — Hang Tuah dan Lima Helaian Naskhah" src="/misi1/?profile=${encodeURIComponent(studentId)}"></iframe>`;
