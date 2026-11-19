@@ -139,6 +139,13 @@
       evidencePanel.append(el('small','Dihantar pada '+new Date(item.created_at).toLocaleString('ms-MY')));
     }
     root.append(evidencePanel);
+    if(x.missionId===4){
+      const videos=(current.videos||[]).filter(v=>same(v.studentId,x.studentId));
+      for(const video of videos.slice(0,2))renderMisi4Recording(root,video,{canReview:false});
+      if(!videos.length)root.append(el('p',
+        'Belum ada bukti rakaman Misi 4 dihantar. Jangan sahkan TP persembahan tanpa menilai evidens yang sesuai.',
+        'hn-learning-muted'));
+    }
     const form=el('form','','hn-learning-form');
     const tp=select([['','Belum ditetapkan'],...[1,2,3,4,5,6].map(n=>[n,'TP'+n])],existing?.tp??'');
     form.append(field('Tahap Penguasaan (ditetapkan Guru)',tp));
@@ -293,15 +300,59 @@
       history.append(card);
     }root.append(history);
   }
+  function renderMisi4Recording(root,item,{canReview=true}={}){
+    const card=el('article','','hn-learning-panel hn-video-evidence');
+    card.append(el('h3','Rakaman Misi 4 · '+(item.storyTitle||'Persembahan Hikayat')));
+    card.append(el('p','Rujukan: '+item.referenceNo+' · Versi '+item.version+
+      ' · Status: '+item.status+' · Dihantar '+new Date(item.submittedAt).toLocaleString('ms-MY'),
+      'hn-learning-muted'));
+    const player=document.createElement('video');
+    player.controls=true;player.preload='none';player.playsInline=true;
+    player.style.cssText='display:none;width:100%;max-height:360px;background:#111;border-radius:12px;margin:12px 0';
+    const notice=el('p','','hn-learning-message');notice.setAttribute('role','status');
+    card.append(button('▶ Tonton Rakaman',async()=>{
+      notice.textContent='Mendapatkan rakaman selamat...';
+      try{
+        const r=await api('/api/teacher/misi4/media/'+encodeURIComponent(item.id));
+        if(!r.ok){notice.textContent='Rakaman tidak dapat dibuka. Sila cuba semula.';return;}
+        player.src=r.data.url;player.style.display='block';player.load();
+        notice.textContent='Rakaman tersedia untuk semakan Guru.';
+      }catch{notice.textContent='Sambungan terganggu semasa membuka rakaman.';}
+    },'hn-learning-primary'),player,notice);
+    if(item.review?.comment)card.append(el('p','Ulasan terdahulu: '+item.review.comment,'hn-learning-muted'));
+    if(canReview){
+      const comment=textarea('Ulasan rakaman untuk Murid (sekurang-kurangnya 10 aksara)',1500,
+        item.review?.comment||'');
+      const status=select([['Dalam Semakan','Dalam Semakan'],['Selesai Disemak','Selesai Disemak'],
+        ['Perlu Penambahbaikan','Perlu Penambahbaikan']],item.status==='Telah Dihantar'?'Dalam Semakan':item.status);
+      card.append(comment,field('Status Semakan Rakaman',status));
+      card.append(button('Simpan Semakan dan Maklum Balas Video',async()=>{
+        const value=comment.querySelector('textarea').value.trim();
+        if(value.length<10){notice.textContent='Ulasan perlu sekurang-kurangnya 10 aksara.';return;}
+        if(!confirm('Terbitkan semakan video ini supaya murid boleh melihatnya?'))return;
+        try{
+          const r=await post('/api/teacher/misi4/review',{
+            submissionId:item.id,status:status.value,comment:value
+          },card);
+          if(r.ok){notice.textContent='Ulasan berjaya direkodkan dan boleh dilihat oleh Murid.';await loadData();}
+        }catch{notice.textContent='Gagal menyimpan ulasan. Sila cuba lagi.';}
+      },'hn-learning-primary'));
+    }
+    root.append(card);
+  }
   function renderPortfolio(){
     const root=pages.portfolio;
     intro(root,'Portfolio Digital','Himpunan karya bertulis yang dihantar sendiri oleh Murid. Rakaman video dan audio belum boleh dimuat naik ke portal.');
     const x=filters(root,'portfolio',{mission:false});
     if(!x.studentId){empty(root,'Tiada murid aktif dalam kelas ini.');return;}
     const records=current.learning.portfolio.filter(r=>same(r.student_id,x.studentId));
+    const videos=(current.videos||[]).filter(v=>same(v.studentId,x.studentId));
+    root.append(el('h3','Rakaman Persembahan Misi 4 ('+videos.length+')'));
+    if(!videos.length)empty(root,'Belum ada rakaman Misi 4 dihantar oleh Murid ini.');
+    for(const video of videos)renderMisi4Recording(root,video);
     const count=el('p',records.length+' karya bertulis direkodkan untuk murid ini.','hn-learning-muted');
     root.append(count);
-    if(!records.length){empty(root,'Belum ada karya dihantar. Murid boleh membuka Portfolio Pengembara untuk menghantar teks.');return;}
+    if(!records.length){empty(root,'Belum ada karya teks dihantar. Murid boleh membuka Portfolio Pengembara untuk menghantar teks.');return;}
     for(const item of records){
       const card=el('article','','hn-learning-panel');
       card.append(el('h3',item.title));
@@ -420,9 +471,10 @@
     const targets=Object.values(pages).filter(Boolean);
     for(const page of targets)message(page,'Memuatkan rekod pembelajaran...');
     try {
-      const [classes,students,progress,learning]=await Promise.all([
+      const [classes,students,progress,learning,videoResult]=await Promise.all([
         api('/api/teacher/classes'),api('/api/teacher/students'),
-        api('/api/teacher/progress'),api('/api/teacher/learning')
+        api('/api/teacher/progress'),api('/api/teacher/learning'),
+        api('/api/teacher/misi4/submissions')
       ]);
       if([classes,students,progress,learning].some(r=>!r.ok)){
         for(const page of targets){
@@ -432,7 +484,8 @@
         return;
       }
       current={classes:classes.data.classes,students:students.data.students,
-        progress:progress.data.progress,learning:learning.data};
+        progress:progress.data.progress,learning:learning.data,
+        videos:videoResult.ok?videoResult.data.submissions:[]};
       for(const key of Object.keys(pages))render(key);
     }catch {
       for(const page of targets){
