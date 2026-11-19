@@ -348,6 +348,7 @@ export default function App() {
     attemptCount?: number;
     lastScore?: number | null;
     lastTotal?: number | null;
+    attempts?: { attemptNumber: number; totalScore: number; timestampIso: string }[];
   }) => {
     if (window.parent === window) return;
     window.parent.postMessage({
@@ -367,6 +368,11 @@ export default function App() {
       attemptCount: attempts.length,
       lastScore: previous?.totalScore ?? null,
       lastTotal: previous ? 8 : null,
+      attempts: attempts.slice(-30).map(a => ({
+        attemptNumber: a.attemptNumber,
+        totalScore: a.totalScore,
+        timestampIso: a.timestampIso,
+      })),
     });
   }, [attempts, notifyHikayatPortal]);
 
