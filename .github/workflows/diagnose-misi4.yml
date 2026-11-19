@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Inspect source for preview submission handler
+      - name: Inspect original video submission implementation
         run: |
           node --input-type=module <<'JS'
           import { extractMisiFourSource } from './scripts/extract-misi4.mjs';
@@ -26,16 +26,15 @@ jobs:
               if(entry.isDirectory()) await walk(file);
               else if(/\.(?:tsx?|jsx?)$/.test(entry.name)){
                 const s=await readFile(file,'utf8');
-                const needles=['Mod Pratonton','Storan Pelayan Belum Dikonfigurasi','Hantar Persembahan kepada Guru','backendConfigured','storageConfigured','submissionEnabled'];
-                const hits=needles.filter(x=>s.includes(x));
-                if(hits.length) {
-                  console.log('FILE',file,'MATCHES',hits.join(', '),'LENGTH',s.length);
-                  for(const h of hits){
-                    let pos=0,c=0;
-                    while((pos=s.indexOf(h,pos))>=0&&c++<3){
-                      console.log('CONTEXT FOR',h,'\\n',s.slice(Math.max(0,pos-1400),Math.min(s.length,pos+1600)));
-                      pos+=h.length;
-                    }
+                if(file.endsWith('SubmissionHallModal.tsx')) {
+                  console.log('COMPONENT_BEGIN',file);
+                  console.log(s.slice(0,13500));
+                  console.log('COMPONENT_END');
+                }else if(/backendReady|storageHealth|onSubmitToTeacher|handleRealSubmit/.test(s)){
+                  console.log('RELATED',file);
+                  for(const needle of ['backendReady','storageHealth','onSubmitToTeacher','handleRealSubmit']){
+                    const pos=s.indexOf(needle);
+                    if(pos>=0)console.log('MATCH',needle,s.slice(Math.max(0,pos-950),pos+1350));
                   }
                 }
               }
