@@ -342,7 +342,7 @@
   }
   function renderPortfolio(){
     const root=pages.portfolio;
-    intro(root,'Portfolio Digital','Himpunan karya bertulis yang dihantar sendiri oleh Murid. Rakaman video dan audio belum boleh dimuat naik ke portal.');
+    intro(root,'Portfolio Digital','Himpunan karya bertulis dan rakaman Misi 4 yang disahkan telah dihantar. Video hanya boleh ditonton oleh Guru kelas berkenaan.');
     const x=filters(root,'portfolio',{mission:false});
     if(!x.studentId){empty(root,'Tiada murid aktif dalam kelas ini.');return;}
     const records=current.learning.portfolio.filter(r=>same(r.student_id,x.studentId));
