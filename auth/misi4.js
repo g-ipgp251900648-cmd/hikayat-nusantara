@@ -186,11 +186,54 @@ export async function handleMisi4Api(req,res,path,db,user,audit){
   if(path==='/api/misi4/state'&&method==='GET'){
     if(!me){respond(res,401,{ok:false,error:'LOGIN_REQUIRED'});return true;}
     const records=await listStudent(db,user);
+    const work=await db.query(
+      'SELECT story_plan,rehearsal FROM hn_misi4_workflow WHERE organization_id=$1 AND student_id=$2',
+      [user.organization_id,user.id]
+    );
     respond(res,200,{ok:true,hasPortalDraft:false,
-      state:{storyPlan:null,rehearsal:null,xpAwarded:records.length>0,misi4Xp:records.length?80:0},
+      state:{storyPlan:work.rows[0]?.story_plan||null,
+        rehearsal:work.rows[0]?.rehearsal||null,
+        xpAwarded:records.length>0,misi4Xp:records.length?80:0},
       submissions:records.map(publicSubmission),
       portalSummary:{priorMissionsXp:0,priorMissionsCompleted:false,totalJourneyXp:records.length?80:0}});
     return true;
+  }
+  if(path==='/api/misi4/story-plan'&&method==='PUT'){
+    if(!me){respond(res,403,{ok:false,error:'MURID_REQUIRED'});return true;}
+    const body=await bodyJson(req,16000);
+    const story={
+      tajuk:String(body.tajuk||'').trim().slice(0,160),
+      permulaan:String(body.permulaan||'').trim().slice(0,4000),
+      perkembangan:String(body.perkembangan||'').trim().slice(0,4000),
+      pengakhiran:String(body.pengakhiran||'').trim().slice(0,4000),
+      ungkapanIndah:Array.isArray(body.ungkapanIndah)?
+        body.ungkapanIndah.filter(x=>typeof x==='string').slice(0,20).map(x=>x.slice(0,120)):[],
+      sumberKarya:['portal','templat','fail'].includes(body.sumberKarya)?body.sumberKarya:'manual',
+      updatedAt:new Date().toISOString()
+    };
+    const r=await db.query(
+      "INSERT INTO hn_misi4_workflow(organization_id,student_id,story_plan) VALUES($1,$2,$3::jsonb) ON CONFLICT(student_id) DO UPDATE SET story_plan=excluded.story_plan,updated_at=now() WHERE hn_misi4_workflow.organization_id=excluded.organization_id RETURNING story_plan",
+      [user.organization_id,user.id,JSON.stringify(story)]
+    );
+    if(!r.rows.length){respond(res,403,{ok:false,error:'FORBIDDEN'});return true;}
+    respond(res,200,{ok:true,state:{storyPlan:r.rows[0].story_plan}});return true;
+  }
+  if(path==='/api/misi4/rehearsal'&&method==='PUT'){
+    if(!me){respond(res,403,{ok:false,error:'MURID_REQUIRED'});return true;}
+    const body=await bodyJson(req,3500);
+    const rehearsal={
+      completed:body.completed===true,
+      selectedTone:String(body.selectedTone||'Tenang').slice(0,40),
+      practicedActs:Array.isArray(body.practicedActs)?
+        body.practicedActs.filter(x=>['permulaan','perkembangan','pengakhiran'].includes(x)).slice(0,3):[],
+      notes:String(body.notes||'').slice(0,600)
+    };
+    const r=await db.query(
+      "INSERT INTO hn_misi4_workflow(organization_id,student_id,rehearsal) VALUES($1,$2,$3::jsonb) ON CONFLICT(student_id) DO UPDATE SET rehearsal=excluded.rehearsal,updated_at=now() WHERE hn_misi4_workflow.organization_id=excluded.organization_id RETURNING rehearsal",
+      [user.organization_id,user.id,JSON.stringify(rehearsal)]
+    );
+    if(!r.rows.length){respond(res,403,{ok:false,error:'FORBIDDEN'});return true;}
+    respond(res,200,{ok:true,state:{rehearsal:r.rows[0].rehearsal}});return true;
   }
   if(path==='/api/misi4/submissions'&&method==='POST'){
     if(!me){respond(res,403,{ok:false,error:'MURID_REQUIRED'});return true;}
@@ -212,7 +255,7 @@ export async function handleMisi4Api(req,res,path,db,user,audit){
         fields.rehearsalCompleted!=='true'||
         !Number.isFinite(duration)||duration<1||duration>3600)
         throw Object.assign(Error('SUBMISSION_STEPS_INCOMPLETE'),{status:400});
-      const title=String(story.title||story.storyTitle||'Persembahan Hikayat').trim().slice(0,120);
+      const title=String(story.tajuk||'Persembahan Hikayat').trim().slice(0,120);
       const file=files.mediaFile;
       key='misi4/'+user.organization_id+'/'+user.id+'/'+randomUUID()+TYPES.get(file.mime).ext;
       await storage.client.send(new PutObjectCommand({
