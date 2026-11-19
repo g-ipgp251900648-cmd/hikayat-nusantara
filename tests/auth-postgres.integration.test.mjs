@@ -311,13 +311,14 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.equal(otherStats.data.stats.teachers,0);
     assert.equal(otherStats.data.stats.students,0);
 
-    const logs=await pool.query('SELECT action,resource_type FROM hn_audit ORDER BY id');
+    const logs=await pool.query('SELECT action,resource_type,actor_id FROM hn_audit ORDER BY id');
     assert.ok(logs.rows.some(x=>x.action==='create_teacher'));
     assert.ok(logs.rows.some(x=>x.action==='create_student'));
     assert.ok(logs.rows.some(x=>x.action==='deactivate_account'));
     assert.ok(logs.rows.some(x=>x.action==='permanently_delete_guru'));
     assert.ok(logs.rows.some(x=>x.action==='permanently_delete_murid'));
-    assert.ok(logs.rows.some(x=>x.actor_id===undefined || x.actor_id===null || x.actor_id));
+    assert.ok(logs.rows.some(x=>x.action==='login'&&x.actor_id===null),
+      'Historical audit events survive account removal without retaining a user foreign key');
   }finally{
     server.kill('SIGTERM');
     await pool.end();
