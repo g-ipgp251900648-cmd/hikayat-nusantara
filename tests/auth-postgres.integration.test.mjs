@@ -776,6 +776,41 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     for(const action of ['update_own_teacher_profile','update_own_teacher_settings','logout_other_teacher_sessions']){
       assert.ok(teacherSettingsAudit.rows.some(x=>x.action===action),action);
     }
+
+    // Authentic Misi 4 video submission is gated by private object storage.
+    // No configured bucket = never accept / falsely confirm a recording.
+    const storageHealth=await api('/api/misi4/health',{cookie:testStudent.cookie});
+    assert.equal(storageHealth.status,200);
+    assert.equal(storageHealth.data.storage.configured,false);
+    assert.equal(storageHealth.data.storage.driver,'object-storage');
+    const gameSession=await api('/api/misi4/session',{cookie:testStudent.cookie});
+    assert.equal(gameSession.status,200);
+    assert.equal(gameSession.data.user.id,testPupil.id);
+    assert.equal(gameSession.data.user.role,'student');
+    assert.deepEqual(gameSession.data.availableDemoAccounts,[]);
+    assert.equal((await api('/api/misi4/session',{cookie:a.cookie})).status,401);
+    const pupilVideoState=await api('/api/misi4/state',{cookie:testStudent.cookie});
+    assert.equal(pupilVideoState.status,200);
+    assert.deepEqual(pupilVideoState.data.submissions,[]);
+    const teacherVideoInbox=await api('/api/teacher/misi4/submissions',{cookie:a.cookie});
+    assert.equal(teacherVideoInbox.status,200);
+    assert.deepEqual(teacherVideoInbox.data.submissions,[]);
+    assert.deepEqual((await api('/api/teacher/misi4/submissions',{cookie:b.cookie}))
+      .data.submissions,[]);
+    assert.equal((await api('/api/teacher/misi4/submissions',{cookie:testStudent.cookie})).status,403);
+    const unavailableUpload=await api('/api/misi4/submissions',{method:'POST',cookie:testStudent.cookie,
+      body:{storyPlan:{},rehearsalCompleted:'true'}});
+    assert.equal(unavailableUpload.status,503);
+    assert.equal(unavailableUpload.data.error,'STORAGE_NOT_CONFIGURED');
+    const invalidVideoReview=await api('/api/teacher/misi4/review',{method:'POST',cookie:a.cookie,
+      body:{submissionId:'invalid',status:'Selesai Disemak',comment:'Penambahbaikan karya'}});
+    assert.equal(invalidVideoReview.status,400);
+    const fakeId='11111111-1111-4111-8111-111111111111';
+    assert.equal((await api('/api/teacher/misi4/media/'+fakeId,{cookie:a.cookie})).status,404);
+    assert.equal((await api('/api/misi4/media/'+fakeId,{cookie:testStudent.cookie})).status,404);
+    const uploadedCount=await pool.query('SELECT count(*)::int AS count FROM hn_misi4_submissions');
+    assert.equal(uploadedCount.rows[0].count,0);
+
     // A separate school/organization admin cannot see School A teachers.
     const otherOrg=(await pool.query(
       'INSERT INTO hn_organizations(name) VALUES($1) RETURNING id',['Sekolah Ujian B']
