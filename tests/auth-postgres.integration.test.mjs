@@ -11,11 +11,12 @@ const base='http://127.0.0.1:'+port;
 const origin=base;
 const makePassword=()=> 'Secure-Test-'+randomBytes(14).toString('hex');
 
-async function api(path,{method='GET',body,cookie}={}) {
+async function api(path,{method='GET',body,cookie,clientIp}={}) {
   const headers={};
   if(method!=='GET')headers.Origin=origin;
   if(body!==undefined)headers['Content-Type']='application/json';
   if(cookie)headers.Cookie=cookie;
+  if(clientIp)headers['X-Forwarded-For']=clientIp;
   const response=await fetch(base+path,{
     method,headers,redirect:'manual',
     ...(body!==undefined?{body:JSON.stringify(body)}:{})
@@ -24,8 +25,12 @@ async function api(path,{method='GET',body,cookie}={}) {
   const issued=response.headers.get('set-cookie')?.split(';')[0]||null;
   return {status:response.status,data,cookie:issued};
 }
+let testSignInCounter=0;
 async function signin(id,password) {
-  const res=await api('/api/auth/login',{method:'POST',body:{id,password}});
+  // CI makes many independent sign-ins in one test. Use synthetic client IPs
+  // to exercise account permissions without exhausting the production IP limiter.
+  const clientIp='192.0.2.'+(++testSignInCounter);
+  const res=await api('/api/auth/login',{method:'POST',body:{id,password},clientIp});
   assert.equal(res.status,200,JSON.stringify(res.data));
   assert.match(res.cookie||'',/^hn_session=/);
   return res;
@@ -383,6 +388,40 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
       ['5D-01','5D-02','5D-03']
     );
     assert.equal(preservedBulk.rows[0].count,3);
+    // A teacher can reissue only first-login passwords. Pupils who already
+    // chose their own password retain it, and the old temporary password stops working.
+    await updatePassword(bulkStudent.cookie,sample.temporaryPassword,makePassword());
+    const incorrectClassName=await api('/api/teacher/students/reissue-temporary',{
+      method:'POST',cookie:a.cookie,
+      body:{classId:classA.data.class.id,confirmationName:'Not The Class'}
+    });
+    assert.equal(incorrectClassName.status,400);
+    const wrongRoleRecovery=await api('/api/teacher/students/reissue-temporary',{
+      method:'POST',cookie:admin.cookie,
+      body:{classId:classA.data.class.id,confirmationName:'5 Amanah'}
+    });
+    assert.equal(wrongRoleRecovery.status,404);
+    const reissue=await api('/api/teacher/students/reissue-temporary',{
+      method:'POST',cookie:a.cookie,
+      body:{classId:classA.data.class.id,confirmationName:'5 Amanah'}
+    });
+    assert.equal(reissue.status,200,JSON.stringify(reissue.data));
+    assert.equal(reissue.data.reissued,2);
+    assert.ok(reissue.data.unaffected>=2);
+    assert.deepEqual(reissue.data.credentials.map(r=>r.loginId),['5D-02','5D-03']);
+    const before=imported.data.credentials.find(r=>r.loginId==='5D-02');
+    assert.equal((await api('/api/auth/login',{method:'POST',
+      body:{id:before.loginId,password:before.temporaryPassword}})).status,401);
+    const after=reissue.data.credentials.find(r=>r.loginId==='5D-02');
+    const newPupilSession=await signin(after.loginId,after.temporaryPassword);
+    assert.equal(newPupilSession.data.user.mustChangePassword,true);
+    const keepPassword=await api('/api/auth/session',{cookie:bulkStudent.cookie});
+    assert.equal(keepPassword.data.authenticated,true);
+    const reissueHistory=await pool.query(
+      "SELECT count(*)::int AS count FROM hn_audit WHERE action='reissue_initial_pupil_passwords'"
+    );
+    assert.ok(reissueHistory.rows[0].count>=1);
+
 
     // A separate school/organization admin cannot see School A teachers.
     const otherOrg=(await pool.query(
