@@ -13,7 +13,7 @@
   };
   const section=el('section','','hn-pupil-portfolio');
   section.append(el('h2','Hantar Karya Bertulis'));
-  section.append(el('p','Pilih misi dan hantar karya teks anda kepada Guru. Jawapan permainan, jurnal, suara dan video tidak dihantar secara automatik.','hn-learning-muted'));
+  section.append(el('p','Pilih misi dan hantar karya teks kepada Guru. Rakaman Misi 4 pula dihantar melalui butang Hantar dalam permainan selepas disahkan oleh sistem.','hn-learning-muted'));
   const form=el('form','','hn-learning-form');
   const choose=el('select');
   ['Jejak Naskhah Pusaka','Balai Olah Hikayat','Warisan Bahasa','Pentas Warisan'].forEach((name,i)=>{
