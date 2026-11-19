@@ -4,6 +4,8 @@ import { extractMisiFourSource } from './scripts/extract-misi4.mjs';
 
 await extractMisiThreeSource();
 await extractMisiFourSource();
+// Connect the original Misi 4 submission button to authenticated Neon Storage.
+await import('./scripts/patch-misi4-submit.mjs');
 await rm('dist', { recursive: true, force: true });
 await mkdir('dist', { recursive: true });
 for (const file of ['index.html', 'styles.css', 'app.js', 'world3d.js', 'student-map3d.js', 'student-activities.js', 'mission-one-ai-bridge.js', 'mission-two-ai-bridge.js', 'mission-three-ai-bridge.js', 'mission-four-ai-bridge.js', 'student-learning-center.js', 'teacher-dashboard.js', 'teacher-dashboard.css', 'admin-dashboard.js', 'admin-dashboard.css', 'login-preview.html', 'login.html', 'auth-client.js', 'account-ui.js', 'teacher-settings-ui.js', 'teacher-learning-ui.js', 'student-portfolio-ui.js']) {
