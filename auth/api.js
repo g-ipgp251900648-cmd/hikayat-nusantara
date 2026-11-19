@@ -55,7 +55,7 @@ function rateLimit(key){
   attempts.set(key,state);
   return state.count<=12;
 }
-async function findSession(db,request) {
+export async function findSession(db,request) {
   const token=getCookie(request);
   if(!token)return null;
   const result=await db.query(
