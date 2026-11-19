@@ -7,6 +7,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { handleApi, authorizeMissionRequest } from "./auth/api.js";
 import { handleMisi4Video } from "./misi4-video-api.js";
+import { handleAppsScriptBridge } from "./apps-script-bridge.js";
 
 const PUBLIC_FILES = new Map([
   ["/", ["index.html", "text/html; charset=utf-8"]],
@@ -65,6 +66,7 @@ const server = createServer(async (request, response) => {
 
   // Authentication and account APIs are handled before static asset routes.
   if (pathname.startsWith("/api/") && method !== "HEAD") {
+    if (await handleAppsScriptBridge(request, response, pathname)) return;
     if (await handleMisi4Video(request, response, pathname)) return;
     if (await handleApi(request, response, pathname)) return;
   }
