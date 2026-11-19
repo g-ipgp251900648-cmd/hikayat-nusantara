@@ -7,7 +7,7 @@ export const validLoginId = id => typeof id === 'string' && /^[A-Z0-9-]{5,32}$/.
 export const validPassword = value => typeof value === 'string' && value.length >= 12 && value.length <= 128;
 export const validName = name => typeof name === 'string' && name.trim().length >= 2 && name.trim().length <= 100;
 export const temporaryPassword = () => randomBytes(18).toString('base64url');
-export const uniqueId = role => 'HN-' + ({ teacher: 'G', student: 'M' }[role] || 'U') + '-' + randomBytes(6).toString('hex').toUpperCase();
+export const uniqueId = role => 'HN-' + ({ teacher: 'G', student: 'M', gkmp: 'GK', panitia: 'KP' }[role] || 'U') + '-' + randomBytes(6).toString('hex').toUpperCase();
 export const sessionToken = () => randomBytes(32).toString('base64url');
 export const tokenHash = token => createHash('sha256').update(token).digest('hex');
 
