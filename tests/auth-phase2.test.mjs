@@ -99,6 +99,16 @@ test('teacher supports bulk CSV pupil onboarding with private one-time passwords
   assert.match(teacher,/id="hn-import-students"/);
 });
 
+test('lost pupil temporary credentials can be reissued only before the first password change',()=>{
+  const api=src('auth/api.js'),ui=src('account-ui.js'),teacher=src('teacher-dashboard.js');
+  assert.match(api,/\/api\/teacher\/students\/reissue-temporary/);
+  assert.match(api,/must_change_password/);
+  assert.match(api,/reissue_initial_pupil_passwords/);
+  assert.match(ui,/openCredentialRecovery/);
+  assert.match(ui,/Muat Turun Senarai Kata Laluan/);
+  assert.match(teacher,/hn-reissue-credentials/);
+});
+
 test('server supports account API and keeps Misi 4 upload disabled',()=>{
   const server=src('server.js');
   assert.match(server,/handleApi\(request, response, pathname\)/);
