@@ -1,7 +1,6 @@
 /**
- * Hikayat Nusantara — pelayan Node.js untuk portal pembelajaran yang belum mempunyai autentikasi.
- * Pelayan hanya menyajikan UI awam; TIADA endpoint data murid atau log masuk.
- * Fail /dist dijana oleh npm run build dan bersifat sementara (deploy sahaja).
+ * Hikayat Nusantara — sesi berautentikasi dan fail permainan tersendiri.
+ * Video Murid disimpan secara peribadi dalam storan objek, bukan /dist.
  */
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
@@ -164,25 +163,8 @@ const server = createServer(async (request, response) => {
   }
 
 
-  // The existing portal does not authenticate student/teacher accounts yet.
-  // Therefore NEVER enable the ZIP's publicly switchable sample teacher accounts
-  // or accept children's recordings in ephemeral Render storage.
-  if (pathname === '/api/misi4/health') {
-    const body = JSON.stringify({
-      ok:true,service:'hikayat-nusantara-misi4',
-      storage:{configured:false,driver:'object-storage',maxUploadBytes:100*1024*1024,
-        note:'Penghantaran guru belum diaktifkan: autentikasi sebenar dan storan persendirian diperlukan. Rakaman boleh disimpan ke peranti.'}
-    });
-    response.writeHead(200,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
-    response.end(method==='HEAD'?undefined:body);
-    return;
-  }
-  if(pathname.startsWith('/api/misi4/')){
-    response.writeHead(503,{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'});
-    response.end(method==='HEAD'?undefined:JSON.stringify({error:'MISI4_BACKEND_NOT_CONFIGURED',
-      message:'Penghantaran rasmi kepada guru belum tersedia. Simpan rakaman ke peranti.'}));
-    return;
-  }
+  // All /api/misi4/* requests are handled by auth/api.js with real sessions
+  // and private object storage. No public demo recording endpoints are exposed.
 
   // Isolated same-origin route for original AI Studio Pentas Warisan game.
   // Same-origin iframe and explicit Permissions-Policy allow browser permission prompts.
@@ -227,5 +209,5 @@ const server = createServer(async (request, response) => {
 });
 
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Hikayat Nusantara berjalan di port ${PORT} (paparan awam tanpa autentikasi)`);
+  console.log(`Hikayat Nusantara berjalan di port ${PORT} (portal berautentikasi)`);
 });
