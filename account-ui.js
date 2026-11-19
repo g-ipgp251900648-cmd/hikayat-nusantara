@@ -432,6 +432,7 @@
         }
       }else progressArea.textContent='Kemajuan belum dapat dimuat daripada Neon. Cuba muat semula.';
     }
+    if(checkpoint.ok){const chip=$('#guru-view .system-status-chip');if(chip)chip.textContent='DATA NEON DISAMBUNGKAN';}
     notice($('#guru-pengurusan-murid'),'Akaun murid disimpan pada pangkalan data berpusat. Kata laluan sementara hanya dipaparkan selepas akaun berjaya dicipta.');
     notice($('#guru-pengurusan-kelas'),'Kelas yang dicipta akan disimpan dalam organisasi dan akaun guru ini.');
   }
