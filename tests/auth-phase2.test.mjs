@@ -87,6 +87,18 @@ test('class management supports confirmed deletion with roster preservation',()=
   assert.match(ui,/deleteClassWithSafeguards/);
 });
 
+test('teacher supports bulk CSV pupil onboarding with private one-time passwords',()=>{
+  const backend=src('auth/api.js'),ui=src('account-ui.js'),teacher=src('teacher-dashboard.js');
+  assert.match(backend,/\/api\/teacher\/students\/bulk/);
+  assert.match(backend,/LOGIN_ID_CONFLICT/);
+  assert.match(backend,/bulk_register_students/);
+  assert.match(backend,/must_change_password\) VALUES/);
+  assert.match(ui,/readRosterCsv/);
+  assert.match(ui,/downloadCredentialsCsv/);
+  assert.match(ui,/hn-import-students/);
+  assert.match(teacher,/id="hn-import-students"/);
+});
+
 test('server supports account API and keeps Misi 4 upload disabled',()=>{
   const server=src('server.js');
   assert.match(server,/handleApi\(request, response, pathname\)/);
