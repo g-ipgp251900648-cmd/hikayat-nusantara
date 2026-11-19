@@ -7,7 +7,7 @@
     try {data=await response.json();}catch {data={};}
     return {ok:response.ok,status:response.status,data};
   }
-  const roles=['murid','guru','admin','gkmp','panitia'];
+  const roles=['murid','guru','admin'];
   const adminLike=role=>['admin','gkmp','panitia'].includes(role);
   const dashboardRole=role=>adminLike(role)?'admin':role;
   let remembered=null;
@@ -50,13 +50,13 @@
   const id=document.getElementById('login-id');
   const password=document.getElementById('login-password');
   const roleButtons=[...document.querySelectorAll('[data-role]')];
-  let chosen=new URLSearchParams(location.search).get('role')||'murid';
+  let chosen=dashboardRole(new URLSearchParams(location.search).get('role')||'murid');
   if(!roles.includes(chosen))chosen='murid';
   let sessionRole=null;
   const setRole=role=>{
     chosen=role;
     roleButtons.forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.role===role)));
-    document.getElementById('id-label').textContent='ID '+({murid:'Murid',guru:'Guru',admin:'Admin',gkmp:'Guru Kanan BM',panitia:'Ketua Panitia BM'}[role]);
+    document.getElementById('id-label').textContent='ID '+({murid:'Murid',guru:'Guru',admin:'Admin / GKMP / Ketua Panitia'}[role]);
   };
   roleButtons.forEach(b=>b.addEventListener('click',()=>setRole(b.dataset.role)));
   setRole(chosen);
@@ -89,9 +89,9 @@
       const result=await request('/api/auth/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:id.value.trim().toUpperCase(),password:password.value})});
       password.value='';
       if(!result.ok){message(result.status===429?'Terlalu banyak percubaan. Sila cuba kemudian.':'ID atau kata laluan tidak sah.');return;}
-      if(result.data.user?.role!==chosen){
+      if(dashboardRole(result.data.user?.role)!==chosen){
         await request('/api/auth/logout',{method:'POST'});
-        message('Peranan akaun tidak sepadan dengan pilihan log masuk. Sila pilih peranan yang betul.');
+        message('Jenis portal tidak sepadan dengan akaun. Sila pilih Murid, Guru atau Admin yang betul.');
         return;
       }
       await afterLogin(result.data.user);
