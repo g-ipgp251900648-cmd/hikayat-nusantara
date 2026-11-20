@@ -96,6 +96,8 @@ CREATE TABLE IF NOT EXISTS hn_pbd_assessments (
   confirmed_at timestamptz,
   UNIQUE(organization_id,student_id,mission_id)
 );
+-- Soft deletion preserves evidential history and allows secure recovery/audit.
+ALTER TABLE hn_pbd_assessments ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 CREATE INDEX IF NOT EXISTS hn_pbd_org_student ON hn_pbd_assessments(organization_id,student_id);
 CREATE TABLE IF NOT EXISTS hn_pbd_assessment_history (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
