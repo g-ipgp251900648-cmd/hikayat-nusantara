@@ -59,3 +59,16 @@ test('Build Vite dan server menyokong misi 1 dan misi 2 serentak',()=>{
   assert.match(read('mission-two-ai/vite.config.ts'),/base: '\/misi2\/'/);
   assert.match(read('student-learning-center.js'),/Wau Sakti: Pencarian Kata Indah/);
 });
+
+
+test('Misi 2: pengiraan perkataan menerima cerita sah yang mengandungi ruang dan baris baharu',()=>{
+  const s=read('student-activities.js');
+  // Extract the exact regular expression used at the success gate.
+  const found=s.match(/text\.trim\(\)\.split\((\/[^\n]+?\/)\)\.length<3/);
+  assert.ok(found,'Misi 2 mesti menyemak jumlah perkataan dalam setiap bahagian cerita');
+  const separator=Function('return '+found[1])();
+  assert.deepEqual('Pada hari ini'.trim().split(separator),['Pada','hari','ini']);
+  assert.deepEqual('Pada\nhari\tini'.trim().split(separator),['Pada','hari','ini']);
+  assert.equal('Satu'.trim().split(separator).length<3,true);
+  assert.equal('Pada hari ini'.trim().split(separator).length<3,false);
+});
