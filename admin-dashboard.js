@@ -26,7 +26,7 @@
   ];
   const escapeHTML = value => String(value ?? '').replace(/[&<>"']/g, char =>
     ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
-  const pendingPages=new Set(['admin-organisasi','admin-audit','admin-penghantaran','admin-media','admin-notifikasi','admin-backup']);
+  const pendingPages=new Set(['admin-organisasi','admin-audit','admin-media','admin-notifikasi','admin-backup']);
   const emptyTable = headings => '<div class="table-wrap"><table><thead><tr>' +
     headings.map(h => '<th>' + escapeHTML(h) + '</th>').join('') +
     '</tr></thead><tbody><tr><td colspan="' + headings.length +
@@ -64,9 +64,8 @@
     'Log audit akan menyimpan siapa, tindakan apa, bila, organisasi dan keputusan tindakan. Elakkan merekod kata laluan atau kandungan sensitif.',
     emptyTable(['Masa','Pengguna / Peranan','Peristiwa','Organisasi','Hasil']));
   make('admin-penghantaran','KARYA','Penghantaran & Karya',
-    'Lihat ringkasan penghantaran dan status semakan guru. Rakaman murid kekal persendirian.',
-    stats(['Karya diterima','Belum disemak','Muat naik gagal']) +
-    emptyTable(['Kelas','Misi','Jenis karya','Status']));
+    'Pantau penghantaran video Misi 4 dan status maklum balas guru berdasarkan rekod Neon. Rakaman murid kekal persendirian.',
+    '<div id="hn-admin-submissions-root" role="region" aria-label="Rekod penghantaran Misi 4"><p role="status">Klik menu ini untuk memuatkan rekod sebenar.</p></div>');
   make('admin-laporan','ANALITIK','Analitik & Laporan',
     'Laporan agregat mengikut organisasi, sekolah, kelas dan misi dengan akses yang dibenarkan.',
     stats(['Murid aktif','Penyelesaian misi','Tugasan tertangguh']) +
@@ -83,6 +82,103 @@
     'Semak status sandaran, tempoh simpanan dan ujian pemulihan. Jangan dakwa backup aktif sebelum diuji.',
     stats(['Sandaran terakhir','Status integriti','Pemulihan terakhir']) +
     '<p class="hn-admin-muted">Sandaran dan pemulihan akan disediakan selepas pengujian keselamatan selesai.</p>');
+
+  // Read-only monitoring of authenticated, organization-scoped Misi 4 submissions.
+  // Admin can monitor status, not stream/download private pupil recordings.
+  const submissionsRoot=document.getElementById('hn-admin-submissions-root');
+  let submissions=[];
+  let submissionsLimited=false;
+  const submissionsStats=(d)=>[
+    ['Video diterima',d.received],
+    ['Menunggu semakan guru',d.pending_review],
+    ['Telah diberi maklum balas',d.commented],
+    ['Muat naik belum lengkap',d.unfinished_upload],
+    ['Rakaman dikeluarkan',d.removed]
+  ];
+  const renderSubmissions=()=>{
+    if(!submissionsRoot)return;
+    const tbody=submissionsRoot.querySelector('[data-hn-submissions-tbody]');
+    if(!tbody)return;
+    const className=submissionsRoot.querySelector('[data-hn-submissions-class]')?.value||'';
+    const status=submissionsRoot.querySelector('[data-hn-submissions-status]')?.value||'';
+    const search=(submissionsRoot.querySelector('[data-hn-submissions-search]')?.value||'').trim().toLowerCase();
+    const shown=submissions.filter(r=>
+      (!className||r.className===className)&&(!status||r.status===status)&&
+      (!search||[r.studentName,r.studentLoginId,r.className].some(x=>String(x||'').toLowerCase().includes(search)))
+    );
+    tbody.innerHTML=shown.length?shown.map(r=>{
+      const when=r.submittedAt||r.createdAt;
+      const date=when?new Date(when):null;
+      const formatted=date&&!Number.isNaN(date.getTime())?date.toLocaleString('ms-MY'):'—';
+      return '<tr><td>'+escapeHTML(r.studentName)+'<br><small>'+escapeHTML(r.studentLoginId)+'</small></td>'+
+        '<td>'+escapeHTML(r.className)+'</td><td>Misi 4</td>'+
+        '<td>'+escapeHTML(r.kind)+'</td><td>'+escapeHTML(formatted)+'</td>'+
+        '<td>'+escapeHTML(r.status)+'</td></tr>';
+    }).join(''):'<tr><td colspan="6">Tiada penghantaran yang sepadan dengan penapis.</td></tr>';
+    const count=submissionsRoot.querySelector('[data-hn-submissions-count]');
+    if(count)count.textContent=shown.length+' daripada '+submissions.length+' rekod dipaparkan'+(submissionsLimited?' (500 terkini sahaja)':'');
+  };
+  const loadAdminSubmissions=async()=>{
+    if(!submissionsRoot)return;
+    submissionsRoot.replaceChildren();
+    const progress=document.createElement('p');
+    progress.setAttribute('role','status');
+    progress.textContent='Memuatkan rekod penghantaran Neon...';
+    submissionsRoot.append(progress);
+    try{
+      const response=await fetch('/api/admin/submissions',{credentials:'same-origin',cache:'no-store'});
+      const data=await response.json();
+      if(!response.ok||data?.ok!==true||!Array.isArray(data.submissions)||!data.stats)
+        throw Error('NOT_AVAILABLE');
+      submissions=data.submissions;
+      submissionsLimited=data.limited===true;
+      const cards=document.createElement('div');cards.className='stats-grid three';
+      for(const [label,count] of submissionsStats(data.stats)){
+        const card=document.createElement('div');
+        card.className='stat';
+        const l=document.createElement('span');l.textContent=label;
+        const n=document.createElement('strong');
+        n.textContent=String(Number.isSafeInteger(count)?count:0);
+        const caption=document.createElement('em');caption.textContent='Daripada rekod Neon organisasi';
+        card.append(l,n,caption);cards.append(card);
+      }
+      const filters=document.createElement('div');filters.className='hn-admin-actions';
+      filters.style.cssText='display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin:18px 0';
+      const search=document.createElement('input');search.type='search';search.placeholder='Cari nama atau ID murid';
+      search.setAttribute('aria-label','Cari nama atau ID murid');
+      search.dataset.hnSubmissionsSearch='';
+      const classes=document.createElement('select');classes.dataset.hnSubmissionsClass='';
+      classes.setAttribute('aria-label','Tapis kelas');
+      const classOptions=['',...new Set(submissions.map(r=>r.className))].sort();
+      for(const c of classOptions){const opt=document.createElement('option');opt.value=c;opt.textContent=c||'Semua kelas';classes.append(opt);}
+      const statuses=document.createElement('select');statuses.dataset.hnSubmissionsStatus='';
+      statuses.setAttribute('aria-label','Tapis status');
+      for(const status of ['', 'Menunggu semakan','Telah diberikan maklum balas','Muat naik belum lengkap','Dikeluarkan']){
+        const opt=document.createElement('option');opt.value=status;opt.textContent=status||'Semua status';statuses.append(opt);
+      }
+      const refresh=document.createElement('button');refresh.type='button';refresh.textContent='↻ Muat Semula';
+      refresh.addEventListener('click',()=>{void loadAdminSubmissions();});
+      filters.append(search,classes,statuses,refresh);
+      const count=document.createElement('p');count.dataset.hnSubmissionsCount='';
+      count.setAttribute('role','status');
+      const note=document.createElement('p');note.className='hn-admin-muted';
+      note.textContent='Status menunggu semakan berdasarkan maklum balas yang dipautkan pada video. Rekod muat naik belum lengkap bukan semestinya gagal. Admin tidak dapat membuka fail video murid dari halaman ini.';
+      const table=document.createElement('div');table.className='table-wrap';
+      table.innerHTML='<table><thead><tr><th>Murid</th><th>Kelas</th><th>Misi</th><th>Jenis karya</th><th>Tarikh</th><th>Status</th></tr></thead><tbody data-hn-submissions-tbody></tbody></table>';
+      submissionsRoot.replaceChildren(cards,filters,count,note,table);
+      search.addEventListener('input',renderSubmissions);
+      classes.addEventListener('change',renderSubmissions);
+      statuses.addEventListener('change',renderSubmissions);
+      renderSubmissions();
+    }catch{
+      submissionsRoot.replaceChildren();
+      const warning=document.createElement('p');warning.setAttribute('role','alert');
+      warning.textContent='Rekod belum dapat dimuatkan. Pastikan sesi Admin aktif dan sambungan Neon tersedia.';
+      const retry=document.createElement('button');retry.type='button';retry.textContent='Cuba Lagi';
+      retry.addEventListener('click',()=>void loadAdminSubmissions());
+      submissionsRoot.append(warning,retry);
+    }
+  };
 
   // Replace ADMIN navigation only. Student experience and Teacher navigation are untouched.
   sidebar.querySelectorAll('.side-link[data-target]').forEach(node => node.remove());
@@ -106,6 +202,7 @@
     if(!pages.some(p=>p[0]===id))return;
     activeId=id;
     sections.forEach(section => { section.hidden=section.id!==id; });
+    if(id==='admin-penghantaran')void loadAdminSubmissions();
     nav.querySelectorAll('[data-admin-menu]').forEach(button=>{
       const active=button.dataset.adminMenu===id;
       button.classList.toggle('active',active);

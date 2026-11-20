@@ -266,6 +266,21 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
       "INSERT INTO hn_teacher_feedback(organization_id,student_id,mission_id,teacher_id,strengths,status,video_id) VALUES((SELECT organization_id FROM hn_users WHERE id=$1),$1,4,$2,'Sebutannya jelas','published',$3) RETURNING id",
       [pupilA.student.id,teacherA.teacher.id,videoId]
     );
+    // School administrator sees real organization-scoped Misi 4 counts and statuses,
+    // while teachers and pupils cannot access the admin submissions monitor.
+    const adminBeforeDelete=await api('/api/admin/submissions',{cookie:admin.cookie});
+    assert.equal(adminBeforeDelete.status,200,JSON.stringify(adminBeforeDelete.data));
+    assert.ok(adminBeforeDelete.data.stats.received>=1);
+    assert.ok(adminBeforeDelete.data.stats.commented>=1);
+    const displayed=adminBeforeDelete.data.submissions.find(x=>x.id===videoId);
+    assert.equal(displayed?.status,'Telah diberikan maklum balas');
+    assert.equal(displayed?.studentLoginId,pupilA.student.login_id);
+    assert.equal('object_key' in displayed,false);
+    assert.equal('drive_file_id' in displayed,false);
+    assert.equal((await api('/api/admin/submissions',{cookie:studentA.cookie})).status,403);
+    assert.equal((await api('/api/admin/submissions',{cookie:a.cookie})).status,403);
+    assert.equal((await api('/api/admin/submissions',{cookie:gkmpSession.cookie})).status,200);
+
     assert.equal((await api('/api/misi4/teacher',{cookie:a.cookie})).data.submissions.some(x=>x.id===videoId),true);
     assert.equal((await api('/api/misi4/delete/'+videoId,{
       method:'POST',cookie:studentA.cookie,body:{confirmId:videoId}
@@ -296,6 +311,11 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     assert.ok(removedMetadata.rows[0].deleted_at);
     assert.equal(removedMetadata.rows[0].deleted_by,teacherA.teacher.id);
     assert.equal(removedMetadata.rows[0].drive_file_id,null);
+    const adminAfterDelete=await api('/api/admin/submissions',{cookie:admin.cookie});
+    assert.equal(adminAfterDelete.status,200);
+    assert.equal(adminAfterDelete.data.submissions.find(x=>x.id===videoId)?.status,'Dikeluarkan');
+    assert.ok(adminAfterDelete.data.stats.removed>=1);
+
     assert.equal((await api('/api/misi4/delete/'+videoId,{
       method:'POST',cookie:a.cookie,body:{confirmId:videoId}
     })).status,404);

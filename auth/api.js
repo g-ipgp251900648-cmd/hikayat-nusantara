@@ -263,6 +263,53 @@ export async function handleApi(request,response,pathname) {
         json(response,201,{ok:true,leader:result.rows[0],temporaryPassword:password});return true;
       }
     }
+    // Organization-scoped, read-only submission monitoring for school leadership.
+    // Never expose video object keys, private URLs or raw pupil writing.
+    if(pathname==='/api/admin/submissions'&&method==='GET'){
+      if(!canAdmin(user.role)){reject(response,403,'FORBIDDEN');return true;}
+      const totals=await db.query(
+        `SELECT
+          count(*) FILTER (WHERE v.status='submitted' AND v.deleted_at IS NULL)::int AS received,
+          count(*) FILTER (WHERE v.status='submitted' AND v.deleted_at IS NULL
+             AND NOT EXISTS(SELECT 1 FROM hn_teacher_feedback f
+               WHERE f.video_id=v.id AND f.organization_id=v.organization_id
+                 AND f.status IN ('published','revision_requested')))::int AS pending_review,
+          count(*) FILTER (WHERE v.status='submitted' AND v.deleted_at IS NULL
+             AND EXISTS(SELECT 1 FROM hn_teacher_feedback f
+               WHERE f.video_id=v.id AND f.organization_id=v.organization_id
+                 AND f.status IN ('published','revision_requested')))::int AS commented,
+          count(*) FILTER (WHERE v.status='pending' AND v.deleted_at IS NULL)::int AS unfinished_upload,
+          count(*) FILTER (WHERE v.deleted_at IS NOT NULL)::int AS removed
+          FROM hn_misi4_videos v WHERE v.organization_id=$1`,
+        [user.organization_id]
+      );
+      const rows=await db.query(
+        `SELECT v.id,v.submitted_at,v.created_at,v.status,v.mime_type,
+          v.deleted_at,u.login_id AS student_login_id,u.display_name AS student_name,
+          COALESCE((SELECT string_agg(DISTINCT c.name, ', ' ORDER BY c.name)
+            FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id
+            WHERE cm.student_id=v.student_id AND c.organization_id=$1),'Tiada kelas') AS class_name,
+          EXISTS(SELECT 1 FROM hn_teacher_feedback f
+             WHERE f.video_id=v.id AND f.organization_id=$1
+               AND f.status IN ('published','revision_requested')) AS has_feedback
+          FROM hn_misi4_videos v
+          JOIN hn_users u ON u.id=v.student_id
+          WHERE v.organization_id=$1 AND u.organization_id=$1 AND u.role='murid'
+          ORDER BY COALESCE(v.submitted_at,v.created_at) DESC,v.id DESC LIMIT 500`,
+        [user.organization_id]
+      );
+      const records=rows.rows.map(item=>({
+        id:item.id,studentLoginId:item.student_login_id,studentName:item.student_name,
+        className:item.class_name,missionId:4,kind:'Rakaman video',
+        submittedAt:item.submitted_at,createdAt:item.created_at,
+        mimeType:item.mime_type,hasFeedback:item.has_feedback,
+        status:item.deleted_at?'Dikeluarkan':
+          item.status==='pending'?'Muat naik belum lengkap':
+          item.has_feedback?'Telah diberikan maklum balas':'Menunggu semakan'
+      }));
+      json(response,200,{ok:true,stats:totals.rows[0],submissions:records,
+        limited:records.length===500});return true;
+    }
     if(pathname==='/api/admin/progress'&&method==='GET'&&canAdmin(user.role)){
       const result=await db.query(
         "SELECT u.id AS student_id,u.login_id,u.display_name,c.id AS class_id,c.name AS class_name,mp.mission_id,mp.state,mp.checkpoint,mp.updated_at FROM hn_mission_progress mp JOIN hn_users u ON u.id=mp.student_id JOIN hn_class_members cm ON cm.student_id=u.id JOIN hn_classes c ON c.id=cm.class_id WHERE c.organization_id=$1 AND u.organization_id=$1 AND u.role='murid' ORDER BY c.name,u.display_name,mp.mission_id LIMIT 1200",
