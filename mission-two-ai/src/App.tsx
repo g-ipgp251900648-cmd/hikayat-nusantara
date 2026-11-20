@@ -202,7 +202,7 @@ export default function App() {
         if(active)setCloudStatus('Sila log masuk sebagai Murid untuk membuka rekod permainan.');
       }
     })();
-    const online=()=>{if(active&&storageReady)void bootCloud();};
+    const online=()=>{if(active)void bootCloud();};
     window.addEventListener('online',online);
     return ()=>{active=false;window.removeEventListener('online',online);};
   },[bootCloud]);
