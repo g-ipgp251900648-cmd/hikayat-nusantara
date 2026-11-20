@@ -159,4 +159,14 @@ CREATE TABLE IF NOT EXISTS hn_teacher_settings (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS hn_teacher_settings_org ON hn_teacher_settings(organization_id);
+-- Private Misi 2 game snapshot, scoped to a pupil and organization.
+-- Raw story drafts are never returned to teacher or admin APIs.
+CREATE TABLE IF NOT EXISTS hn_misi2_game_state (
+  student_id uuid PRIMARY KEY REFERENCES hn_users(id) ON DELETE CASCADE,
+  organization_id uuid NOT NULL REFERENCES hn_organizations(id),
+  snapshot jsonb NOT NULL CHECK (jsonb_typeof(snapshot) = 'object'),
+  revision integer NOT NULL DEFAULT 1 CHECK (revision >= 1),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS hn_misi2_state_org ON hn_misi2_game_state(organization_id);
 COMMIT;

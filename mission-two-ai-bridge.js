@@ -20,6 +20,12 @@
         event.source !== iframe.contentWindow) return;
     const message = event.data;
     if (!message || message.source !== source || message.version !== 1) return;
+    if(message.eventType==='sync'){
+      const text=message.payload?.status;
+      const status=overlay?.querySelector('#hn-m2-status');
+      if(status&&typeof text==='string'&&text.length<=180)status.textContent=text;
+      return;
+    }
     let result = null;
     if (message.eventType === 'attempt') {
       result = window.submitMissionTwoFlightAttempt?.(message.payload);
