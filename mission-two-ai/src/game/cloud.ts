@@ -17,10 +17,7 @@ export function mergeMisi2Cloud(
   const older=newer===remote?local:remote;
   const merged:PersistedMission2State={
     ...newer,
-    draft:{...newer.draft},checklist:{...newer.checklist},
-    checkpointRecords:[...newer.checkpointRecords],
-    attemptHistory:[...newer.attemptHistory],
-    collectedPhrases:[...newer.collectedPhrases],
+    draft:{...newer.draft},
     lastRunStats:{...newer.lastRunStats},
     lastUpdated:Math.max(local.lastUpdated,remote.lastUpdated),
     tutorialCompleted:local.tutorialCompleted||remote.tutorialCompleted,
