@@ -43,3 +43,8 @@ ON hn_misi4_videos (
 -- Link a teacher's Misi 4 feedback to a specific stored video.
 ALTER TABLE hn_teacher_feedback ADD COLUMN IF NOT EXISTS video_id uuid REFERENCES hn_misi4_videos(id) ON DELETE SET NULL;
 CREATE INDEX IF NOT EXISTS hn_feedback_video ON hn_teacher_feedback(video_id) WHERE video_id IS NOT NULL;
+
+-- Teacher-managed removal: keep an audit trail, but hide withdrawn submissions.
+ALTER TABLE hn_misi4_videos ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+ALTER TABLE hn_misi4_videos ADD COLUMN IF NOT EXISTS deleted_by uuid REFERENCES hn_users(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS hn_misi4_active_teacher ON hn_misi4_videos(organization_id,student_id,submitted_at DESC) WHERE deleted_at IS NULL;

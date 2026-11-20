@@ -814,7 +814,7 @@ export async function handleApi(request,response,pathname) {
           reject(response,400,'INVALID_VIDEO_REFERENCE');return true;
         }
         const verified=await db.query(
-          "SELECT id FROM hn_misi4_videos WHERE id=$1 AND student_id=$2 AND organization_id=$3 AND status IN ('submitted','reviewed','revision_requested') AND (object_key IS NOT NULL OR drive_file_id IS NOT NULL)",
+          "SELECT id FROM hn_misi4_videos WHERE id=$1 AND student_id=$2 AND organization_id=$3 AND status IN ('submitted','reviewed','revision_requested') AND deleted_at IS NULL AND (object_key IS NOT NULL OR drive_file_id IS NOT NULL)",
           [videoId,body.studentId,user.organization_id]
         );
         if(!verified.rows.length){reject(response,404,'VIDEO_NOT_FOUND');return true;}

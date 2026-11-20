@@ -255,6 +255,51 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const cloudAdmin=await api('/api/student/misi2/state',{cookie:admin.cookie});
     assert.notEqual(cloudAdmin.status,200);
 
+    // Teacher-only Misi 4 deletion: remove a selected duplicate while keeping
+    // the pupil's progress and any published teacher feedback untouched.
+    const seedVideo=await pool.query(
+      "INSERT INTO hn_misi4_videos(organization_id,student_id,drive_file_id,mime_type,expected_bytes,status,submitted_at) VALUES((SELECT organization_id FROM hn_users WHERE id=$1),$1,'legacy-drive-test-id','video/mp4',4096,'submitted',now()) RETURNING id",
+      [pupilA.student.id]
+    );
+    const videoId=seedVideo.rows[0].id;
+    const seedFeedback=await pool.query(
+      "INSERT INTO hn_teacher_feedback(organization_id,student_id,mission_id,teacher_id,strengths,status,video_id) VALUES((SELECT organization_id FROM hn_users WHERE id=$1),$1,4,$2,'Sebutannya jelas','published',$3) RETURNING id",
+      [pupilA.student.id,teacherA.teacher.id,videoId]
+    );
+    assert.equal((await api('/api/misi4/teacher',{cookie:a.cookie})).data.submissions.some(x=>x.id===videoId),true);
+    assert.equal((await api('/api/misi4/delete/'+videoId,{
+      method:'POST',cookie:studentA.cookie,body:{confirmId:videoId}
+    })).status,403);
+    assert.equal((await api('/api/misi4/delete/'+videoId,{
+      method:'POST',cookie:b.cookie,body:{confirmId:videoId}
+    })).status,403);
+    assert.equal((await api('/api/misi4/delete/'+videoId,{
+      method:'POST',cookie:a.cookie,body:{confirmId:'00000000-0000-4000-8000-000000000000'}
+    })).status,400);
+    const deletedVideo=await api('/api/misi4/delete/'+videoId,{
+      method:'POST',cookie:a.cookie,body:{confirmId:videoId}
+    });
+    assert.equal(deletedVideo.status,200,JSON.stringify(deletedVideo.data));
+    assert.equal(deletedVideo.data.legacyDriveWarning,true);
+    assert.equal((await api('/api/misi4/teacher',{cookie:a.cookie})).data.submissions.some(x=>x.id===videoId),false);
+    assert.equal((await api('/api/misi4/state',{cookie:studentA.cookie})).data.submissions.some(x=>x.id===videoId),false);
+    assert.equal((await api('/api/misi4/watch/'+videoId,{cookie:studentA.cookie})).status,404);
+    const feedbackAfterDelete=await pool.query(
+      'SELECT strengths,status,video_id FROM hn_teacher_feedback WHERE id=$1',[seedFeedback.rows[0].id]
+    );
+    assert.equal(feedbackAfterDelete.rows[0].strengths,'Sebutannya jelas');
+    assert.equal(feedbackAfterDelete.rows[0].status,'published');
+    assert.equal(feedbackAfterDelete.rows[0].video_id,null);
+    const removedMetadata=await pool.query(
+      'SELECT deleted_at,deleted_by,drive_file_id FROM hn_misi4_videos WHERE id=$1',[videoId]
+    );
+    assert.ok(removedMetadata.rows[0].deleted_at);
+    assert.equal(removedMetadata.rows[0].deleted_by,teacherA.teacher.id);
+    assert.equal(removedMetadata.rows[0].drive_file_id,null);
+    assert.equal((await api('/api/misi4/delete/'+videoId,{
+      method:'POST',cookie:a.cookie,body:{confirmId:videoId}
+    })).status,404);
+
     const firstSave=await api('/api/student/progress/1',{
       method:'PUT',cookie:studentA.cookie,
       body:{revision:0,checkpoint:{draft:'Cerita peribadi A'}}
