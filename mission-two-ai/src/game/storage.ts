@@ -38,7 +38,7 @@ export function importLegacyMisi2Progress(): boolean {
     window.localStorage.setItem(accountStorageKey,legacy);
     if(window.localStorage.getItem(accountStorageKey)!==legacy)return false;
     // Source is removed only after a verified copy, to avoid sharing it with another pupil.
-    window.localStorage.removeItem(accountStorageKey);
+    window.localStorage.removeItem(MISI2_STORAGE_KEY);
     return true;
   }catch{return false;}
 }
@@ -159,7 +159,7 @@ export function saveMission2State(state: PersistedMission2State): boolean {
 export function clearMission2State(): boolean {
   if (!isLocalStorageAvailable() || !accountStorageKey) return false;
   try {
-    window.localStorage.removeItem(MISI2_STORAGE_KEY);
+    window.localStorage.removeItem(accountStorageKey);
     return true;
   } catch {
     return false;
