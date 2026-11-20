@@ -9,7 +9,39 @@ import type {
   PersistedMission2State,
 } from './types';
 
-export const MISI2_STORAGE_KEY = 'hikayat_nusantara_misi2_state_v1';
+export const MISI2_STORAGE_KEY = 'hikayat_nusantara_misi2_state_v1'; // legacy, unowned
+let accountStorageKey: string | null = null;
+export function setMission2StorageAccount(id: string): void {
+  if(!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id))throw Error('Invalid pupil account');
+  accountStorageKey=MISI2_STORAGE_KEY+'-account-'+id.toLowerCase();
+}
+export function hasLegacyMisi2Progress(): boolean {
+  try {
+    const raw=window.localStorage.getItem(MISI2_STORAGE_KEY);
+    if(!raw)return false;
+    const p=JSON.parse(raw);
+    return p&&typeof p==='object'&&(p.missionCompleted===true||
+      p.flightCompleted===true||p.tutorialCompleted===true||
+      (Array.isArray(p.attemptHistory)&&p.attemptHistory.length>0)||
+      (Array.isArray(p.collectedPhrases)&&p.collectedPhrases.length>0)||
+      typeof p.draft?.permulaan==='string'&&p.draft.permulaan.trim().length>0);
+  }catch{return false;}
+}
+export function importLegacyMisi2Progress(): boolean {
+  if(!accountStorageKey||!hasLegacyMisi2Progress())return false;
+  try{
+    // Never replace an already-active account with another pupil's legacy data.
+    const existing=loadMission2State();
+    if(existing.hasSavedProgress)return false;
+    const legacy=window.localStorage.getItem(MISI2_STORAGE_KEY);
+    if(!legacy)return false;
+    window.localStorage.setItem(accountStorageKey,legacy);
+    if(window.localStorage.getItem(accountStorageKey)!==legacy)return false;
+    // Source is removed only after a verified copy, to avoid sharing it with another pupil.
+    window.localStorage.removeItem(accountStorageKey);
+    return true;
+  }catch{return false;}
+}
 
 export function createInitialCheckpointRecords(): CheckpointMasteryRecord[] {
   return CHECKPOINTS.map((cp) => ({
@@ -77,7 +109,7 @@ export function loadMission2State(): {
   }
 
   try {
-    const raw = window.localStorage.getItem(MISI2_STORAGE_KEY);
+    const raw = accountStorageKey ? window.localStorage.getItem(accountStorageKey) : null;
     if (!raw) {
       return { state: fallback, hasSavedProgress: false, storageAvailable: true };
     }
@@ -111,13 +143,13 @@ export function loadMission2State(): {
 }
 
 export function saveMission2State(state: PersistedMission2State): boolean {
-  if (!isLocalStorageAvailable()) return false;
+  if (!isLocalStorageAvailable() || !accountStorageKey) return false;
   try {
     const payload: PersistedMission2State = {
       ...state,
       lastUpdated: Date.now(),
     };
-    window.localStorage.setItem(MISI2_STORAGE_KEY, JSON.stringify(payload));
+    window.localStorage.setItem(accountStorageKey, JSON.stringify(payload));
     return true;
   } catch {
     return false;
@@ -125,7 +157,7 @@ export function saveMission2State(state: PersistedMission2State): boolean {
 }
 
 export function clearMission2State(): boolean {
-  if (!isLocalStorageAvailable()) return false;
+  if (!isLocalStorageAvailable() || !accountStorageKey) return false;
   try {
     window.localStorage.removeItem(MISI2_STORAGE_KEY);
     return true;
