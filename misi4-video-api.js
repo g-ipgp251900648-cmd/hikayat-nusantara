@@ -108,7 +108,7 @@ export async function handleMisi4Video(req,res,path){
       if(user.role!=='murid'){reply(res,403,{ok:false,error:'FORBIDDEN'});return true;}
       const id=path.split('/').at(-1);
       if(!UUID.test(id)){reply(res,400,{ok:false,error:'INVALID_ID'});return true;}
-      const q=await db.query("SELECT expected_bytes,mime_type,status FROM hn_misi4_videos WHERE id=$1 AND organization_id=$2 AND student_id=$3",[id,user.organization_id,user.id]);
+      const q=await db.query("SELECT expected_bytes,mime_type,status FROM hn_misi4_videos WHERE id=$1 AND organization_id=$2 AND student_id=$3 AND deleted_at IS NULL",[id,user.organization_id,user.id]);
       const item=q.rows[0];
       if(!item||item.status!=='pending'){reply(res,409,{ok:false,error:'UPLOAD_NOT_PENDING'});return true;}
       if(req.headers['content-type']?.split(';')[0]!==item.mime_type){reply(res,400,{ok:false,error:'INVALID_MIME'});return true;}
@@ -116,22 +116,71 @@ export async function handleMisi4Video(req,res,path){
       const key='misi4/'+user.organization_id+'/'+user.id+'/'+id+(item.mime_type==='video/mp4'?'.mp4':'.webm');
       const s3=makeS3(cfg);
       await storeUpload(req,s3,cfg.bucket,key,Number(item.expected_bytes));
-      const saved=await db.query("UPDATE hn_misi4_videos SET object_key=$1,drive_file_id=NULL,status='submitted',submitted_at=now() WHERE id=$2 AND student_id=$3 AND organization_id=$4 AND status='pending' RETURNING id",[key,id,user.id,user.organization_id]);
+      const saved=await db.query("UPDATE hn_misi4_videos SET object_key=$1,drive_file_id=NULL,status='submitted',submitted_at=now() WHERE id=$2 AND student_id=$3 AND organization_id=$4 AND status='pending' AND deleted_at IS NULL RETURNING id",[key,id,user.id,user.organization_id]);
       if(!saved.rowCount){await s3.send(new DeleteObjectCommand({Bucket:cfg.bucket,Key:key}));reply(res,409,{ok:false,error:'STATE_CONFLICT'});return true;}
       reply(res,200,{ok:true,id,referenceNo:id,status:'Telah Dihantar'});return true;
     }
     if(path==='/api/misi4/state'&&req.method==='GET'&&user.role==='murid'){
-      const q=await db.query("SELECT id,id::text AS \"referenceNo\",submitted_at FROM hn_misi4_videos WHERE student_id=$1 AND organization_id=$2 AND status='submitted' ORDER BY submitted_at DESC LIMIT 50",[user.id,user.organization_id]);
+      const q=await db.query("SELECT id,id::text AS \"referenceNo\",submitted_at FROM hn_misi4_videos WHERE student_id=$1 AND organization_id=$2 AND status='submitted' AND deleted_at IS NULL ORDER BY submitted_at DESC LIMIT 50",[user.id,user.organization_id]);
       reply(res,200,{ok:true,submissions:q.rows.map(x=>({...x,status:'Telah Dihantar'}))});return true;
     }
     if(path==='/api/misi4/teacher'&&req.method==='GET'&&user.role==='guru'){
-      const q=await db.query("SELECT v.id,v.student_id,u.display_name,v.submitted_at,v.mime_type,(SELECT string_agg(DISTINCT c.name, ', ') FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id WHERE cm.student_id=v.student_id AND c.teacher_id=$1 AND c.organization_id=$2) AS class_name FROM hn_misi4_videos v JOIN hn_users u ON u.id=v.student_id WHERE v.organization_id=$2 AND v.status='submitted' AND (v.object_key IS NOT NULL OR v.drive_file_id IS NOT NULL) AND EXISTS(SELECT 1 FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id WHERE cm.student_id=v.student_id AND c.teacher_id=$1 AND c.organization_id=$2) ORDER BY v.submitted_at DESC LIMIT 250",[user.id,user.organization_id]);
+      const q=await db.query("SELECT v.id,v.student_id,u.display_name,v.submitted_at,v.mime_type,(SELECT string_agg(DISTINCT c.name, ', ') FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id WHERE cm.student_id=v.student_id AND c.teacher_id=$1 AND c.organization_id=$2) AS class_name FROM hn_misi4_videos v JOIN hn_users u ON u.id=v.student_id WHERE v.organization_id=$2 AND v.status='submitted' AND v.deleted_at IS NULL AND (v.object_key IS NOT NULL OR v.drive_file_id IS NOT NULL) AND EXISTS(SELECT 1 FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id WHERE cm.student_id=v.student_id AND c.teacher_id=$1 AND c.organization_id=$2) ORDER BY v.submitted_at DESC LIMIT 250",[user.id,user.organization_id]);
       reply(res,200,{ok:true,submissions:q.rows});return true;
+    }
+    // Teacher removes only a recording belonging to a pupil in their own class.
+    // Neon storage bytes are deleted, while a minimal tombstone and all PBD
+    // assessments / text feedback remain. Deleted videos are never watchable.
+    if(path.startsWith('/api/misi4/delete/')&&req.method==='POST'){
+      if(user.role!=='guru'){reply(res,403,{ok:false,error:'FORBIDDEN'});return true;}
+      const id=path.split('/').at(-1);
+      if(!UUID.test(id)){reply(res,400,{ok:false,error:'INVALID_ID'});return true;}
+      const body=await jsonBody(req);
+      if(body?.confirmId!==id){reply(res,400,{ok:false,error:'CONFIRMATION_REQUIRED'});return true;}
+      const client=await db.connect();
+      try{
+        await client.query('BEGIN');
+        const rows=await client.query(
+          "SELECT id,student_id,object_key,drive_file_id FROM hn_misi4_videos WHERE id=$1 AND organization_id=$2 AND status='submitted' AND deleted_at IS NULL FOR UPDATE",
+          [id,user.organization_id]
+        );
+        const item=rows.rows[0];
+        if(!item){await client.query('ROLLBACK');reply(res,404,{ok:false,error:'VIDEO_NOT_FOUND'});return true;}
+        if(!(await teacherHasStudent(client,user,item.student_id))){
+          await client.query('ROLLBACK');reply(res,403,{ok:false,error:'FORBIDDEN'});return true;
+        }
+        if(item.object_key){
+          if(!configured(cfg)){
+            await client.query('ROLLBACK');
+            reply(res,503,{ok:false,error:'NEON_STORAGE_NOT_CONFIGURED'});return true;
+          }
+          // Delete the private object first. If deletion fails, keep the submission.
+          await makeS3(cfg).send(new DeleteObjectCommand({Bucket:cfg.bucket,Key:item.object_key}));
+        }
+        // Preserve any published teacher comments; detach the deleted video link.
+        await client.query('UPDATE hn_teacher_feedback SET video_id=NULL WHERE video_id=$1 AND organization_id=$2',
+          [id,user.organization_id]);
+        await client.query(
+          "UPDATE hn_misi4_videos SET deleted_at=now(),deleted_by=$3,object_key=NULL,drive_file_id=NULL WHERE id=$1 AND organization_id=$2",
+          [id,user.organization_id,user.id]
+        );
+        await client.query(
+          "INSERT INTO hn_audit(organization_id,actor_id,action,resource_type,resource_id,outcome) VALUES($1,$2,'teacher_remove_misi4_video','misi4_video',$3,'success')",
+          [user.organization_id,user.id,id]
+        );
+        await client.query('COMMIT');
+        reply(res,200,{ok:true,deletedId:id,storageDeleted:Boolean(item.object_key),
+          legacyDriveWarning:Boolean(item.drive_file_id)});
+        return true;
+      }catch(error){
+        await client.query('ROLLBACK').catch(()=>{});
+        throw error;
+      }finally{client.release();}
     }
     if(path.startsWith('/api/misi4/watch/')&&req.method==='GET'&&(user.role==='guru'||user.role==='murid')){
       const id=path.split('/').at(-1);
       if(!UUID.test(id)){reply(res,400,{ok:false,error:'INVALID_ID'});return true;}
-      const q=await db.query("SELECT student_id,drive_file_id,object_key,mime_type,expected_bytes FROM hn_misi4_videos WHERE id=$1 AND organization_id=$2 AND status='submitted'",[id,user.organization_id]);
+      const q=await db.query("SELECT student_id,drive_file_id,object_key,mime_type,expected_bytes FROM hn_misi4_videos WHERE id=$1 AND organization_id=$2 AND status='submitted' AND deleted_at IS NULL",[id,user.organization_id]);
       const item=q.rows[0];
       if(!item||(item.object_key===null&&item.drive_file_id===null)){reply(res,404,{ok:false,error:'NOT_FOUND'});return true;}
       if((user.role==='murid'&&item.student_id!==user.id)||(user.role==='guru'&&!(await teacherHasStudent(db,user,item.student_id)))){reply(res,403,{ok:false,error:'FORBIDDEN'});return true;}
