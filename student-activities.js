@@ -599,7 +599,7 @@
     for(const k of ["permulaan","perkembangan","pengakhiran"]){
       const text=draft[k];
       if(typeof text!=="string"||text.length>3500||text.replace(/_{2,}/g,"").trim().length<15||
-         text.trim().split(/\\s+/).length<3)return {ok:false};
+         text.trim().split(/\s+/).length<3)return {ok:false};
     }
     const keys=["watakDanLatar","peristiwaJelas","permulaanLengkap","perkembanganLengkap","pengakhiranLengkap","duaUngkapanIndah","bacaSemulaSantun"];
     if(keys.some(k=>check[k]!==true))return {ok:false};
