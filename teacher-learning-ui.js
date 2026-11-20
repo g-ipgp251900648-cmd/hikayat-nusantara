@@ -175,6 +175,57 @@
     form.addEventListener('submit',event=>event.preventDefault());
     form.append(actions);root.append(form);
     root.append(el('p','Rekod TP yang disahkan hanya dipaparkan kepada Murid selepas Guru membuat pengesahan. Setiap perubahan mempunyai rekod sejarah dan audit.','hn-learning-muted'));
+    // Show the teacher's saved records for every pupil in this class, including drafts.
+    const archive=el('section','','hn-learning-panel');
+    archive.append(el('h3','Rekod PBD Murid — Semak Semula dan Edit'));
+    archive.append(el('p','Pilih rekod murid untuk mengedit TP, rubrik, evidens atau justifikasi. Setiap simpanan menghasilkan versi baharu; rekod sejarah lama dikekalkan.','hn-learning-muted'));
+    const all=(current.learning.assessments||[])
+      .filter(a=>ownStudents(x.classId).some(p=>same(p.id,a.student_id)))
+      .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
+    if(!all.length)empty(archive,'Belum ada rekod PBD disimpan untuk kelas ini.');
+    for(const item of all){
+      const pupil=ownStudents(x.classId).find(p=>same(p.id,item.student_id));
+      const entry=el('div','','hn-learning-entry');
+      entry.append(el('strong',(pupil?.display_name||'Murid')+' · Misi '+item.mission_id+' · '+(item.tp?'TP'+item.tp:'TP belum ditetapkan')));
+      entry.append(el('p',(statuses[item.status]||item.status)+' · Versi '+item.revision+' · Dikemas kini '+new Date(item.updated_at).toLocaleString('ms-MY')));
+      const actions=el('div','','hn-learning-actions');
+      actions.append(button('Lihat / Edit PBD',()=>{
+        x.studentId=item.student_id;x.missionId=item.mission_id;renderPbd();
+        pages.pbd.querySelector('.hn-learning-form')?.scrollIntoView({behavior:'smooth',block:'start'});
+      },'hn-learning-primary'));
+      actions.append(button('Sejarah Pindaan',()=>void showPbdHistory(item.student_id,item.mission_id,entry)));
+      entry.append(actions);archive.append(entry);
+    }
+    root.append(archive);
+    const selectedHistory=el('section','','hn-learning-panel');
+    selectedHistory.append(el('h3','Sejarah PBD Murid Dipilih'));
+    root.append(selectedHistory);
+    void showPbdHistory(x.studentId,x.missionId,selectedHistory);
+  }
+  async function showPbdHistory(studentId,missionId,root){
+    let target=root.querySelector('.hn-pbd-history');
+    if(!target){target=el('div','','hn-pbd-history');root.append(target);}
+    target.replaceChildren(el('p','Memuatkan sejarah pindaan...','hn-learning-muted'));
+    try{
+      const result=await api('/api/teacher/pbd/history?studentId='+encodeURIComponent(studentId)+'&missionId='+encodeURIComponent(missionId));
+      if(!target.isConnected)return;
+      target.replaceChildren();
+      if(!result.ok){empty(target,'Sejarah tidak dapat dimuatkan. Cuba lagi.');return;}
+      const history=result.data?.history||[];
+      if(!history.length){empty(target,'Tiada sejarah pindaan untuk rekod ini.');return;}
+      for(const h of history){
+        const snap=h.snapshot||{};
+        const item=el('div','','hn-learning-entry');
+        item.append(el('strong','Versi '+h.revision+' · '+(snap.tp?'TP'+snap.tp:'TP belum ditetapkan')+' · '+(statuses[snap.status]||snap.status||'Draf')));
+        item.append(el('p','Tarikh: '+new Date(h.created_at).toLocaleString('ms-MY')+' · Guru: '+(h.teacher_name||'Tidak tersedia')));
+        if(snap.evidence)item.append(el('p','Evidens: '+snap.evidence));
+        if(snap.justification)item.append(el('p','Justifikasi: '+snap.justification));
+        if(snap.rubric){
+          item.append(el('p','Rubrik: '+Object.entries(snap.rubric).map(([k,v])=>k+' '+v+'/4').join(' · ')));
+        }
+        target.append(item);
+      }
+    }catch{if(target.isConnected){target.replaceChildren();empty(target,'Sambungan terganggu semasa memuatkan sejarah.');}}
   }
   function renderAnalysis(){
     const root=pages.analysis;
