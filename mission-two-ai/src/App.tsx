@@ -44,6 +44,7 @@ import type {
   StoryDraft,
 } from './game/types';
 import { awardMissionXpOnce, canCompleteMission } from './game/writing';
+import {mergeMisi2Cloud,readMisi2Cloud,writeMisi2Cloud} from './game/cloud';
 
 function mapPhaseToBodyDataset(
   phase: GamePhase,
@@ -58,7 +59,7 @@ function mapPhaseToBodyDataset(
 
 // Same-origin events to Hikayat Nusantara Portal. No remote account or API.
 // Only assessment evidence for this local demo is sent to the parent window.
-function notifyHikayatPortal(eventType: 'attempt' | 'victory', payload: unknown) {
+function notifyHikayatPortal(eventType: 'attempt' | 'victory' | 'sync', payload: unknown) {
   if (typeof window === 'undefined' || window.parent === window) return;
   window.parent.postMessage({
     source: 'hikayat-misi2-aistudio-original',
@@ -158,6 +159,54 @@ export default function App() {
       malayAudio.setMood('victory');
     }
   }, [phase]);
+
+  // Fetch the pupil's private Neon snapshot on opening. Never replace the local
+  // game with a blank record from a newly used phone/computer.
+  const [cloudReady,setCloudReady]=useState(false);
+  const [cloudStatus,setCloudStatus]=useState('Menyemak rekod Misi 2...');
+  const bootCloud=useCallback(async()=>{
+    try{
+      const remote=await readMisi2Cloud();
+      if(remote)setPersisted(prev=>mergeMisi2Cloud(prev,remote));
+      setCloudReady(true);
+      setCloudStatus('Rekod peranti sedang diselaraskan.');
+    }catch{
+      setCloudReady(false);
+      setCloudStatus('Rekod disimpan pada peranti. Penyelarasan Neon belum tersedia.');
+    }
+  },[]);
+  useEffect(()=>{
+    void bootCloud();
+    window.addEventListener('online',bootCloud);
+    return ()=>window.removeEventListener('online',bootCloud);
+  },[bootCloud]);
+  // Save the actual game state, including checkpoint and graph data, after
+  // successful initialization. Every upload is merged under a DB transaction.
+  useEffect(()=>{
+    if(!cloudReady)return;
+    let active=true;
+    const timer=window.setTimeout(()=>{
+      void (async()=>{
+        try{
+          const remote=await writeMisi2Cloud(persisted);
+          if(!active)return;
+          if(remote)setPersisted(prev=>{
+            const combined=mergeMisi2Cloud(prev,remote);
+            const withoutTime=(v:PersistedMission2State)=>JSON.stringify({...v,lastUpdated:0});
+            return withoutTime(combined)===withoutTime(prev)?prev:combined;
+          });
+          setCloudStatus('✓ Kemajuan Misi 2 disimpan dalam Neon.');
+        }catch{
+          if(active)setCloudStatus('Belum dapat menyegerakkan Neon. Rekod telefon/komputer masih tersimpan.');
+        }
+      })();
+    },1350);
+    return ()=>{active=false;window.clearTimeout(timer);};
+  },[persisted,cloudReady]);
+
+  useEffect(()=>{
+    notifyHikayatPortal('sync',{status:cloudStatus});
+  },[cloudStatus]);
 
   // Debounced auto-save to localStorage
   useEffect(() => {
