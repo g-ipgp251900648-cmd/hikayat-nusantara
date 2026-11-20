@@ -888,7 +888,8 @@ export async function handleApi(request,response,pathname) {
         json(response,200,{ok:true,state:r.rows[0]?.snapshot||null,
           revision:r.rows[0]?.revision||0,updatedAt:r.rows[0]?.updated_at||null});return true;
       }
-      const body=await readBody(request,36000);
+      const body=await readBody(request,60000);
+      if(body.accountId!==user.id){reject(response,403,'STUDENT_ACCOUNT_MISMATCH');return true;}
       const incoming=sanitizeMisi2(body.state);
       if(!incoming){reject(response,400,'INVALID_MISI2_STATE');return true;}
       const client=await db.connect();
