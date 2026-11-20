@@ -157,7 +157,8 @@
           return '<tr><td>'+safe(item.display_name)+'</td><td>'+safe(item.class_name)+'</td>'+
             '<td>'+safe(date)+'</td><td>Telah Dihantar</td>'+
             '<td><button type="button" data-m4-watch="'+safe(item.id)+'">▶ Tonton Video</button> '+
-            '<button type="button" data-m4-comment="'+safe(item.id)+'" data-m4-student="'+safe(item.student_id)+'">✎ Beri Komen</button></td></tr>';
+            '<button type="button" data-m4-comment="'+safe(item.id)+'" data-m4-student="'+safe(item.student_id)+'">✎ Beri Komen</button> '+
+            '<button type="button" data-m4-delete="'+safe(item.id)+'" data-m4-name="'+safe(item.display_name)+'" style="color:#982d2d;border-color:#c77c7c">🗑 Padam Video</button></td></tr>';
         }).join('');
         reviewRoot.innerHTML=heading+refresh+
           '<div class="table-wrap"><table><thead><tr><th>Nama Murid</th><th>Kelas</th><th>Tarikh Hantar</th>'+
@@ -169,8 +170,44 @@
           '<button type="button" data-m4-refresh>Cuba Lagi</button>';
       }
     };
-    reviewRoot.addEventListener('click',event=>{
+    reviewRoot.addEventListener('click',async event=>{
       if(event.target.closest('[data-m4-refresh]')){void load();return;}
+      const remove=event.target.closest('button[data-m4-delete]');
+      if(remove){
+        const id=remove.dataset.m4Delete;
+        const name=remove.dataset.m4Name||'murid ini';
+        if(!/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(id))return;
+        const confirmed=window.confirm(
+          'Padam rakaman Misi 4 untuk '+name+'?\\n\\n'+
+          'Rakaman Neon akan dipadam daripada storan dan tidak boleh dimainkan semula. '+
+          'Komen guru dan pentaksiran PBD dikekalkan.\\n\\n'+
+          'Pastikan anda memilih video yang betul sebelum meneruskan.'
+        );
+        if(!confirmed)return;
+        const status=reviewRoot.querySelector('#hn-m4-review-status');
+        remove.disabled=true;
+        if(status)status.textContent='Sedang memadam rakaman yang dipilih...';
+        try{
+          const response=await fetch('/api/misi4/delete/'+encodeURIComponent(id),{
+            method:'POST',credentials:'same-origin',
+            headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({confirmId:id})
+          });
+          const result=await response.json();
+          if(!response.ok||result?.ok!==true)throw Error(result?.error||'DELETE_FAILED');
+          clearVideo();
+          await load();
+          const nextStatus=reviewRoot.querySelector('#hn-m4-review-status');
+          if(nextStatus)nextStatus.textContent=result.legacyDriveWarning
+            ? 'Rekod video lama dikeluarkan daripada portal. Fail asal Google Drive mungkin masih perlu dipadam secara berasingan.'
+            : '✓ Video berjaya dipadam. Komen guru dan PBD kekal.';
+          window.dispatchEvent(new Event('hn:misi4-video-deleted'));
+        }catch{
+          remove.disabled=false;
+          if(status)status.textContent='Video tidak dapat dipadam. Cuba semula atau semak sambungan Neon.';
+        }
+        return;
+      }
       const comment=event.target.closest('button[data-m4-comment]');
       if(comment){
         const navButton=nav.querySelector('[data-teacher-menu="guru-maklum-balas"]');
