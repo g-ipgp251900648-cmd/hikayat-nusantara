@@ -775,7 +775,7 @@ export async function handleApi(request,response,pathname) {
     if(pathname==='/api/teacher/learning'&&method==='GET'&&user.role==='guru'){
       const clause=" WHERE t.organization_id=$1 AND EXISTS (SELECT 1 FROM hn_class_members cm JOIN hn_classes c ON c.id=cm.class_id JOIN hn_users u ON u.id=cm.student_id WHERE cm.student_id=t.student_id AND c.teacher_id=$2 AND c.organization_id=$1 AND u.organization_id=$1 AND u.role='murid' AND u.active=true)";
       const [pbd,feedback,portfolio,interventions]=await Promise.all([
-        db.query('SELECT t.* FROM hn_pbd_assessments t'+clause+' ORDER BY t.updated_at DESC LIMIT 1200',[user.organization_id,user.id]),
+        db.query('SELECT t.* FROM hn_pbd_assessments t'+clause+' AND t.deleted_at IS NULL ORDER BY t.updated_at DESC LIMIT 1200',[user.organization_id,user.id]),
         db.query('SELECT t.* FROM hn_teacher_feedback t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id]),
         db.query('SELECT t.* FROM hn_portfolio_entries t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id]),
         db.query('SELECT t.* FROM hn_teacher_interventions t'+clause+' ORDER BY t.created_at DESC LIMIT 1200',[user.organization_id,user.id])
@@ -794,6 +794,47 @@ export async function handleApi(request,response,pathname) {
         [user.organization_id,studentId,missionId]
       );
       json(response,200,{ok:true,history:history.rows});return true;
+    }
+    // Teacher-only soft deletion: keeps history and audit, hides the TP from pupils.
+    if(pathname==='/api/teacher/pbd/delete'&&method==='POST'&&user.role==='guru'){
+      const body=await readBody(request,4096);
+      const studentId=body.studentId,missionId=body.missionId,expected=body.expectedRevision;
+      if(!uuid(studentId)||!validMission(missionId)||!Number.isInteger(expected)||expected<1){
+        reject(response,400,'INVALID_PBD_DELETE');return true;
+      }
+      const client=await db.connect();
+      try{
+        await client.query('BEGIN');
+        if(!(await teacherClassForStudent(client,user,studentId))){
+          await client.query('ROLLBACK');reject(response,404,'STUDENT_NOT_IN_CLASS');return true;
+        }
+        const previous=await client.query(
+          'SELECT * FROM hn_pbd_assessments WHERE organization_id=$1 AND student_id=$2 AND mission_id=$3 FOR UPDATE',
+          [user.organization_id,studentId,missionId]
+        );
+        const record=previous.rows[0];
+        if(!record||record.deleted_at){
+          await client.query('ROLLBACK');reject(response,404,'PBD_NOT_FOUND');return true;
+        }
+        if(record.revision!==expected){
+          await client.query('ROLLBACK');reject(response,409,'PBD_REVISION_CONFLICT');return true;
+        }
+        await client.query(
+          'UPDATE hn_pbd_assessments SET deleted_at=now(),revision=revision+1,updated_at=now() WHERE id=$1',
+          [record.id]
+        );
+        await client.query(
+          'INSERT INTO hn_pbd_assessment_history(organization_id,student_id,mission_id,teacher_id,revision,snapshot) VALUES($1,$2,$3,$4,$5,$6::jsonb)',
+          [user.organization_id,studentId,missionId,user.id,record.revision+1,JSON.stringify({
+            action:'deleted',tp:record.tp,rubric:record.rubric,evidence:record.evidence,
+            justification:record.justification,status:record.status,deletedAt:new Date().toISOString()
+          })]
+        );
+        await auditEvent(client,user,'delete_pbd','pbd',record.id);
+        await client.query('COMMIT');
+        json(response,200,{ok:true,deleted:true,studentId,missionId});return true;
+      }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
+      finally{client.release();}
     }
     if(pathname==='/api/teacher/pbd'&&method==='POST'&&user.role==='guru'){
       const body=await readBody(request,12000);
@@ -820,17 +861,17 @@ export async function handleApi(request,response,pathname) {
         const classId=await teacherClassForStudent(client,user,studentId);
         if(!classId){await client.query('ROLLBACK');reject(response,404,'STUDENT_NOT_IN_CLASS');return true;}
         const previous=await client.query(
-          'SELECT id,revision FROM hn_pbd_assessments WHERE organization_id=$1 AND student_id=$2 AND mission_id=$3 FOR UPDATE',
+          'SELECT id,revision,deleted_at FROM hn_pbd_assessments WHERE organization_id=$1 AND student_id=$2 AND mission_id=$3 FOR UPDATE',
           [user.organization_id,studentId,missionId]
         );
         const old=previous.rows[0];
-        if((old?.revision||0)!==expected){
+        if((old?.deleted_at?0:(old?.revision||0))!==expected){
           await client.query('ROLLBACK');reject(response,409,'PBD_REVISION_CONFLICT');return true;
         }
         const params=[user.organization_id,studentId,missionId,classId,user.id,tp,JSON.stringify(scores),evidence,justification,status];
         const result=old
           ?await client.query(
-            "UPDATE hn_pbd_assessments SET class_id=$1,teacher_id=$2,tp=$3,rubric=$4::jsonb,evidence=$5,justification=$6,status=$7,revision=revision+1,updated_at=now(),confirmed_at=CASE WHEN $7::varchar='confirmed' THEN now() ELSE NULL END WHERE id=$8 RETURNING *",
+            "UPDATE hn_pbd_assessments SET class_id=$1,teacher_id=$2,tp=$3,rubric=$4::jsonb,evidence=$5,justification=$6,status=$7,revision=revision+1,deleted_at=NULL,updated_at=now(),confirmed_at=CASE WHEN $7::varchar='confirmed' THEN now() ELSE NULL END WHERE id=$8 RETURNING *",
             [classId,user.id,tp,JSON.stringify(scores),evidence,justification,status,old.id]
           )
           :await client.query(
@@ -977,7 +1018,7 @@ export async function handleApi(request,response,pathname) {
     }
     if(pathname==='/api/student/learning'&&method==='GET'&&user.role==='murid'){
       const [pbd,feedback,portfolio]=await Promise.all([
-        db.query("SELECT mission_id,tp,status,updated_at,confirmed_at FROM hn_pbd_assessments WHERE organization_id=$1 AND student_id=$2 AND status='confirmed' ORDER BY mission_id",[user.organization_id,user.id]),
+        db.query("SELECT mission_id,tp,status,updated_at,confirmed_at FROM hn_pbd_assessments WHERE organization_id=$1 AND student_id=$2 AND status='confirmed' AND deleted_at IS NULL ORDER BY mission_id",[user.organization_id,user.id]),
         db.query("SELECT id,mission_id,video_id,strengths,improvements,next_steps,status,created_at,updated_at FROM hn_teacher_feedback WHERE organization_id=$1 AND student_id=$2 AND status IN ('published','revision_requested') ORDER BY updated_at DESC LIMIT 100",[user.organization_id,user.id]),
         db.query('SELECT id,mission_id,title,content,status,created_at,updated_at FROM hn_portfolio_entries WHERE organization_id=$1 AND student_id=$2 ORDER BY created_at DESC LIMIT 100',[user.organization_id,user.id])
       ]);
