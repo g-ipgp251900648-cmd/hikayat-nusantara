@@ -17,3 +17,18 @@ test('the unauthenticated Render portal cannot pretend teacher uploads succeeded
   assert.match(src('mission-four-ai-bridge.js'),/receipt not verified/);
   assert.match(src('mission-four-ai-bridge.js'),/res\.ok|r\.ok/);
 });
+
+test('Misi 4 marks pupil dashboard complete only after server verifies a video',()=>{
+  const student=src('student-activities.js');
+  const bridge=src('mission-four-ai-bridge.js');
+  assert.match(student,/window\.submitMissionFourAdventure=async payload/);
+  assert.match(student,/window\.hnApiRequest\('\/api\/misi4\/state'\)/);
+  assert.match(student,/payload\.verified!==true/);
+  assert.match(student,/item\.status==='Telah Dihantar'/);
+  assert.match(student,/state\.completed\[3\]=true/);
+  assert.match(student,/await initializeCloud\(\);\s*await verifyMissionFourStatus\(\);/);
+  assert.match(student,/if\(cloud\.ready\)queueCloud\(\)/);
+  assert.match(bridge,/await window\.submitMissionFourAdventure/);
+  assert.match(bridge,/completion\?\.ok!==true/);
+  assert.match(bridge,/Misi 4 ditandakan selesai \(80 XP\)/);
+});
