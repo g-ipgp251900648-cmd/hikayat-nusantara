@@ -52,11 +52,11 @@ export function mergeMisi2Cloud(
   }
   return merged;
 }
-async function request(method:'GET'|'PUT',state?:PersistedMission2State){
+async function request(method:'GET'|'PUT',state?:PersistedMission2State,accountId?:string){
   const response=await fetch(url,{
     method,credentials:'same-origin',cache:'no-store',
     ...(method==='PUT'?{headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({state:{...state,lastUpdated:Date.now()}})}:{})
+      body:JSON.stringify({accountId,state:{...state,lastUpdated:Date.now()}})}:{})
   });
   if(!response.ok)throw Error('Misi 2 cloud unavailable: '+response.status);
   const result=await response.json();
@@ -66,6 +66,6 @@ async function request(method:'GET'|'PUT',state?:PersistedMission2State){
 export async function readMisi2Cloud():Promise<PersistedMission2State|null>{
   return request('GET');
 }
-export async function writeMisi2Cloud(state:PersistedMission2State):Promise<PersistedMission2State|null>{
-  return request('PUT',state);
+export async function writeMisi2Cloud(state:PersistedMission2State,accountId:string):Promise<PersistedMission2State|null>{
+  return request('PUT',state,accountId);
 }
