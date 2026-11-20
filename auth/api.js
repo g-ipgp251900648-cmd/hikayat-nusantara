@@ -1,4 +1,5 @@
 import { database, databaseConfigured, audit } from './db.js';
+import { sanitizeMisi2, mergeMisi2 } from './misi2-state.js';
 import { hashPassword, verifyPassword, validLoginId, validPassword, validName, temporaryPassword, uniqueId, sessionToken, tokenHash } from './credentials.js';
 
 const COOKIE_NAME='hn_session';
@@ -876,6 +877,42 @@ export async function handleApi(request,response,pathname) {
         [body.status,body.entryId,user.organization_id]);
       await auditEvent(db,user,'review_portfolio','portfolio',body.entryId);
       json(response,200,{ok:true,entry:r.rows[0]});return true;
+    }
+    // Private account-scoped game data. Never exposed through teacher or admin APIs.
+    if(pathname==='/api/student/misi2/state'&&user.role==='murid'&&(method==='GET'||method==='PUT')){
+      if(method==='GET'){
+        const r=await db.query(
+          'SELECT snapshot,revision,updated_at FROM hn_misi2_game_state WHERE student_id=$1 AND organization_id=$2',
+          [user.id,user.organization_id]
+        );
+        json(response,200,{ok:true,state:r.rows[0]?.snapshot||null,
+          revision:r.rows[0]?.revision||0,updatedAt:r.rows[0]?.updated_at||null});return true;
+      }
+      const body=await readBody(request,36000);
+      const incoming=sanitizeMisi2(body.state);
+      if(!incoming){reject(response,400,'INVALID_MISI2_STATE');return true;}
+      const client=await db.connect();
+      try{
+        await client.query('BEGIN');
+        // Per-student advisory transaction lock also serializes first-time inserts.
+        await client.query('SELECT pg_advisory_xact_lock(hashtext($1))',[user.id]);
+        const existing=await client.query(
+          'SELECT snapshot FROM hn_misi2_game_state WHERE student_id=$1 AND organization_id=$2 FOR UPDATE',
+          [user.id,user.organization_id]
+        );
+        const old=existing.rows.length?sanitizeMisi2(existing.rows[0].snapshot):null;
+        const merged=mergeMisi2(old,incoming);
+        if(existing.rows.length){
+          await client.query('UPDATE hn_misi2_game_state SET snapshot=$3::jsonb,revision=revision+1,updated_at=now() WHERE student_id=$1 AND organization_id=$2',
+            [user.id,user.organization_id,JSON.stringify(merged)]);
+        }else{
+          await client.query('INSERT INTO hn_misi2_game_state(student_id,organization_id,snapshot) VALUES($1,$2,$3::jsonb)',
+            [user.id,user.organization_id,JSON.stringify(merged)]);
+        }
+        await client.query('COMMIT');
+        json(response,200,{ok:true,state:merged});return true;
+      }catch(error){await client.query('ROLLBACK').catch(()=>{});throw error;}
+      finally{client.release();}
     }
     if(pathname==='/api/student/learning'&&method==='GET'&&user.role==='murid'){
       const [pbd,feedback,portfolio]=await Promise.all([
