@@ -782,6 +782,19 @@ export async function handleApi(request,response,pathname) {
       ]);
       json(response,200,{ok:true,assessments:pbd.rows,feedback:feedback.rows,portfolio:portfolio.rows,interventions:interventions.rows});return true;
     }
+    // Audit trail for a pupil's PBD: accessible only to the teacher of that pupil.
+    if(pathname==='/api/teacher/pbd/history'&&method==='GET'&&user.role==='guru'){
+      const params=new URL(request.url,'http://localhost').searchParams;
+      const studentId=params.get('studentId');
+      const missionId=Number(params.get('missionId'));
+      if(!uuid(studentId)||!validMission(missionId)){reject(response,400,'INVALID_PBD_HISTORY_REQUEST');return true;}
+      if(!(await teacherClassForStudent(db,user,studentId))){reject(response,404,'STUDENT_NOT_IN_CLASS');return true;}
+      const history=await db.query(
+        'SELECT h.revision,h.snapshot,h.created_at,u.display_name AS teacher_name FROM hn_pbd_assessment_history h LEFT JOIN hn_users u ON u.id=h.teacher_id WHERE h.organization_id=$1 AND h.student_id=$2 AND h.mission_id=$3 ORDER BY h.revision DESC LIMIT 100',
+        [user.organization_id,studentId,missionId]
+      );
+      json(response,200,{ok:true,history:history.rows});return true;
+    }
     if(pathname==='/api/teacher/pbd'&&method==='POST'&&user.role==='guru'){
       const body=await readBody(request,12000);
       const studentId=body.studentId,missionId=body.missionId;
