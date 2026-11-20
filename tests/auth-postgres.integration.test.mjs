@@ -196,6 +196,65 @@ test('PostgreSQL API: Admin creates teacher, teacher creates class and pupil; da
     const studentB=await signin(pupilB.student.login_id,pupilB.temporaryPassword);
     await updatePassword(studentA.cookie,pupilA.temporaryPassword,makePassword());
     await updatePassword(studentB.cookie,pupilB.temporaryPassword,makePassword());
+    // Private Misi 2 cloud sync: A's phone can upload progress; a blank computer
+    // cannot erase it. Teachers and other pupils cannot read A's written story.
+    const misi2State=(completed=false)=>({
+      version:1,lastUpdated:100,savedPhase:completed?'victory':'title',
+      mode:'pengembara',quality:'high',reducedMotion:false,use2DFallback:false,
+      alternativeLanguagePath:false,tutorialCompleted:completed,flightCompleted:completed,
+      collectedPhrases:completed?['desa yang permai']:[],
+      checkpointRecords:[0,1,2,3,4].map(i=>({
+        checkpointIndex:i,firstAttemptCorrect:completed?true:null,
+        masteredAfterCorrection:completed,attemptsUsed:completed?1:0
+      })),
+      flightScore:completed?500:0,
+      lastRunStats:{timeRemaining:120,heartsRemaining:3,collisions:0,checkpointsCleared:completed?5:0},
+      draft:{watakId:completed?'watak':'',latarId:completed?'desa':'',
+        peristiwaId:completed?'peristiwa':'',useTemplate:true,
+        permulaan:completed?'Pada suatu hari di desa yang permai.':'',
+        perkembangan:completed?'Melur berjumpa dengan seorang pengembara.':'',
+        pengakhiran:completed?'Akhirnya mereka hidup dengan gembira.':''},
+      checklist:{watakDanLatar:completed,peristiwaJelas:completed,
+        permulaanLengkap:completed,perkembanganLengkap:completed,
+        pengakhiranLengkap:completed,duaUngkapanIndah:completed,
+        bacaSemulaSantun:completed},
+      reviewChecked:completed,missionCompleted:completed,xpAwarded:completed?90:0,
+      badgeUnlocked:completed,attemptHistory:completed?[{
+        id:'run_1731000000000',timestamp:1731000000000,mode:'pengembara',
+        completedFlight:true,checkpointsReached:5,firstTryAccuracyPct:100,
+        masteredCount:5,collisions:0,heartsRemaining:3,timeUsedSeconds:70,
+        alternativeLanguagePath:false
+      }]:[]
+    });
+    const cloudInitial=await api('/api/student/misi2/state',{cookie:studentA.cookie});
+    assert.equal(cloudInitial.status,200,JSON.stringify(cloudInitial.data));
+    assert.equal(cloudInitial.data.state,null);
+    const cloudWrongAccount=await api('/api/student/misi2/state',{
+      method:'PUT',cookie:studentA.cookie,
+      body:{accountId:pupilB.student.id,state:misi2State(true)}
+    });
+    assert.equal(cloudWrongAccount.status,403);
+    const cloudWrite=await api('/api/student/misi2/state',{
+      method:'PUT',cookie:studentA.cookie,
+      body:{accountId:pupilA.student.id,state:misi2State(true)}
+    });
+    assert.equal(cloudWrite.status,200,JSON.stringify(cloudWrite.data));
+    const cloudBlankFromComputer=await api('/api/student/misi2/state',{
+      method:'PUT',cookie:studentA.cookie,
+      body:{accountId:pupilA.student.id,state:{...misi2State(false),lastUpdated:200}}
+    });
+    assert.equal(cloudBlankFromComputer.status,200);
+    assert.equal(cloudBlankFromComputer.data.state.missionCompleted,true);
+    assert.equal(cloudBlankFromComputer.data.state.attemptHistory.length,1);
+    assert.match(cloudBlankFromComputer.data.state.draft.permulaan,/desa yang permai/);
+    const cloudOtherPupil=await api('/api/student/misi2/state',{cookie:studentB.cookie});
+    assert.equal(cloudOtherPupil.status,200);
+    assert.equal(cloudOtherPupil.data.state,null);
+    const cloudTeacher=await api('/api/student/misi2/state',{cookie:a.cookie});
+    assert.notEqual(cloudTeacher.status,200);
+    const cloudAdmin=await api('/api/student/misi2/state',{cookie:admin.cookie});
+    assert.notEqual(cloudAdmin.status,200);
+
     const firstSave=await api('/api/student/progress/1',{
       method:'PUT',cookie:studentA.cookie,
       body:{revision:0,checkpoint:{draft:'Cerita peribadi A'}}
