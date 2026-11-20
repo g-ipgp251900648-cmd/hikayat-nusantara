@@ -166,8 +166,30 @@
       const payload={studentId:x.studentId,missionId:x.missionId,expectedRevision:existing?.revision||0,
         tp:tp.value?Number(tp.value):null,rubric:Object.fromEntries(Object.entries(inputs).map(([k,v])=>[k,Number(v.value)])),
         evidence:ev.querySelector('textarea').value,justification:why.querySelector('textarea').value,status};
-      try{const result=await post('/api/teacher/pbd',payload,root);if(result.ok)await reload('pbd');}
-      catch{message(root,'Sambungan terganggu. Sila cuba lagi.');}
+      try{
+        const result=await post('/api/teacher/pbd',payload,root);
+        if(result.ok&&result.data?.assessment){
+          // Reconcile the confirmed server response immediately, even if the
+          // following list refresh fails or is delayed.
+          const saved=result.data.assessment;
+          current.learning.assessments=[
+            saved,...(current.learning.assessments||[]).filter(a=>!(same(a.student_id,saved.student_id)&&a.mission_id===saved.mission_id))
+          ];
+          render('pbd');
+          message(pages.pbd,status==='confirmed'
+            ?'✓ PBD berjaya disahkan dan disimpan untuk murid ini (Versi '+saved.revision+'). Rekod ada dalam senarai di bawah.'
+            :'✓ Draf PBD berjaya disimpan (Versi '+saved.revision+'). Rekod ada dalam senarai di bawah.');
+          const refresh=await api('/api/teacher/learning');
+          if(refresh.ok){
+            current.learning=refresh.data;
+            render('pbd');
+            message(pages.pbd,status==='confirmed'
+              ?'✓ PBD disahkan dan rekod terkini dimuatkan.'
+              :'✓ Draf disimpan dan rekod terkini dimuatkan.');
+          }else message(pages.pbd,'✓ PBD telah disimpan. Senarai disegarkan daripada resit pelayan; data terkini belum dapat dimuatkan semula.');
+        }else if(result.ok)message(root,'Pelayan tidak memulangkan resit PBD. Sila semak semula sebelum cuba menyimpan.');
+      }
+      catch{message(pages.pbd,'Sambungan terganggu semasa mengemas kini paparan. Semak rekod sebelum mengulangi pengesahan.');}
       finally{saving=false;}
     };
     actions.append(button('Simpan Draf',()=>save('draft')),
