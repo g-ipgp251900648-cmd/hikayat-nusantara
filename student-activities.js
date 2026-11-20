@@ -642,6 +642,38 @@
     save();updateProgress();
     return {ok:true,completed:true,alreadyCompleted:false};
   };
+  // Misi 4 is complete only after Neon confirms an active video submission.
+  // This also recovers videos submitted before the dashboard completion hook existed.
+  async function verifyMissionFourStatus(expectedId=null){
+    try{
+      const result=await window.hnApiRequest('/api/misi4/state');
+      if(!result?.ok||!Array.isArray(result.data?.submissions))
+        return {ok:false,message:'Rekod video tidak dapat disemak. Cuba segerakkan semula.'};
+      const videos=result.data.submissions.filter(item=>
+        typeof item?.id==='string'&&item.status==='Telah Dihantar'
+      );
+      const found=expectedId?videos.find(item=>item.id===expectedId):videos[0];
+      if(!found)return {ok:false,message:'Belum ada rakaman Misi 4 aktif yang disahkan dalam Neon.'};
+      if(!state.completed[3]){
+        state.completed[3]=true;
+        // Submission counts as completion (80 XP), not an invented graded attempt.
+        save();
+        updateProgress();
+        window.dispatchEvent(new Event('hikayat:attempt'));
+      }else if(cloud.ready)queueCloud();
+      return {ok:true,completed:true,submissionId:found.id};
+    }catch{
+      return {ok:false,message:'Sambungan Neon terganggu. Cuba segerakkan semula.'};
+    }
+  }
+  window.submitMissionFourAdventure=async payload=>{
+    if(!payload||payload.verified!==true||
+      typeof payload.submissionId!=='string'||
+      !/^[0-9a-f]{8}-[0-9a-f-]{27}$/i.test(payload.submissionId))
+      return {ok:false,message:'Resit penghantaran Misi 4 tidak sah.'};
+    return verifyMissionFourStatus(payload.submissionId);
+  };
+
   function checkReading(){
     const correctSequence=state.sequence.every((value,i)=>value===i);
     const score=state.readingAnswers.reduce((acc,a,i)=>acc+(a===String(comprehension[i].correct)?1:0),0);
@@ -775,7 +807,11 @@
   helper.querySelector("#quest-helper-close")?.addEventListener("click",()=>helper.hidden=true);
   document.getElementById('quest-sync-now')?.addEventListener('click',()=>{
     if(cloud.ready)queueCloud();else void initializeCloud();
+    void verifyMissionFourStatus();
   });
   updateProgress();
-  void initializeCloud();
+  void (async()=>{
+    await initializeCloud();
+    await verifyMissionFourStatus();
+  })();
 })();

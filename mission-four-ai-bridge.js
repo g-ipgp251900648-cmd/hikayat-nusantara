@@ -25,8 +25,12 @@
       const verified=await fetch('/api/misi4/state',{credentials:'include',cache:'no-store'});
       const state=await verified.json();
       if(!verified.ok||!state.submissions?.some(s=>s.id===receipt.id))throw Error('RECEIPT_NOT_VERIFIED');
-      window.submitMissionFourAdventure?.({receipt:receipt.referenceNo,submissionId:receipt.id,verified:true});
-      status.textContent='✓ Rakaman berjaya dihantar. Guru boleh melihatnya dalam Pusat Semakan Tugasan.';
+      if(typeof window.submitMissionFourAdventure!=='function')throw Error('DASHBOARD_NOT_READY');
+      const completion=await window.submitMissionFourAdventure({
+        receipt:receipt.referenceNo,submissionId:receipt.id,verified:true
+      });
+      if(completion?.ok!==true)throw Error('DASHBOARD_SYNC_FAILED');
+      status.textContent='✓ Video dihantar dan Misi 4 ditandakan selesai (80 XP). Menunggu semakan guru.';
     }catch(e){
       status.textContent='Penghantaran gagal ('+String(e.message).slice(0,70)+'). Simpan rakaman ke peranti dan cuba lagi.';
     }
@@ -54,8 +58,12 @@
       const record=data?.submissions?.find(s=>s?.referenceNo===msg.referenceNo && s?.status==='Telah Dihantar');
       if(!record)throw Error('receipt not verified');
       // No claim of teacher grading; only backend-confirmed upload.
-      window.submitMissionFourAdventure?.({receipt:record.referenceNo,submissionId:record.id,verified:true});
-      if(status)status.textContent='✓ Resit penghantaran disahkan oleh pelayan.';
+      if(typeof window.submitMissionFourAdventure!=='function')throw Error('DASHBOARD_NOT_READY');
+      const completion=await window.submitMissionFourAdventure({
+        receipt:record.referenceNo,submissionId:record.id,verified:true
+      });
+      if(completion?.ok!==true)throw Error('DASHBOARD_SYNC_FAILED');
+      if(status)status.textContent='✓ Video disahkan. Misi 4 selesai (80 XP); menunggu semakan guru.';
     }catch{
       if(status)status.textContent='Penghantaran belum dapat disahkan; simpan fail ke peranti.';
     }
