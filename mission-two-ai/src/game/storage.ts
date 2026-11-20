@@ -3,6 +3,7 @@ import {
   INITIAL_CHECKLIST,
   INITIAL_DRAFT,
 } from './data';
+import {mergeMisi2Cloud} from './cloud';
 import type {
   CheckpointMasteryRecord,
   FlightAttemptRecord,
@@ -30,13 +31,15 @@ export function hasLegacyMisi2Progress(): boolean {
 export function importLegacyMisi2Progress(): boolean {
   if(!accountStorageKey||!hasLegacyMisi2Progress())return false;
   try{
-    // Never replace an already-active account with another pupil's legacy data.
     const existing=loadMission2State();
-    if(existing.hasSavedProgress)return false;
     const legacy=window.localStorage.getItem(MISI2_STORAGE_KEY);
     if(!legacy)return false;
-    window.localStorage.setItem(accountStorageKey,legacy);
-    if(window.localStorage.getItem(accountStorageKey)!==legacy)return false;
+    const parsed=JSON.parse(legacy) as PersistedMission2State;
+    if(parsed.version!==1||!Array.isArray(parsed.attemptHistory)||!parsed.draft)return false;
+    const combined=mergeMisi2Cloud(existing.state,parsed);
+    const copy=JSON.stringify(combined);
+    window.localStorage.setItem(accountStorageKey,copy);
+    if(window.localStorage.getItem(accountStorageKey)!==copy)return false;
     // Source is removed only after a verified copy, to avoid sharing it with another pupil.
     window.localStorage.removeItem(MISI2_STORAGE_KEY);
     return true;
