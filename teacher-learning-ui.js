@@ -158,17 +158,42 @@
       'Belum ada pentaksiran untuk misi ini.','hn-learning-muted');
     form.append(previous);
     const actions=el('div','','hn-learning-actions');
+    const saveStatus=el('p','','hn-learning-message');
+    saveStatus.setAttribute('role','status');
+    const reportSave=(text)=>{
+      saveStatus.textContent=text;
+      if(saveStatus.isConnected)saveStatus.scrollIntoView({block:'nearest'});
+    };
     let saving=false;
     const save=async status=>{
       if(saving)return;
+      const evidenceText=ev.querySelector('textarea').value.trim();
+      const justificationText=why.querySelector('textarea').value.trim();
+      const hasRubric=Object.values(inputs).some(v=>Number(v.value)>0);
+      if(status==='confirmed'&&(!tp.value||evidenceText.length<12||justificationText.length<12||!hasRubric)){
+        reportSave('PBD belum disahkan: sila pilih TP1–TP6, nilai sekurang-kurangnya satu rubrik dan isi evidens serta justifikasi minimum 12 aksara setiap satu.');
+        return;
+      }
       if(status==='confirmed'&&!confirm('Sahkan TP murid ini? Pengesahan akan direkodkan dalam sejarah pentaksiran.'))return;
       saving=true;
+      reportSave('Sedang menghantar PBD ke pangkalan data…');
       const payload={studentId:x.studentId,missionId:x.missionId,expectedRevision:existing?.revision||0,
         tp:tp.value?Number(tp.value):null,rubric:Object.fromEntries(Object.entries(inputs).map(([k,v])=>[k,Number(v.value)])),
         evidence:ev.querySelector('textarea').value,justification:why.querySelector('textarea').value,status};
       try{
-        const result=await post('/api/teacher/pbd',payload,root);
-        if(result.ok&&result.data?.assessment){
+        const result=await api('/api/teacher/pbd',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+        if(!result.ok){
+          const errors={
+            INVALID_PBD_ASSESSMENT:'Pengesahan gagal: semak TP, rubrik, evidens dan justifikasi (minimum 12 aksara).',
+            STUDENT_NOT_IN_CLASS:'Pengesahan gagal: murid tidak didaftarkan dalam kelas Guru ini.',
+            PBD_REVISION_CONFLICT:'Rekod telah diubah pada sesi lain. Muat semula halaman sebelum mengedit.',
+            INVALID_ORIGIN:'Pengesahan ditolak oleh keselamatan pelayan. Akses melalui alamat website rasmi.',
+            LOGIN_REQUIRED:'Sesi log masuk telah tamat. Log masuk semula sebelum menyimpan.'
+          };
+          reportSave((errors[result.data?.error]||'PBD tidak disimpan. Ralat pelayan: '+(result.data?.error||'HTTP '+result.status))+'.');
+          return;
+        }
+        if(result.data?.assessment){
           // Reconcile the confirmed server response immediately, even if the
           // following list refresh fails or is delayed.
           const saved=result.data.assessment;
@@ -187,15 +212,15 @@
               ?'✓ PBD disahkan dan rekod terkini dimuatkan.'
               :'✓ Draf disimpan dan rekod terkini dimuatkan.');
           }else message(pages.pbd,'✓ PBD telah disimpan. Senarai disegarkan daripada resit pelayan; data terkini belum dapat dimuatkan semula.');
-        }else if(result.ok)message(root,'Pelayan tidak memulangkan resit PBD. Sila semak semula sebelum cuba menyimpan.');
+        }else reportSave('PBD belum dapat disahkan: pelayan tidak memulangkan resit simpanan. Semak rekod sebelum cuba lagi.');
       }
-      catch{message(pages.pbd,'Sambungan terganggu semasa mengemas kini paparan. Semak rekod sebelum mengulangi pengesahan.');}
+      catch{reportSave('Sambungan terganggu. Tidak dapat menentukan status simpanan. Muat semula rekod sebelum mencuba semula.');}
       finally{saving=false;}
     };
     actions.append(button('Simpan Draf',()=>save('draft')),
       button('Sahkan Tahap Penguasaan',()=>save('confirmed'),'hn-learning-primary'));
     form.addEventListener('submit',event=>event.preventDefault());
-    form.append(actions);root.append(form);
+    form.append(actions,saveStatus);root.append(form);
     root.append(el('p','Rekod TP yang disahkan hanya dipaparkan kepada Murid selepas Guru membuat pengesahan. Setiap perubahan mempunyai rekod sejarah dan audit.','hn-learning-muted'));
     // Show the teacher's saved records for every pupil in this class, including drafts.
     const archive=el('section','','hn-learning-panel');
