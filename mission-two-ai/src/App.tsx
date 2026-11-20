@@ -33,6 +33,9 @@ import {
   createInitialCheckpointRecords,
   loadMission2State,
   saveMission2State,
+  setMission2StorageAccount,
+  hasLegacyMisi2Progress,
+  importLegacyMisi2Progress,
 } from './game/storage';
 import type {
   CheckpointOption,
@@ -162,6 +165,9 @@ export default function App() {
 
   // Fetch the pupil's private Neon snapshot on opening. Never replace the local
   // game with a blank record from a newly used phone/computer.
+  const [accountId,setAccountId]=useState<string|null>(null);
+  const [storageReady,setStorageReady]=useState(false);
+  const [legacyImportAvailable,setLegacyImportAvailable]=useState(false);
   const [cloudReady,setCloudReady]=useState(false);
   const [cloudStatus,setCloudStatus]=useState('Menyemak rekod Misi 2...');
   const bootCloud=useCallback(async()=>{
@@ -176,19 +182,39 @@ export default function App() {
     }
   },[]);
   useEffect(()=>{
-    void bootCloud();
-    window.addEventListener('online',bootCloud);
-    return ()=>window.removeEventListener('online',bootCloud);
+    let active=true;
+    void (async()=>{
+      try{
+        const res=await fetch('/api/auth/session',{credentials:'same-origin',cache:'no-store'});
+        const session=await res.json();
+        if(!res.ok||session?.authenticated!==true||session.user?.role!=='murid'||
+          typeof session.user?.id!=='string')throw Error('SESSION_REQUIRED');
+        if(!active)return;
+        setMission2StorageAccount(session.user.id);
+        const local=loadMission2State();
+        setPersisted(local.state);
+        setHasSavedProgress(local.hasSavedProgress);
+        setLegacyImportAvailable(!local.hasSavedProgress&&hasLegacyMisi2Progress());
+        setAccountId(session.user.id);
+        setStorageReady(true);
+        await bootCloud();
+      }catch{
+        if(active)setCloudStatus('Sila log masuk sebagai Murid untuk membuka rekod permainan.');
+      }
+    })();
+    const online=()=>{if(active&&storageReady)void bootCloud();};
+    window.addEventListener('online',online);
+    return ()=>{active=false;window.removeEventListener('online',online);};
   },[bootCloud]);
   // Save the actual game state, including checkpoint and graph data, after
   // successful initialization. Every upload is merged under a DB transaction.
   useEffect(()=>{
-    if(!cloudReady)return;
+    if(!cloudReady||!accountId||!storageReady)return;
     let active=true;
     const timer=window.setTimeout(()=>{
       void (async()=>{
         try{
-          const remote=await writeMisi2Cloud(persisted);
+          const remote=await writeMisi2Cloud(persisted,accountId);
           if(!active)return;
           if(remote)setPersisted(prev=>{
             const combined=mergeMisi2Cloud(prev,remote);
@@ -202,7 +228,7 @@ export default function App() {
       })();
     },1350);
     return ()=>{active=false;window.clearTimeout(timer);};
-  },[persisted,cloudReady]);
+  },[persisted,cloudReady,accountId,storageReady]);
 
   useEffect(()=>{
     notifyHikayatPortal('sync',{status:cloudStatus});
@@ -210,6 +236,7 @@ export default function App() {
 
   // Debounced auto-save to localStorage
   useEffect(() => {
+    if(!storageReady)return;
     const id = window.setTimeout(() => {
       const ok = saveMission2State(persisted);
       if (ok) {
@@ -223,7 +250,7 @@ export default function App() {
       }
     }, 350);
     return () => window.clearTimeout(id);
-  }, [persisted]);
+  }, [persisted,storageReady]);
 
   const recordAttemptSummary = useCallback(
     (completedFlight: boolean, cpReached: number, nextCollisions: number, nextHearts: number, nextTimeRem: number) => {
@@ -299,6 +326,19 @@ export default function App() {
       checklist: persisted.checklist,
     });
   }, [persisted.missionCompleted]);
+
+  const importOldMisi2=()=>{
+    if(!confirm('Adakah rekod Misi 2 lama dalam pelayar ini benar-benar milik akaun murid yang sedang log masuk? Jangan import jika peranti ini dikongsi dan rekod milik orang lain.'))return;
+    if(!importLegacyMisi2Progress()){
+      setCloudStatus('Import belum berjaya. Rekod lama tidak dipadam.');
+      return;
+    }
+    const imported=loadMission2State();
+    setPersisted(prev=>mergeMisi2Cloud(prev,imported.state));
+    setHasSavedProgress(imported.hasSavedProgress);
+    setLegacyImportAvailable(false);
+    setCloudStatus('Rekod lama berjaya diimport. Menyelaraskan ke Neon...');
+  };
 
   // Main Countdown ("3, 2, 1, TERBANG!") -> starts 120s timer ONLY after countdown ends
   useEffect(() => {
@@ -685,6 +725,19 @@ export default function App() {
 
   return (
     <main className="relative w-screen h-screen overflow-hidden bg-[#1c140d]">
+      {!storageReady&&(
+        <div className="absolute inset-0 z-[900] flex items-center justify-center bg-stone-950/85 text-amber-100 p-5 text-center">
+          <p role="status">{cloudStatus}</p>
+        </div>
+      )}
+      {storageReady&&legacyImportAvailable&&(
+        <aside className="absolute top-3 left-3 right-3 z-[850] mx-auto max-w-xl rounded-xl border-2 border-amber-400 bg-amber-50 p-4 text-stone-900 shadow-xl">
+          <strong>Rekod Misi 2 lama ditemui pada peranti ini</strong>
+          <p className="mt-1 mb-3 text-sm">Import hanya jika rekod ini milik akaun murid yang sedang log masuk. Rekod permainan dalam akaun murid lain tidak boleh diimport.</p>
+          <button type="button" onClick={importOldMisi2} className="rounded-lg bg-emerald-800 px-4 py-2 text-white font-semibold">Import Rekod Lama Saya</button>
+          <button type="button" onClick={()=>setLegacyImportAvailable(false)} className="ml-3 rounded-lg border border-stone-300 px-4 py-2">Bukan Rekod Saya</button>
+        </aside>
+      )}
       {/* Persistent 3D or 2D World Viewport */}
       {persisted.use2DFallback ? (
         <WorldViewport2D
