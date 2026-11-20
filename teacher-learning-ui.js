@@ -225,7 +225,7 @@
     // Show the teacher's saved records for every pupil in this class, including drafts.
     const archive=el('section','','hn-learning-panel');
     archive.append(el('h3','Rekod PBD Murid — Semak Semula dan Edit'));
-    archive.append(el('p','Pilih rekod murid untuk mengedit TP, rubrik, evidens atau justifikasi. Setiap simpanan menghasilkan versi baharu; rekod sejarah lama dikekalkan.','hn-learning-muted'));
+    archive.append(el('p','Semak, edit atau padam rekod PBD aktif murid. Pemadaman memerlukan pengesahan dan tidak menghapuskan sejarah audit.','hn-learning-muted'));
     const all=(current.learning.assessments||[])
       .filter(a=>ownStudents(x.classId).some(p=>same(p.id,a.student_id)))
       .sort((a,b)=>new Date(b.updated_at)-new Date(a.updated_at));
@@ -241,6 +241,40 @@
         pages.pbd.querySelector('.hn-learning-form')?.scrollIntoView({behavior:'smooth',block:'start'});
       },'hn-learning-primary'));
       actions.append(button('Sejarah Pindaan',()=>void showPbdHistory(item.student_id,item.mission_id,entry)));
+      const remove=button('Padam PBD',async()=>{
+        const name=pupil?.display_name||'murid ini';
+        if(!confirm('Padam rekod PBD '+name+' bagi Misi '+item.mission_id+'?\\n\\nTP tidak lagi dipaparkan kepada murid. Sejarah pentaksiran dan audit akan dikekalkan.'))return;
+        remove.disabled=true;
+        try{
+          const result=await api('/api/teacher/pbd/delete',{
+            method:'POST',headers:{'Content-Type':'application/json'},
+            body:JSON.stringify({studentId:item.student_id,missionId:item.mission_id,expectedRevision:item.revision})
+          });
+          if(!result.ok){
+            remove.disabled=false;
+            message(archive,result.data?.error==='PBD_REVISION_CONFLICT'
+              ?'Rekod sudah diubah oleh sesi lain. Muat semula sebelum memadam.'
+              :'Rekod tidak dapat dipadam ('+(result.data?.error||'HTTP '+result.status)+').');
+            return;
+          }
+          // Do not hide the card unless the server explicitly confirms deletion.
+          if(result.data?.deleted!==true){
+            remove.disabled=false;message(archive,'Pelayan belum mengesahkan pemadaman.');return;
+          }
+          current.learning.assessments=current.learning.assessments.filter(a=>
+            !(same(a.student_id,item.student_id)&&a.mission_id===item.mission_id));
+          renderPbd();
+          message(pages.pbd,'✓ Rekod PBD '+name+' untuk Misi '+item.mission_id+' telah dipadam daripada rekod aktif. Sejarah kekal untuk audit.');
+          const latest=await api('/api/teacher/learning');
+          if(latest.ok){current.learning=latest.data;renderPbd();
+            message(pages.pbd,'✓ Rekod PBD dipadam daripada senarai aktif. Sejarah kekal untuk audit.');}
+        }catch{
+          remove.disabled=false;
+          message(archive,'Sambungan terganggu. Semak semula sebelum cuba padam lagi.');
+        }
+      });
+      remove.style.cssText='background:#fff0ee;color:#9c302a;border:1px solid #d99d98';
+      actions.append(remove);
       entry.append(actions);archive.append(entry);
     }
     root.append(archive);
@@ -263,7 +297,7 @@
       for(const h of history){
         const snap=h.snapshot||{};
         const item=el('div','','hn-learning-entry');
-        item.append(el('strong','Versi '+h.revision+' · '+(snap.tp?'TP'+snap.tp:'TP belum ditetapkan')+' · '+(statuses[snap.status]||snap.status||'Draf')));
+        item.append(el('strong','Versi '+h.revision+' · '+(snap.action==='deleted'?'Dipadam oleh Guru':(snap.tp?'TP'+snap.tp:'TP belum ditetapkan')+' · '+(statuses[snap.status]||snap.status||'Draf'))));
         item.append(el('p','Tarikh: '+new Date(h.created_at).toLocaleString('ms-MY')+' · Guru: '+(h.teacher_name||'Tidak tersedia')));
         if(snap.evidence)item.append(el('p','Evidens: '+snap.evidence));
         if(snap.justification)item.append(el('p','Justifikasi: '+snap.justification));
